@@ -9,38 +9,215 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ResultatsRouteImport } from './routes/resultats'
+import { Route as PronosticsRouteImport } from './routes/pronostics'
+import { Route as PmuRouteImport } from './routes/pmu'
+import { Route as PariFootRouteImport } from './routes/pari-foot'
+import { Route as MesTicketsRouteImport } from './routes/mes-tickets'
+import { Route as LotoBalsaRouteImport } from './routes/loto-balsa'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TicketIdRouteImport } from './routes/ticket.$id'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResultatsRoute = ResultatsRouteImport.update({
+  id: '/resultats',
+  path: '/resultats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PronosticsRoute = PronosticsRouteImport.update({
+  id: '/pronostics',
+  path: '/pronostics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PmuRoute = PmuRouteImport.update({
+  id: '/pmu',
+  path: '/pmu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PariFootRoute = PariFootRouteImport.update({
+  id: '/pari-foot',
+  path: '/pari-foot',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MesTicketsRoute = MesTicketsRouteImport.update({
+  id: '/mes-tickets',
+  path: '/mes-tickets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LotoBalsaRoute = LotoBalsaRouteImport.update({
+  id: '/loto-balsa',
+  path: '/loto-balsa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TicketIdRoute = TicketIdRouteImport.update({
+  id: '/ticket/$id',
+  path: '/ticket/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/loto-balsa': typeof LotoBalsaRoute
+  '/mes-tickets': typeof MesTicketsRoute
+  '/pari-foot': typeof PariFootRoute
+  '/pmu': typeof PmuRoute
+  '/pronostics': typeof PronosticsRoute
+  '/resultats': typeof ResultatsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/loto-balsa': typeof LotoBalsaRoute
+  '/mes-tickets': typeof MesTicketsRoute
+  '/pari-foot': typeof PariFootRoute
+  '/pmu': typeof PmuRoute
+  '/pronostics': typeof PronosticsRoute
+  '/resultats': typeof ResultatsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/loto-balsa': typeof LotoBalsaRoute
+  '/mes-tickets': typeof MesTicketsRoute
+  '/pari-foot': typeof PariFootRoute
+  '/pmu': typeof PmuRoute
+  '/pronostics': typeof PronosticsRoute
+  '/resultats': typeof ResultatsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/loto-balsa'
+    | '/mes-tickets'
+    | '/pari-foot'
+    | '/pmu'
+    | '/pronostics'
+    | '/resultats'
+    | '/sitemap.xml'
+    | '/ticket/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin'
+    | '/loto-balsa'
+    | '/mes-tickets'
+    | '/pari-foot'
+    | '/pmu'
+    | '/pronostics'
+    | '/resultats'
+    | '/sitemap.xml'
+    | '/ticket/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/loto-balsa'
+    | '/mes-tickets'
+    | '/pari-foot'
+    | '/pmu'
+    | '/pronostics'
+    | '/resultats'
+    | '/sitemap.xml'
+    | '/ticket/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  LotoBalsaRoute: typeof LotoBalsaRoute
+  MesTicketsRoute: typeof MesTicketsRoute
+  PariFootRoute: typeof PariFootRoute
+  PmuRoute: typeof PmuRoute
+  PronosticsRoute: typeof PronosticsRoute
+  ResultatsRoute: typeof ResultatsRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  TicketIdRoute: typeof TicketIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resultats': {
+      id: '/resultats'
+      path: '/resultats'
+      fullPath: '/resultats'
+      preLoaderRoute: typeof ResultatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pronostics': {
+      id: '/pronostics'
+      path: '/pronostics'
+      fullPath: '/pronostics'
+      preLoaderRoute: typeof PronosticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pmu': {
+      id: '/pmu'
+      path: '/pmu'
+      fullPath: '/pmu'
+      preLoaderRoute: typeof PmuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pari-foot': {
+      id: '/pari-foot'
+      path: '/pari-foot'
+      fullPath: '/pari-foot'
+      preLoaderRoute: typeof PariFootRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mes-tickets': {
+      id: '/mes-tickets'
+      path: '/mes-tickets'
+      fullPath: '/mes-tickets'
+      preLoaderRoute: typeof MesTicketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/loto-balsa': {
+      id: '/loto-balsa'
+      path: '/loto-balsa'
+      fullPath: '/loto-balsa'
+      preLoaderRoute: typeof LotoBalsaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +225,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ticket/$id': {
+      id: '/ticket/$id'
+      path: '/ticket/$id'
+      fullPath: '/ticket/$id'
+      preLoaderRoute: typeof TicketIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  LotoBalsaRoute: LotoBalsaRoute,
+  MesTicketsRoute: MesTicketsRoute,
+  PariFootRoute: PariFootRoute,
+  PmuRoute: PmuRoute,
+  PronosticsRoute: PronosticsRoute,
+  ResultatsRoute: ResultatsRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
+  TicketIdRoute: TicketIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

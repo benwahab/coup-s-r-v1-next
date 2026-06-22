@@ -11,6 +11,15 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import "@fontsource/manrope/400.css";
+import "@fontsource/manrope/600.css";
+import "@fontsource/manrope/700.css";
+import "@fontsource/space-grotesk/500.css";
+import "@fontsource/space-grotesk/600.css";
+import "@fontsource/space-grotesk/700.css";
+import { I18nProvider } from "@/lib/i18n";
+import { TicketsProvider } from "@/lib/tickets";
+import { AppShell } from "@/components/AppShell";
 
 function NotFoundComponent() {
   return (
@@ -77,14 +86,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "LoNaNi — Loterie Nationale du Niger en ligne" },
+      { name: "description", content: "Jouez au PMU, Loto Balsa et Pari Foot en ligne au Niger. Paiement par Airtel Money, Moov Money, Zamani Cash et Nita. Reçu numérique sécurisé avec QR Code." },
+      { name: "author", content: "Loterie Nationale du Niger" },
+      { property: "og:title", content: "LoNaNi — Jouez en ligne au Niger" },
+      { property: "og:description", content: "PMU, Loto Balsa, Pari Foot. Paiement mobile, reçu QR Code, notifications de gain par SMS." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -118,8 +126,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <I18nProvider>
+        <TicketsProvider>
+          <AppShell>
+            {/* Required: nested routes render here. */}
+            <Outlet />
+          </AppShell>
+        </TicketsProvider>
+      </I18nProvider>
     </QueryClientProvider>
   );
 }
