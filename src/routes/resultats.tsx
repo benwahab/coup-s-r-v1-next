@@ -3,6 +3,7 @@ import { Trophy } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/AppShell";
 import { coldNumbers, footMatches, hotNumbers, recentResults } from "@/lib/mock-data";
+import { formatDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/resultats")({
   head: () => ({
@@ -31,7 +32,7 @@ function ResultsPage() {
             {loto.map((r) => (
               <li key={r.id} className="rounded-2xl border border-border bg-card p-4 shadow-soft">
                 <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{new Date(r.date).toLocaleDateString()}</span>
+                  <span className="tabular-nums">{formatDate(r.date)}</span>
                   <span className="font-mono">{r.id}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -46,7 +47,7 @@ function ResultsPage() {
           <ul className="space-y-3">
             {pmu.map((r) => (
               <li key={r.id} className="rounded-2xl border border-border bg-card p-4 shadow-soft">
-                <div className="mb-2 text-xs text-muted-foreground">{new Date(r.date).toLocaleDateString()}</div>
+                <div className="mb-2 text-xs text-muted-foreground tabular-nums">{formatDate(r.date)}</div>
                 <div className="flex flex-wrap items-center gap-2">
                   {r.horses!.map((h, i) => (
                     <span key={h} className="inline-flex items-center gap-1.5">
@@ -64,7 +65,7 @@ function ResultsPage() {
           <ul className="space-y-3">
             {foot.map((r) => (
               <li key={r.id} className="rounded-2xl border border-border bg-card p-4 shadow-soft">
-                <div className="mb-2 text-xs text-muted-foreground">{new Date(r.date).toLocaleDateString()}</div>
+                <div className="mb-2 text-xs text-muted-foreground tabular-nums">{formatDate(r.date)}</div>
                 <ul className="space-y-1.5 text-sm">
                   {r.matches!.map((m) => {
                     const match = footMatches.find((x) => x.id === m.matchId);
