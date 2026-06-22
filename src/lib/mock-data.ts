@@ -38,13 +38,24 @@ export const recentResults: DrawResult[] = [
   ]},
 ];
 
-export const hotNumbers = [7, 12, 19, 28, 34];
-export const coldNumbers = [2, 13, 23, 31, 44];
+export const hotNumbers = [7, 19, 34, 56, 72, 88];
+export const coldNumbers = [2, 23, 41, 63, 77, 90];
 export const lotoSuggestions = [
-  [3, 12, 19, 27, 34, 41],
-  [7, 11, 18, 26, 33, 40],
-  [5, 14, 21, 28, 35, 42],
+  [12, 27, 45, 68, 84],
+  [7, 19, 33, 56, 72],
+  [3, 21, 49, 64, 88],
 ];
+
+/** Loto Balsa — multiplicateurs officiels simulés (style Niger : 1 à 5 boules sur 90). */
+export const lotoMultipliers: Record<number, number> = {
+  1: 70,
+  2: 240,
+  3: 800,
+  4: 4000,
+  5: 20000,
+};
+
+export const jackpot = 187_500_000; // FCFA
 
 export const expertTips = [
   { game: "pmu" as GameId, title: "Tiercé du jour", text: "Sahara Wind (1) en pole position. Niamey Star (2) confirme. Outsider : Niger Gold (7)." },
@@ -62,7 +73,7 @@ export const paymentMethods = [
 ];
 
 export const games = [
-  { id: "pmu" as GameId, name: "PMU", emoji: "🐎", closes: "Sam. 18:00", color: "from-[oklch(0.62_0.11_190)] to-[oklch(0.42_0.08_195)]" },
-  { id: "loto" as GameId, name: "Loto Balsa", emoji: "🎱", closes: "Ven. 21:00", color: "from-[oklch(0.78_0.15_82)] to-[oklch(0.65_0.18_60)]" },
-  { id: "foot" as GameId, name: "Pari Foot", emoji: "⚽", closes: "Sam. 16:00", color: "from-[oklch(0.55_0.14_165)] to-[oklch(0.35_0.08_180)]" },
+  { id: "pmu" as GameId, name: "PMU", emoji: "🐎", closes: "Sam. 18:00", color: "from-[oklch(0.78_0.20_150)] to-[oklch(0.45_0.12_160)]" },
+  { id: "loto" as GameId, name: "Loto Balsa", emoji: "🎱", closes: "Ven. 21:00", color: "from-[oklch(0.82_0.17_82)] to-[oklch(0.65_0.18_60)]" },
+  { id: "foot" as GameId, name: "Pari Foot", emoji: "⚽", closes: "Sam. 16:00", color: "from-[oklch(0.72_0.13_215)] to-[oklch(0.35_0.10_240)]" },
 ];
