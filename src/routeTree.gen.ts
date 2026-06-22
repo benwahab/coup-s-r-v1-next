@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PmuRouteImport } from './routes/pmu'
 import { Route as LotoBalsaRouteImport } from './routes/loto-balsa'
 import { Route as IndexRouteImport } from './routes/index'
 
+const PmuRoute = PmuRouteImport.update({
+  id: '/pmu',
+  path: '/pmu',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LotoBalsaRoute = LotoBalsaRouteImport.update({
   id: '/loto-balsa',
   path: '/loto-balsa',
@@ -26,31 +32,42 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/loto-balsa': typeof LotoBalsaRoute
+  '/pmu': typeof PmuRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/loto-balsa': typeof LotoBalsaRoute
+  '/pmu': typeof PmuRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/loto-balsa': typeof LotoBalsaRoute
+  '/pmu': typeof PmuRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/loto-balsa'
+  fullPaths: '/' | '/loto-balsa' | '/pmu'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/loto-balsa'
-  id: '__root__' | '/' | '/loto-balsa'
+  to: '/' | '/loto-balsa' | '/pmu'
+  id: '__root__' | '/' | '/loto-balsa' | '/pmu'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LotoBalsaRoute: typeof LotoBalsaRoute
+  PmuRoute: typeof PmuRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/pmu': {
+      id: '/pmu'
+      path: '/pmu'
+      fullPath: '/pmu'
+      preLoaderRoute: typeof PmuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/loto-balsa': {
       id: '/loto-balsa'
       path: '/loto-balsa'
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LotoBalsaRoute: LotoBalsaRoute,
+  PmuRoute: PmuRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
