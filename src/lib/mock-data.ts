@@ -23,7 +23,7 @@ export const footMatches: FootMatch[] = [
   { id: "m1", home: "Sahel SC", away: "AS GNN", date: "Sam. 20:00", odds: { "1": 1.85, "X": 3.2, "2": 4.1 } },
   { id: "m2", home: "AS FAN", away: "Olympic FC", date: "Sam. 17:00", odds: { "1": 2.1, "X": 3.0, "2": 3.4 } },
   { id: "m3", home: "Akokana", away: "Zumunta", date: "Dim. 16:00", odds: { "1": 1.6, "X": 3.5, "2": 5.2 } },
-  { id: "m4", home: "Espoir Zinder", jockey: undefined as never, away: "USGN", date: "Dim. 18:30", odds: { "1": 2.4, "X": 2.9, "2": 2.9 } },
+  { id: "m4", home: "Espoir Zinder", away: "USGN", date: "Dim. 18:30", odds: { "1": 2.4, "X": 2.9, "2": 2.9 } },
   { id: "m5", home: "Liberté FC", away: "Jangorzo", date: "Dim. 20:30", odds: { "1": 1.9, "X": 3.1, "2": 3.8 } },
 ];
 
