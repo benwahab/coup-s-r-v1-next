@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResultatsRouteImport } from './routes/resultats'
+import { Route as PronosticsRouteImport } from './routes/pronostics'
 import { Route as PmuRouteImport } from './routes/pmu'
 import { Route as PariFootRouteImport } from './routes/pari-foot'
 import { Route as MesTicketsRouteImport } from './routes/mes-tickets'
@@ -20,6 +21,11 @@ import { Route as TicketIdRouteImport } from './routes/ticket.$id'
 const ResultatsRoute = ResultatsRouteImport.update({
   id: '/resultats',
   path: '/resultats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PronosticsRoute = PronosticsRouteImport.update({
+  id: '/pronostics',
+  path: '/pronostics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PmuRoute = PmuRouteImport.update({
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/mes-tickets': typeof MesTicketsRoute
   '/pari-foot': typeof PariFootRoute
   '/pmu': typeof PmuRoute
+  '/pronostics': typeof PronosticsRoute
   '/resultats': typeof ResultatsRoute
   '/ticket/$id': typeof TicketIdRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/mes-tickets': typeof MesTicketsRoute
   '/pari-foot': typeof PariFootRoute
   '/pmu': typeof PmuRoute
+  '/pronostics': typeof PronosticsRoute
   '/resultats': typeof ResultatsRoute
   '/ticket/$id': typeof TicketIdRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/mes-tickets': typeof MesTicketsRoute
   '/pari-foot': typeof PariFootRoute
   '/pmu': typeof PmuRoute
+  '/pronostics': typeof PronosticsRoute
   '/resultats': typeof ResultatsRoute
   '/ticket/$id': typeof TicketIdRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/mes-tickets'
     | '/pari-foot'
     | '/pmu'
+    | '/pronostics'
     | '/resultats'
     | '/ticket/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/mes-tickets'
     | '/pari-foot'
     | '/pmu'
+    | '/pronostics'
     | '/resultats'
     | '/ticket/$id'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/mes-tickets'
     | '/pari-foot'
     | '/pmu'
+    | '/pronostics'
     | '/resultats'
     | '/ticket/$id'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   MesTicketsRoute: typeof MesTicketsRoute
   PariFootRoute: typeof PariFootRoute
   PmuRoute: typeof PmuRoute
+  PronosticsRoute: typeof PronosticsRoute
   ResultatsRoute: typeof ResultatsRoute
   TicketIdRoute: typeof TicketIdRoute
 }
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/resultats'
       fullPath: '/resultats'
       preLoaderRoute: typeof ResultatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pronostics': {
+      id: '/pronostics'
+      path: '/pronostics'
+      fullPath: '/pronostics'
+      preLoaderRoute: typeof PronosticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pmu': {
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   MesTicketsRoute: MesTicketsRoute,
   PariFootRoute: PariFootRoute,
   PmuRoute: PmuRoute,
+  PronosticsRoute: PronosticsRoute,
   ResultatsRoute: ResultatsRoute,
   TicketIdRoute: TicketIdRoute,
 }
