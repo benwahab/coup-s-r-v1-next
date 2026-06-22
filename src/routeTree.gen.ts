@@ -9,8 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LotoBalsaRouteImport } from './routes/loto-balsa'
 import { Route as IndexRouteImport } from './routes/index'
 
+const LotoBalsaRoute = LotoBalsaRouteImport.update({
+  id: '/loto-balsa',
+  path: '/loto-balsa',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +25,39 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/loto-balsa': typeof LotoBalsaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/loto-balsa': typeof LotoBalsaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/loto-balsa': typeof LotoBalsaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/loto-balsa'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/loto-balsa'
+  id: '__root__' | '/' | '/loto-balsa'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LotoBalsaRoute: typeof LotoBalsaRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/loto-balsa': {
+      id: '/loto-balsa'
+      path: '/loto-balsa'
+      fullPath: '/loto-balsa'
+      preLoaderRoute: typeof LotoBalsaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +70,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LotoBalsaRoute: LotoBalsaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
