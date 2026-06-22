@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ShieldCheck, TrendingUp, Users, Wallet, Trophy, Send, FileText, Settings2, Download } from "lucide-react";
-import { useMemo } from "react";
+import { ShieldCheck, TrendingUp, Users, Wallet, Trophy, Send, FileText, Settings2, Download, MessageCircle, Check, BellRing } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useTickets } from "@/lib/tickets";
 import { PageHeader } from "@/components/AppShell";
@@ -21,6 +21,25 @@ const statusColor: Record<string, string> = {
 function AdminPage() {
   const { t } = useI18n();
   const { tickets, updateStatus } = useTickets();
+
+  const [autoSms, setAutoSms] = useState(true);
+  const [sentLog, setSentLog] = useState<{ id: string; phone: string; prize: number; at: number }[]>([]);
+  const [cashoutRequests, setCashoutRequests] = useState<string[]>([]);
+
+  // Auto-SMS: whenever a ticket flips to "winning" and we haven't notified yet, log a "sent" entry
+  // and create a cash-out request on behalf of the winner.
+  useEffect(() => {
+    if (!autoSms) return;
+    const winners = tickets.filter((t) => t.status === "winning");
+    const known = new Set(sentLog.map((s) => s.id));
+    const fresh = winners.filter((w) => !known.has(w.id));
+    if (fresh.length === 0) return;
+    setSentLog((prev) => [
+      ...fresh.map((w) => ({ id: w.id, phone: w.phone, prize: w.prize ?? 0, at: Date.now() })),
+      ...prev,
+    ]);
+    setCashoutRequests((prev) => Array.from(new Set([...fresh.map((w) => w.id), ...prev])));
+  }, [tickets, autoSms, sentLog]);
 
   const revenue = tickets.reduce((s, t) => s + t.stake, 0);
   const active = tickets.filter((t) => t.status === "pending").length;
@@ -71,6 +90,11 @@ function AdminPage() {
       current === "paid" ? "losing" : "pending";
     const prize = next === "winning" ? Math.round((tickets.find(t => t.id === id)?.stake ?? 0) * 12) : undefined;
     updateStatus(id, next as "pending" | "winning" | "paid" | "losing", prize);
+  };
+
+  const approveCashout = (id: string) => {
+    updateStatus(id, "paid", tickets.find((t) => t.id === id)?.prize);
+    setCashoutRequests((prev) => prev.filter((x) => x !== id));
   };
 
   return (
@@ -139,12 +163,47 @@ function AdminPage() {
 
           <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
             <h2 className="font-display text-lg font-bold">Actions</h2>
+
+            {/* Auto SMS toggle */}
+            <div className="mt-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+              <div className="flex items-start gap-3">
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/20 text-primary">
+                  <BellRing className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-bold">{t("autoSmsTitle")}</span>
+                    <button
+                      type="button"
+                      onClick={() => setAutoSms((v) => !v)}
+                      className={cn(
+                        "relative h-6 w-11 rounded-full transition",
+                        autoSms ? "bg-primary" : "bg-muted",
+                      )}
+                      aria-pressed={autoSms}
+                    >
+                      <span className={cn(
+                        "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition",
+                        autoSms ? "left-5" : "left-0.5",
+                      )} />
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{t("autoSmsDesc")}</p>
+                  <span className={cn(
+                    "mt-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                    autoSms ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+                  )}>
+                    {autoSms ? t("enabled") : t("disabled")}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <div className="mt-3 grid gap-2">
               {[
                 { icon: Settings2, label: t("manageGames") },
                 { icon: Trophy, label: t("manageDraws") },
                 { icon: Send, label: t("publishResults") },
-                { icon: Send, label: t("sendSms") },
                 { icon: FileText, label: t("financialReport") },
               ].map((a, i) => (
                 <button key={i} className="flex items-center gap-3 rounded-2xl border border-border bg-background px-4 py-3 text-left text-sm font-semibold hover:border-primary">
@@ -152,6 +211,71 @@ function AdminPage() {
                 </button>
               ))}
             </div>
+          </section>
+        </div>
+
+        {/* Cash-out requests + SMS log */}
+        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+          <section className="rounded-3xl border border-border bg-card shadow-soft">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3">
+              <h2 className="font-display text-lg font-bold">{t("cashoutRequests")}</h2>
+              <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gold">
+                {cashoutRequests.length}
+              </span>
+            </div>
+            {cashoutRequests.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-muted-foreground">{t("noRequests")}</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {cashoutRequests.map((id) => {
+                  const tk = tickets.find((x) => x.id === id);
+                  if (!tk) return null;
+                  return (
+                    <li key={id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                      <div className="min-w-0">
+                        <div className="font-mono text-xs font-bold">{tk.id}</div>
+                        <div className="truncate text-sm">{tk.phone} • {tk.gameName}</div>
+                        <div className="text-xs text-success font-bold">{formatFcfa(tk.prize ?? 0)} FCFA</div>
+                      </div>
+                      <button
+                        onClick={() => approveCashout(id)}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-gold-gradient px-3 py-1.5 text-xs font-bold text-[var(--gold-foreground)] shadow-gold"
+                      >
+                        <Check className="h-3.5 w-3.5" /> {t("approve")}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+
+          <section className="rounded-3xl border border-border bg-card shadow-soft">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3">
+              <h2 className="font-display text-lg font-bold">{t("sendSms")} — log auto</h2>
+              <MessageCircle className="h-4 w-4 text-muted-foreground" />
+            </div>
+            {sentLog.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+                Aucun SMS envoyé pour l'instant. Passez un ticket en « winning » dans la liste pour déclencher l'envoi automatique.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {sentLog.slice(0, 8).map((s) => (
+                  <li key={s.id + s.at} className="px-5 py-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs font-bold">{s.id}</span>
+                      <span className="text-[11px] text-muted-foreground tabular-nums">
+                        {new Date(s.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      → {s.phone} : « Bravo ! Votre ticket {s.id} est gagnant ({formatFcfa(s.prize)} FCFA). Répondez OUI pour encaisser. »
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </div>
       </div>
