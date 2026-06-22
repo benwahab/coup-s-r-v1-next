@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResultatsRouteImport } from './routes/resultats'
 import { Route as PronosticsRouteImport } from './routes/pronostics'
 import { Route as PmuRouteImport } from './routes/pmu'
@@ -19,6 +20,11 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TicketIdRouteImport } from './routes/ticket.$id'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResultatsRoute = ResultatsRouteImport.update({
   id: '/resultats',
   path: '/resultats',
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/pmu': typeof PmuRoute
   '/pronostics': typeof PronosticsRoute
   '/resultats': typeof ResultatsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/pmu': typeof PmuRoute
   '/pronostics': typeof PronosticsRoute
   '/resultats': typeof ResultatsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRoutesById {
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/pmu': typeof PmuRoute
   '/pronostics': typeof PronosticsRoute
   '/resultats': typeof ResultatsRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/pmu'
     | '/pronostics'
     | '/resultats'
+    | '/sitemap.xml'
     | '/ticket/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/pmu'
     | '/pronostics'
     | '/resultats'
+    | '/sitemap.xml'
     | '/ticket/$id'
   id:
     | '__root__'
@@ -132,6 +143,7 @@ export interface FileRouteTypes {
     | '/pmu'
     | '/pronostics'
     | '/resultats'
+    | '/sitemap.xml'
     | '/ticket/$id'
   fileRoutesById: FileRoutesById
 }
@@ -144,11 +156,19 @@ export interface RootRouteChildren {
   PmuRoute: typeof PmuRoute
   PronosticsRoute: typeof PronosticsRoute
   ResultatsRoute: typeof ResultatsRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TicketIdRoute: typeof TicketIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/resultats': {
       id: '/resultats'
       path: '/resultats'
@@ -224,6 +244,7 @@ const rootRouteChildren: RootRouteChildren = {
   PmuRoute: PmuRoute,
   PronosticsRoute: PronosticsRoute,
   ResultatsRoute: ResultatsRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TicketIdRoute: TicketIdRoute,
 }
 export const routeTree = rootRouteImport
