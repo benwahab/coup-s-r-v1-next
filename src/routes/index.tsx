@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, ShieldCheck, Smartphone, Zap } from "lucide-react";
+import { ArrowRight, ShieldCheck, Smartphone, Zap, Flame, Radio } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { games, recentResults } from "@/lib/mock-data";
+import { games, recentResults, jackpot, hotNumbers } from "@/lib/mock-data";
+import { formatDate, formatFcfa } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -18,44 +20,110 @@ export const Route = createFileRoute("/")({
 
 const gameLinks = { pmu: "/pmu", loto: "/loto-balsa", foot: "/pari-foot" } as const;
 
+function nextFriday21h() {
+  const now = new Date();
+  const target = new Date(now);
+  const day = target.getDay(); // 0..6
+  const delta = ((5 - day + 7) % 7) || 7;
+  target.setDate(target.getDate() + delta);
+  target.setHours(21, 0, 0, 0);
+  if (target.getTime() <= now.getTime()) target.setDate(target.getDate() + 7);
+  return target;
+}
+
+function useCountdown(target: Date) {
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  if (now === null) return null;
+  const diff = Math.max(0, target.getTime() - now);
+  const d = Math.floor(diff / 86_400_000);
+  const h = Math.floor((diff / 3_600_000) % 24);
+  const m = Math.floor((diff / 60_000) % 60);
+  const s = Math.floor((diff / 1000) % 60);
+  return { d, h, m, s };
+}
+
 function Index() {
   const { t } = useI18n();
   const lastLoto = recentResults.find((r) => r.gameId === "loto");
+  const cd = useCountdown(nextFriday21h());
 
   return (
     <div>
       {/* Hero */}
       <section className="relative overflow-hidden bg-hero text-white">
-        <div className="absolute inset-0 opacity-20" style={{ background: "radial-gradient(800px 400px at 20% -10%, white, transparent 60%)" }} />
-        <div className="relative mx-auto max-w-6xl px-4 py-10 sm:py-16">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest">
-            🇳🇪 {t("tagline")}
-          </span>
-          <h1 className="mt-4 font-display text-4xl sm:text-5xl font-bold leading-tight">
-            {t("play")} <span className="text-gold">en 3 clics</span>,<br />
-            depuis votre téléphone.
-          </h1>
-          <p className="mt-4 max-w-xl text-base sm:text-lg text-white/80">
-            PMU, Loto Balsa et Pari Foot. Payez avec Airtel Money, Moov Money, Zamani Cash ou Nita. Reçu QR Code. Notification de gain par SMS.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <a href="#jeux" className="inline-flex items-center gap-2 rounded-full bg-gold-gradient px-5 py-3 font-bold text-[var(--gold-foreground)] shadow-gold transition hover:brightness-105">
-              {t("playNow")} <ArrowRight className="h-4 w-4" />
-            </a>
-            <Link to="/resultats" className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-5 py-3 font-semibold text-white backdrop-blur transition hover:bg-white/20">
-              {t("results")}
-            </Link>
+        <div className="absolute inset-0 grid-bg opacity-60" />
+        <div className="relative mx-auto max-w-6xl px-4 py-10 sm:py-14">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest backdrop-blur">
+              🇳🇪 {t("tagline")}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-primary">
+              <Radio className="h-3 w-3 animate-pulse" /> {t("liveNow")}
+            </span>
           </div>
 
-          <div className="mt-8 grid grid-cols-3 gap-3 max-w-md">
+          <h1 className="mt-4 font-display text-4xl sm:text-6xl font-extrabold leading-[1.05]">
+            Jouez. Gagnez. <span className="bg-gradient-to-r from-[oklch(0.82_0.20_150)] to-[oklch(0.86_0.16_88)] bg-clip-text text-transparent">Encaissez.</span>
+          </h1>
+          <p className="mt-4 max-w-xl text-base sm:text-lg text-white/75">
+            PMU, Loto Balsa (1 à 5 boules sur 90) et Pari Foot. Paiement Airtel, Moov, Zamani, Nita. Reçu QR sécurisé, gain notifié par SMS.
+          </p>
+
+          {/* Jackpot card */}
+          <div className="mt-6 grid gap-3 sm:grid-cols-[1.2fr_1fr]">
+            <div className="rounded-3xl border border-gold/40 bg-gradient-to-br from-white/5 to-white/0 p-5 shadow-gold backdrop-blur">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-gold/90">{t("jackpot")} — Loto Balsa</span>
+                <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gold">Vendredi 21h</span>
+              </div>
+              <div className="mt-2 font-display text-4xl sm:text-5xl font-extrabold tabular-nums text-white">
+                {formatFcfa(jackpot)} <span className="text-lg font-semibold text-white/70">{t("fcfa")}</span>
+              </div>
+              <Link to="/loto-balsa" className="mt-4 inline-flex items-center gap-2 rounded-full bg-gold-gradient px-5 py-2.5 font-bold text-[var(--gold-foreground)] shadow-gold transition hover:brightness-110">
+                {t("playNow")} <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur">
+              <div className="text-[11px] font-bold uppercase tracking-widest text-white/60">{t("nextDrawIn")}</div>
+              {cd ? (
+                <div className="mt-2 grid grid-cols-4 gap-2 tabular-nums">
+                  {[
+                    { v: cd.d, l: t("days") },
+                    { v: cd.h, l: t("hours") },
+                    { v: cd.m, l: t("minutes") },
+                    { v: cd.s, l: t("seconds") },
+                  ].map((b, i) => (
+                    <div key={i} className="rounded-xl bg-white/5 px-2 py-2 text-center">
+                      <div className="font-display text-2xl font-extrabold text-white">{String(b.v).padStart(2, "0")}</div>
+                      <div className="text-[10px] uppercase tracking-widest text-white/60">{b.l}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-2 h-[68px] animate-pulse rounded-xl bg-white/5" />
+              )}
+              <div className="mt-3 flex items-center gap-1.5 text-[11px] text-white/60">
+                <Flame className="h-3.5 w-3.5 text-gold" /> Numéros chauds :
+                <span className="ml-1 font-bold text-gold tabular-nums">{hotNumbers.slice(0, 4).join(" · ")}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-3 gap-2 max-w-xl">
             {[
               { icon: Zap, label: "3 clics" },
               { icon: Smartphone, label: "Mobile Money" },
               { icon: ShieldCheck, label: "QR sécurisé" },
             ].map((b) => (
-              <div key={b.label} className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3 backdrop-blur">
-                <b.icon className="h-5 w-5 text-gold" />
-                <div className="mt-1 text-xs font-semibold">{b.label}</div>
+              <div key={b.label} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 backdrop-blur">
+                <b.icon className="h-4 w-4 text-primary" />
+                <div className="text-xs font-semibold text-white/85">{b.label}</div>
               </div>
             ))}
           </div>
@@ -102,7 +170,7 @@ function Index() {
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">Loto Balsa</div>
                 <div className="font-display text-xl font-bold">Derniers numéros gagnants</div>
               </div>
-              <span className="text-xs text-muted-foreground">{new Date(lastLoto.date).toLocaleDateString()}</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{formatDate(lastLoto.date)}</span>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               {lastLoto.numbers.map((n) => (
