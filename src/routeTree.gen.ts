@@ -13,6 +13,7 @@ import { Route as PmuRouteImport } from './routes/pmu'
 import { Route as PariFootRouteImport } from './routes/pari-foot'
 import { Route as LotoBalsaRouteImport } from './routes/loto-balsa'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TicketIdRouteImport } from './routes/ticket.$id'
 
 const PmuRoute = PmuRouteImport.update({
   id: '/pmu',
@@ -34,18 +35,25 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TicketIdRoute = TicketIdRouteImport.update({
+  id: '/ticket/$id',
+  path: '/ticket/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/loto-balsa': typeof LotoBalsaRoute
   '/pari-foot': typeof PariFootRoute
   '/pmu': typeof PmuRoute
+  '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/loto-balsa': typeof LotoBalsaRoute
   '/pari-foot': typeof PariFootRoute
   '/pmu': typeof PmuRoute
+  '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/loto-balsa': typeof LotoBalsaRoute
   '/pari-foot': typeof PariFootRoute
   '/pmu': typeof PmuRoute
+  '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/loto-balsa' | '/pari-foot' | '/pmu'
+  fullPaths: '/' | '/loto-balsa' | '/pari-foot' | '/pmu' | '/ticket/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/loto-balsa' | '/pari-foot' | '/pmu'
-  id: '__root__' | '/' | '/loto-balsa' | '/pari-foot' | '/pmu'
+  to: '/' | '/loto-balsa' | '/pari-foot' | '/pmu' | '/ticket/$id'
+  id: '__root__' | '/' | '/loto-balsa' | '/pari-foot' | '/pmu' | '/ticket/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +76,7 @@ export interface RootRouteChildren {
   LotoBalsaRoute: typeof LotoBalsaRoute
   PariFootRoute: typeof PariFootRoute
   PmuRoute: typeof PmuRoute
+  TicketIdRoute: typeof TicketIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ticket/$id': {
+      id: '/ticket/$id'
+      path: '/ticket/$id'
+      fullPath: '/ticket/$id'
+      preLoaderRoute: typeof TicketIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   LotoBalsaRoute: LotoBalsaRoute,
   PariFootRoute: PariFootRoute,
   PmuRoute: PmuRoute,
+  TicketIdRoute: TicketIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
