@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PmuRouteImport } from './routes/pmu'
+import { Route as PariFootRouteImport } from './routes/pari-foot'
 import { Route as LotoBalsaRouteImport } from './routes/loto-balsa'
 import { Route as IndexRouteImport } from './routes/index'
 
 const PmuRoute = PmuRouteImport.update({
   id: '/pmu',
   path: '/pmu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PariFootRoute = PariFootRouteImport.update({
+  id: '/pari-foot',
+  path: '/pari-foot',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LotoBalsaRoute = LotoBalsaRouteImport.update({
@@ -32,30 +38,34 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/loto-balsa': typeof LotoBalsaRoute
+  '/pari-foot': typeof PariFootRoute
   '/pmu': typeof PmuRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/loto-balsa': typeof LotoBalsaRoute
+  '/pari-foot': typeof PariFootRoute
   '/pmu': typeof PmuRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/loto-balsa': typeof LotoBalsaRoute
+  '/pari-foot': typeof PariFootRoute
   '/pmu': typeof PmuRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/loto-balsa' | '/pmu'
+  fullPaths: '/' | '/loto-balsa' | '/pari-foot' | '/pmu'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/loto-balsa' | '/pmu'
-  id: '__root__' | '/' | '/loto-balsa' | '/pmu'
+  to: '/' | '/loto-balsa' | '/pari-foot' | '/pmu'
+  id: '__root__' | '/' | '/loto-balsa' | '/pari-foot' | '/pmu'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LotoBalsaRoute: typeof LotoBalsaRoute
+  PariFootRoute: typeof PariFootRoute
   PmuRoute: typeof PmuRoute
 }
 
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/pmu'
       fullPath: '/pmu'
       preLoaderRoute: typeof PmuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pari-foot': {
+      id: '/pari-foot'
+      path: '/pari-foot'
+      fullPath: '/pari-foot'
+      preLoaderRoute: typeof PariFootRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/loto-balsa': {
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LotoBalsaRoute: LotoBalsaRoute,
+  PariFootRoute: PariFootRoute,
   PmuRoute: PmuRoute,
 }
 export const routeTree = rootRouteImport
