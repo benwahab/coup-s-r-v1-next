@@ -50,7 +50,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             return (
               <li key={it.to}>
                 <Link
-                  to={it.to}
+                  to={it.to as "/"}
                   className={cn(
                     "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition",
                     active ? "text-primary" : "text-muted-foreground hover:text-foreground",
