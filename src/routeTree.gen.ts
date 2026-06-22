@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResultatsRouteImport } from './routes/resultats'
 import { Route as PmuRouteImport } from './routes/pmu'
 import { Route as PariFootRouteImport } from './routes/pari-foot'
 import { Route as MesTicketsRouteImport } from './routes/mes-tickets'
@@ -16,6 +17,11 @@ import { Route as LotoBalsaRouteImport } from './routes/loto-balsa'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TicketIdRouteImport } from './routes/ticket.$id'
 
+const ResultatsRoute = ResultatsRouteImport.update({
+  id: '/resultats',
+  path: '/resultats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PmuRoute = PmuRouteImport.update({
   id: '/pmu',
   path: '/pmu',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/mes-tickets': typeof MesTicketsRoute
   '/pari-foot': typeof PariFootRoute
   '/pmu': typeof PmuRoute
+  '/resultats': typeof ResultatsRoute
   '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/mes-tickets': typeof MesTicketsRoute
   '/pari-foot': typeof PariFootRoute
   '/pmu': typeof PmuRoute
+  '/resultats': typeof ResultatsRoute
   '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRoutesById {
@@ -70,6 +78,7 @@ export interface FileRoutesById {
   '/mes-tickets': typeof MesTicketsRoute
   '/pari-foot': typeof PariFootRoute
   '/pmu': typeof PmuRoute
+  '/resultats': typeof ResultatsRoute
   '/ticket/$id': typeof TicketIdRoute
 }
 export interface FileRouteTypes {
@@ -80,6 +89,7 @@ export interface FileRouteTypes {
     | '/mes-tickets'
     | '/pari-foot'
     | '/pmu'
+    | '/resultats'
     | '/ticket/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -88,6 +98,7 @@ export interface FileRouteTypes {
     | '/mes-tickets'
     | '/pari-foot'
     | '/pmu'
+    | '/resultats'
     | '/ticket/$id'
   id:
     | '__root__'
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
     | '/mes-tickets'
     | '/pari-foot'
     | '/pmu'
+    | '/resultats'
     | '/ticket/$id'
   fileRoutesById: FileRoutesById
 }
@@ -105,11 +117,19 @@ export interface RootRouteChildren {
   MesTicketsRoute: typeof MesTicketsRoute
   PariFootRoute: typeof PariFootRoute
   PmuRoute: typeof PmuRoute
+  ResultatsRoute: typeof ResultatsRoute
   TicketIdRoute: typeof TicketIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/resultats': {
+      id: '/resultats'
+      path: '/resultats'
+      fullPath: '/resultats'
+      preLoaderRoute: typeof ResultatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pmu': {
       id: '/pmu'
       path: '/pmu'
@@ -161,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   MesTicketsRoute: MesTicketsRoute,
   PariFootRoute: PariFootRoute,
   PmuRoute: PmuRoute,
+  ResultatsRoute: ResultatsRoute,
   TicketIdRoute: TicketIdRoute,
 }
 export const routeTree = rootRouteImport
