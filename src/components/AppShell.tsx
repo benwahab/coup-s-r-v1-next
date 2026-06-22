@@ -8,12 +8,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useI18n();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const navItems = [
+  const navItems: { to: string; label: string; icon: typeof Home; exact?: boolean }[] = [
     { to: "/", label: t("home"), icon: Home, exact: true },
     { to: "/resultats", label: t("results"), icon: Trophy },
     { to: "/pronostics", label: t("predictions"), icon: Sparkles },
     { to: "/mes-tickets", label: t("myTickets"), icon: TicketIcon },
-  ] as const;
+  ];
 
   return (
     <div className="min-h-dvh flex flex-col bg-background">
