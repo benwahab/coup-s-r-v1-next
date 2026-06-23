@@ -1,8 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { Sparkles, ArrowRight, Loader2, Brain } from "lucide-react";
+import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/AppShell";
-import { coldNumbers, expertTips, footMatches, hotNumbers, horses, lotoSuggestions } from "@/lib/mock-data";
+import { coldNumbers, expertTips, footMatches, hotNumbers, horses, lotoSuggestions, recentResults } from "@/lib/mock-data";
+import { analyzePmu, analyzeLoto } from "@/lib/ai-pronos.functions";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/pronostics")({
   head: () => ({
@@ -21,7 +25,7 @@ function Pronos() {
   return (
     <>
       <PageHeader title={t("predictions")} icon={<Sparkles className="h-5 w-5" />} subtitle="Tendances, conseils & suggestions" />
-
+      <AiSection />
       <div className="mx-auto grid max-w-6xl gap-5 px-4 py-4 lg:grid-cols-3">
         {/* PMU */}
         <Card title="PMU" linkTo="/pmu" linkLabel="Parier PMU">
