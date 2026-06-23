@@ -8,26 +8,26 @@ const PmuOut = z.object({
   horses: z.array(z.object({
     number: z.number(),
     name: z.string(),
-    score: z.number().min(0).max(100),
+    score: z.number(),
     strength: z.string(),
     weakness: z.string(),
-  })).max(12),
+  })),
   recommended: z.object({
-    tierce: z.array(z.number()).length(3),
-    quinte: z.array(z.number()).length(5),
+    tierce: z.array(z.number()),
+    quinte: z.array(z.number()),
     rationale: z.string(),
   }),
 });
 
 const LotoOut = z.object({
   summary: z.string(),
-  hot: z.array(z.number()).max(8),
-  cold: z.array(z.number()).max(8),
+  hot: z.array(z.number()),
+  cold: z.array(z.number()),
   rotation: z.string(),
   suggestions: z.array(z.object({
-    balls: z.array(z.number()).min(3).max(5),
+    balls: z.array(z.number()),
     rationale: z.string(),
-  })).length(3),
+  })),
 });
 
 export const analyzePmu = createServerFn({ method: "POST" })
