@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Sparkles, Shuffle, Eraser } from "lucide-react";
+import { Sparkles, Shuffle, Eraser, Clock } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
 import { PageHeader } from "@/components/AppShell";
-import { cn, formatFcfa } from "@/lib/utils";
-import { lotoMultipliers } from "@/lib/mock-data";
+import { cn, formatFcfa, formatHour } from "@/lib/utils";
+import { lotoMultipliers, drawSchedule } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/loto-balsa")({
   head: () => ({
@@ -58,6 +58,28 @@ function LotoPage() {
   return (
     <>
       <PageHeader title="Loto Balsa" subtitle={t("selectNumbers")} icon={<Sparkles className="h-5 w-5" />} />
+
+      {/* Bandeau horaires du jour */}
+      <div className="mx-auto max-w-3xl px-4">
+        <div className="rounded-2xl border border-border bg-card-gradient p-3 flex flex-wrap items-center gap-3 justify-between">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <Clock className="h-4 w-4 text-primary" /> {t("pmuDaily")}
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-[11px]">
+            {[
+              { l: t("openAt"), v: formatHour(drawSchedule.loto.openHour) },
+              { l: t("closeAt"), v: formatHour(drawSchedule.loto.closeHour) },
+              { l: t("drawAt"), v: formatHour(drawSchedule.loto.drawHour) },
+            ].map((b, i) => (
+              <div key={i} className="rounded-lg border border-border bg-background/40 px-3 py-1.5 text-center">
+                <div className="text-[9px] uppercase tracking-widest text-muted-foreground">{b.l}</div>
+                <div className="font-display text-sm font-bold tabular-nums text-foreground">{b.v}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <BetFlow
         gameId="loto"
         gameName="Loto Balsa"
