@@ -1,7 +1,7 @@
 export type GameId = "pmu" | "loto" | "foot";
 
 export interface Horse { number: number; name: string; jockey: string }
-export interface FootMatch { id: string; home: string; away: string; date: string; odds: { "1": number; "X": number; "2": number } }
+export interface FootMatch { id: string; league: string; home: string; away: string; date: string; odds: { "1": number; "X": number; "2": number } }
 export interface DrawResult { id: string; gameId: GameId; date: string; numbers?: number[]; horses?: number[]; matches?: { matchId: string; result: "1" | "X" | "2" }[] }
 
 export const horses: Horse[] = [
@@ -19,12 +19,50 @@ export const horses: Horse[] = [
   { number: 12, name: "Sahara Queen", jockey: "F. Souley" },
 ];
 
+export const leagues = [
+  { id: "epl", name: "Premier League", country: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
+  { id: "liga", name: "La Liga", country: "🇪🇸" },
+  { id: "seriea", name: "Serie A", country: "🇮🇹" },
+  { id: "bundes", name: "Bundesliga", country: "🇩🇪" },
+  { id: "l1", name: "Ligue 1", country: "🇫🇷" },
+  { id: "ucl", name: "Ligue des Champions", country: "🏆" },
+  { id: "uel", name: "Europa League", country: "🥈" },
+  { id: "can", name: "CAN", country: "🌍" },
+  { id: "wc", name: "Coupe du Monde — Qualif.", country: "🌐" },
+  { id: "ng", name: "Championnat Niger", country: "🇳🇪" },
+] as const;
+
 export const footMatches: FootMatch[] = [
-  { id: "m1", home: "Sahel SC", away: "AS GNN", date: "Sam. 20:00", odds: { "1": 1.85, "X": 3.2, "2": 4.1 } },
-  { id: "m2", home: "AS FAN", away: "Olympic FC", date: "Sam. 17:00", odds: { "1": 2.1, "X": 3.0, "2": 3.4 } },
-  { id: "m3", home: "Akokana", away: "Zumunta", date: "Dim. 16:00", odds: { "1": 1.6, "X": 3.5, "2": 5.2 } },
-  { id: "m4", home: "Espoir Zinder", away: "USGN", date: "Dim. 18:30", odds: { "1": 2.4, "X": 2.9, "2": 2.9 } },
-  { id: "m5", home: "Liberté FC", away: "Jangorzo", date: "Dim. 20:30", odds: { "1": 1.9, "X": 3.1, "2": 3.8 } },
+  // Premier League
+  { id: "epl1", league: "epl", home: "Arsenal", away: "Chelsea", date: "Sam. 16:00", odds: { "1": 1.85, "X": 3.6, "2": 4.1 } },
+  { id: "epl2", league: "epl", home: "Liverpool", away: "Man. City", date: "Sam. 18:30", odds: { "1": 2.4, "X": 3.4, "2": 2.7 } },
+  { id: "epl3", league: "epl", home: "Tottenham", away: "Man. United", date: "Dim. 17:00", odds: { "1": 2.1, "X": 3.3, "2": 3.2 } },
+  // La Liga
+  { id: "liga1", league: "liga", home: "Real Madrid", away: "Barcelona", date: "Sam. 21:00", odds: { "1": 2.05, "X": 3.5, "2": 3.2 } },
+  { id: "liga2", league: "liga", home: "Atlético", away: "Sevilla", date: "Dim. 19:00", odds: { "1": 1.7, "X": 3.4, "2": 4.6 } },
+  // Serie A
+  { id: "ita1", league: "seriea", home: "Inter", away: "Juventus", date: "Sam. 20:45", odds: { "1": 2.0, "X": 3.2, "2": 3.7 } },
+  { id: "ita2", league: "seriea", home: "Milan", away: "Napoli", date: "Dim. 20:45", odds: { "1": 2.3, "X": 3.1, "2": 2.95 } },
+  // Bundesliga
+  { id: "bun1", league: "bundes", home: "Bayern", away: "Dortmund", date: "Sam. 18:30", odds: { "1": 1.6, "X": 4.2, "2": 4.8 } },
+  { id: "bun2", league: "bundes", home: "Leipzig", away: "Leverkusen", date: "Dim. 17:30", odds: { "1": 2.6, "X": 3.4, "2": 2.5 } },
+  // Ligue 1
+  { id: "l1a", league: "l1", home: "PSG", away: "Marseille", date: "Dim. 20:45", odds: { "1": 1.45, "X": 4.6, "2": 6.5 } },
+  { id: "l1b", league: "l1", home: "Monaco", away: "Lille", date: "Sam. 17:00", odds: { "1": 2.1, "X": 3.3, "2": 3.2 } },
+  // UCL
+  { id: "ucl1", league: "ucl", home: "Real Madrid", away: "Bayern", date: "Mer. 21:00", odds: { "1": 2.2, "X": 3.4, "2": 3.0 } },
+  { id: "ucl2", league: "ucl", home: "Man. City", away: "PSG", date: "Mar. 21:00", odds: { "1": 1.9, "X": 3.6, "2": 3.6 } },
+  // UEL
+  { id: "uel1", league: "uel", home: "Roma", away: "Ajax", date: "Jeu. 18:45", odds: { "1": 1.95, "X": 3.4, "2": 3.5 } },
+  // CAN
+  { id: "can1", league: "can", home: "Sénégal", away: "Maroc", date: "Sam. 19:00", odds: { "1": 2.6, "X": 3.0, "2": 2.6 } },
+  { id: "can2", league: "can", home: "Niger", away: "Algérie", date: "Dim. 16:00", odds: { "1": 4.5, "X": 3.4, "2": 1.7 } },
+  { id: "can3", league: "can", home: "Côte d'Ivoire", away: "Nigeria", date: "Lun. 19:00", odds: { "1": 2.3, "X": 3.1, "2": 2.95 } },
+  // Qualif WC
+  { id: "wc1", league: "wc", home: "Niger", away: "Burkina", date: "Sam. 17:00", odds: { "1": 2.1, "X": 3.1, "2": 3.3 } },
+  // Championnat Niger
+  { id: "ng1", league: "ng", home: "Sahel SC", away: "AS GNN", date: "Sam. 16:00", odds: { "1": 1.85, "X": 3.2, "2": 4.1 } },
+  { id: "ng2", league: "ng", home: "Akokana", away: "Zumunta", date: "Dim. 16:00", odds: { "1": 1.6, "X": 3.5, "2": 5.2 } },
 ];
 
 export const recentResults: DrawResult[] = [
@@ -91,12 +129,18 @@ export const paymentMethods = [
 
 export const games = [
   { id: "pmu" as GameId, name: "PMU", emoji: "🐎", closes: "Tous les jours 14:00", color: "from-[oklch(0.78_0.20_150)] to-[oklch(0.45_0.12_160)]" },
-  { id: "loto" as GameId, name: "Loto Balsa", emoji: "🎱", closes: "Vendredi 20:00", color: "from-[oklch(0.82_0.17_82)] to-[oklch(0.65_0.18_60)]" },
+  { id: "loto" as GameId, name: "Loto Balsa", emoji: "🎱", closes: "Tous les jours 19:00", color: "from-[oklch(0.82_0.17_82)] to-[oklch(0.65_0.18_60)]" },
   { id: "foot" as GameId, name: "Pari Foot", emoji: "⚽", closes: "Samedi 16:00", color: "from-[oklch(0.72_0.13_215)] to-[oklch(0.35_0.10_240)]" },
 ];
 
 /** Calendrier officiel des tirages. */
 export const drawSchedule = {
-  pmu: { closeHour: 14, drawHour: 15, daily: true, label: "Quinté du jour — 15h00" },
-  loto: { closeHour: 20, drawHour: 21, weekday: 5 /* Friday */, label: "Vendredi 21h00" },
+  pmu: { openHour: 8, closeHour: 14, drawHour: 15, daily: true, label: "Quinté du jour — 15h00" },
+  loto: { openHour: 8, closeHour: 19, drawHour: 20, daily: true, label: "Tirage quotidien — 20h00" },
 } as const;
+
+/** Régions du Niger. */
+export const regions = [
+  "Niamey", "Maradi", "Zinder", "Tahoua", "Agadez", "Dosso", "Tillabéri", "Diffa",
+] as const;
+export type Region = (typeof regions)[number];

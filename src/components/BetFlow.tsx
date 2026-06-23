@@ -3,7 +3,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTickets } from "@/lib/tickets";
-import { paymentMethods, type GameId } from "@/lib/mock-data";
+import { paymentMethods, regions, type GameId } from "@/lib/mock-data";
+import { useAccount } from "@/lib/account";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -23,11 +24,13 @@ export function BetFlow({ gameId, gameName, drawDate, selection, picksLabel, can
   const { t } = useI18n();
   const navigate = useNavigate();
   const { addTicket } = useTickets();
+  const { account } = useAccount();
   const [step, setStep] = useState(1);
   const [stake, setStake] = useState(defaultStake);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [firstName, setFirstName] = useState(account?.firstName ?? "");
+  const [lastName, setLastName] = useState(account?.lastName ?? "");
+  const [phone, setPhone] = useState(account?.phone ?? "");
+  const [region, setRegion] = useState<string>(account?.region ?? regions[0]);
   const [email, setEmail] = useState("");
   const [payment, setPayment] = useState(paymentMethods[0].id);
   const [paying, setPaying] = useState(false);
@@ -39,7 +42,7 @@ export function BetFlow({ gameId, gameName, drawDate, selection, picksLabel, can
     setPaying(true);
     await new Promise((r) => setTimeout(r, 1500));
     const ticket = addTicket({
-      gameId, gameName, firstName, lastName, phone, email,
+      gameId, gameName, firstName, lastName, phone, email, region,
       picks: selection, picksLabel,
       stake, payment: paymentMethods.find((p) => p.id === payment)!.name,
       drawDate,
@@ -106,6 +109,16 @@ export function BetFlow({ gameId, gameName, drawDate, selection, picksLabel, can
             <Field label={`${t("firstName")} (${t("optional")})`} value={firstName} onChange={setFirstName} />
             <Field label={`${t("lastName")} (${t("optional")})`} value={lastName} onChange={setLastName} />
             <Field label={t("phone")} value={phone} onChange={setPhone} type="tel" placeholder="+227 90 00 00 00" required wide />
+            <label className="block sm:col-span-2">
+              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("region")}</span>
+              <select
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:border-primary outline-none"
+              >
+                {regions.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </label>
             <Field label={`${t("email")} (${t("optional")})`} value={email} onChange={setEmail} type="email" wide />
           </div>
           <Footer onBack={() => setStep(2)} onNext={() => setStep(4)} disabled={!phoneOk} />

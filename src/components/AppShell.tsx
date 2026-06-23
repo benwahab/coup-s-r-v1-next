@@ -1,11 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { Home, Trophy, Sparkles, Ticket as TicketIcon, ShieldCheck, Globe2 } from "lucide-react";
+import { Home, Trophy, Sparkles, Ticket as TicketIcon, ShieldCheck, Globe2, UserCircle2 } from "lucide-react";
 import { useI18n, type Lang } from "@/lib/i18n";
+import { useAccount } from "@/lib/account";
 import { cn } from "@/lib/utils";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useI18n();
+  const { account } = useAccount();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const navItems: { to: string; label: string; icon: typeof Home; exact?: boolean }[] = [
@@ -29,6 +31,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </Link>
           <div className="flex items-center gap-1.5">
+            <Link
+              to="/compte"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition"
+            >
+              <UserCircle2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{account ? account.firstName : t("createAccount")}</span>
+            </Link>
             <Link
               to="/admin"
               className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition"

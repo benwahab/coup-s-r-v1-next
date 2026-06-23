@@ -11,6 +11,7 @@ export interface Ticket {
   lastName?: string;
   phone: string;
   email?: string;
+  region?: string;
   picks: (string | number)[];           // numbers, horse numbers, or "m1:1" pairs
   picksLabel: string;                    // human readable
   stake: number;
