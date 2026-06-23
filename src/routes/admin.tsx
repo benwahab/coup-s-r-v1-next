@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShieldCheck, TrendingUp, Users, Wallet, Trophy, Send, FileText, Download, MessageCircle, Check, BellRing, Sparkles, MapPin, Circle, BarChart3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
