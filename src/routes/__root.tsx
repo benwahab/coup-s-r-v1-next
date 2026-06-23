@@ -19,6 +19,7 @@ import "@fontsource/space-grotesk/600.css";
 import "@fontsource/space-grotesk/700.css";
 import { I18nProvider } from "@/lib/i18n";
 import { TicketsProvider } from "@/lib/tickets";
+import { AccountProvider } from "@/lib/account";
 import { AppShell } from "@/components/AppShell";
 
 function NotFoundComponent() {
@@ -127,12 +128,14 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
-        <TicketsProvider>
-          <AppShell>
-            {/* Required: nested routes render here. */}
-            <Outlet />
-          </AppShell>
-        </TicketsProvider>
+        <AccountProvider>
+          <TicketsProvider>
+            <AppShell>
+              {/* Required: nested routes render here. */}
+              <Outlet />
+            </AppShell>
+          </TicketsProvider>
+        </AccountProvider>
       </I18nProvider>
     </QueryClientProvider>
   );
