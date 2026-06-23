@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Goal } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Goal, Trophy, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
 import { PageHeader } from "@/components/AppShell";
-import { footMatches } from "@/lib/mock-data";
+import { footMatches, leagues } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/pari-foot")({
@@ -24,8 +24,10 @@ type Outcome = "1" | "X" | "2";
 function FootPage() {
   const { t } = useI18n();
   const [picks, setPicks] = useState<Record<string, Outcome>>({});
+  const [league, setLeague] = useState<string>("all");
 
   const select = (id: string, o: Outcome) => setPicks((p) => ({ ...p, [id]: o }));
+  const removePick = (id: string) => setPicks((p) => { const { [id]: _, ...rest } = p; return rest; });
 
   const list = Object.entries(picks);
   const picksLabel = list.length
@@ -35,15 +37,48 @@ function FootPage() {
       }).join(" • ")
     : "—";
 
+  const totalOdds = useMemo(
+    () => list.reduce((acc, [id, o]) => acc * (footMatches.find((m) => m.id === id)?.odds[o] ?? 1), 1),
+    [list],
+  );
+
+  const visibleMatches = league === "all" ? footMatches : footMatches.filter((m) => m.league === league);
+
+  // Compétitions avec compteur de matchs
+  const leagueTabs = [{ id: "all", name: "Tout", country: "🌐", count: footMatches.length }, ...leagues.map((l) => ({ ...l, count: footMatches.filter((m) => m.league === l.id).length }))];
+
   return (
     <>
       <PageHeader title="Pari Foot" subtitle={t("selectMatches")} icon={<Goal className="h-5 w-5" />} />
+
+      {/* Tabs Compétitions */}
+      <div className="mx-auto max-w-3xl px-4">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-thin">
+          {leagueTabs.map((l) => {
+            const active = league === l.id;
+            return (
+              <button
+                key={l.id}
+                onClick={() => setLeague(l.id)}
+                className={cn(
+                  "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition whitespace-nowrap",
+                  active ? "border-primary bg-primary/15 text-primary shadow-green" : "border-border bg-card text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <span>{l.country}</span> {l.name}
+                <span className={cn("ml-1 rounded-full px-1.5 text-[10px] tabular-nums", active ? "bg-primary/20" : "bg-muted")}>{l.count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <BetFlow
         gameId="foot"
         gameName="Pari Foot"
         drawDate={new Date(Date.now() + 1000 * 60 * 60 * 36).toISOString()}
         selection={list.map(([id, o]) => `${id}:${o}`)}
-        picksLabel={picksLabel}
+        picksLabel={`${picksLabel} | Cote totale ×${totalOdds.toFixed(2)}`}
         canContinue={list.length >= 1}
         renderSelection={
           <div>
@@ -53,12 +88,43 @@ function FootPage() {
                 {list.length} {t("picks")}
               </span>
             </div>
+
+            {/* Bet slip */}
+            {list.length > 0 && (
+              <div className="mb-4 rounded-2xl border border-gold/40 bg-gold/10 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-gold">
+                    <Trophy className="h-3.5 w-3.5" /> {t("betSlip")} ({list.length})
+                  </span>
+                  <span className="font-display text-base font-extrabold text-gold tabular-nums">
+                    {t("totalOdds")} ×{totalOdds.toFixed(2)}
+                  </span>
+                </div>
+                <ul className="space-y-1.5">
+                  {list.map(([id, o]) => {
+                    const m = footMatches.find((x) => x.id === id)!;
+                    return (
+                      <li key={id} className="flex items-center justify-between gap-2 rounded-lg bg-background/40 px-2.5 py-1.5 text-xs">
+                        <span className="truncate"><span className="font-bold text-primary mr-1">{o}</span>{m.home} – {m.away}</span>
+                        <span className="tabular-nums font-bold">{m.odds[o].toFixed(2)}</span>
+                        <button onClick={() => removePick(id)} className="text-muted-foreground hover:text-destructive">
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
             <ul className="space-y-3">
-              {footMatches.map((m) => {
+              {visibleMatches.map((m) => {
                 const sel = picks[m.id];
+                const lg = leagues.find((l) => l.id === m.league);
                 return (
                   <li key={m.id} className="rounded-2xl border border-border bg-card p-3 shadow-soft">
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">{lg?.country} <span className="font-semibold">{lg?.name}</span></span>
                       <span>{m.date}</span>
                     </div>
                     <div className="mt-1 flex items-center justify-between gap-2">
