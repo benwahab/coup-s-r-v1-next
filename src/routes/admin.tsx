@@ -94,7 +94,7 @@ function AdminPage() {
     const simRows = sims.filter((s) => s.iso >= from && s.iso <= to);
     const filtered: { id: string; date: string; game: string; phone: string; region: string; picks: string; stake: number; status: string; payment: string; prize: number }[] = [
       ...live.map((t) => ({ id: t.id, date: t.createdAt.slice(0, 10), game: t.gameName, phone: t.phone, region: t.region ?? "", picks: t.picksLabel, stake: t.stake, status: t.status, payment: t.payment, prize: t.prize ?? 0 })),
-      ...simRows.map((s) => ({ id: `SIM-${s.iso}-${s.player.slice(0, 3)}-${Math.round(s.stake)}`, date: s.iso, game: s.game, phone: s.phone, region: s.region, picks: s.picksLabel, stake: s.stake, status: s.status, payment: s.payment, prize: s.prize })),
+      ...simRows.map((s) => ({ id: s.id, date: s.iso, game: s.gameId, phone: "—", region: s.region, picks: s.picks.join(" · "), stake: s.stake, status: s.status, payment: "sim", prize: s.prize })),
     ];
     const rows = filtered.filter((r) =>
       scope === "all" ? true :
@@ -195,9 +195,18 @@ function AdminPage() {
             <section className="mt-4 rounded-3xl border border-border bg-card shadow-soft">
               <div className="flex items-center justify-between border-b border-border px-5 py-3">
                 <h2 className="font-display text-lg font-bold">Tickets (live)</h2>
-                <button onClick={exportCsv} disabled={!tickets.length} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/40 disabled:opacity-40">
-                  <Download className="h-3.5 w-3.5" /> {t("exportCsv")}
-                </button>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <input type="date" value={csvFrom} onChange={(e) => setCsvFrom(e.target.value)} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]" />
+                  <input type="date" value={csvTo} onChange={(e) => setCsvTo(e.target.value)} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]" />
+                  <select value={csvScope} onChange={(e) => setCsvScope(e.target.value as "all" | "winners" | "cashout")} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]">
+                    <option value="all">Tous</option>
+                    <option value="winners">Gagnants</option>
+                    <option value="cashout">Encaissés</option>
+                  </select>
+                  <button onClick={() => exportCsv()} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/40">
+                    <Download className="h-3.5 w-3.5" /> {t("exportCsv")}
+                  </button>
+                </div>
               </div>
               {tickets.length === 0 ? (
                 <p className="px-5 py-10 text-center text-sm text-muted-foreground">Aucun ticket joueur pour le moment.</p>
