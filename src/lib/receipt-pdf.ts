@@ -26,10 +26,18 @@ export async function downloadTicketPdf(t: Ticket) {
     y += 38;
   };
   line("N° de ticket", t.id);
+  if (t.drawName) line("Tirage", t.drawName);
   line("Joueur", `${[t.firstName, t.lastName].filter(Boolean).join(" ") || "—"}  •  ${t.phone}`);
-  line("Sélections", t.picksLabel);
-  line("Mise", `${t.stake.toLocaleString()} FCFA   (${t.payment})`);
-  line("Tirage", new Date(t.drawDate).toLocaleString());
+  if (t.legs && t.legs.length > 1) {
+    line("Grilles", `${t.legs.length} jeux sur ce reçu`);
+    t.legs.forEach((l, i) => {
+      line(`Grille ${i + 1} — ${l.status.toUpperCase()}`, `${l.picksLabel}  •  ${l.stake.toLocaleString()} FCFA`);
+    });
+  } else {
+    line("Sélections", t.picksLabel);
+  }
+  line("Mise totale", `${t.stake.toLocaleString()} FCFA   (${t.payment})`);
+  line("Date tirage", new Date(t.drawDate).toLocaleString());
   line("Statut", t.status.toUpperCase());
 
   // QR
