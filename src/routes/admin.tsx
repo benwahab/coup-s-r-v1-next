@@ -122,14 +122,7 @@ function AdminPage() {
     updateStatus(id, next as "pending" | "winning" | "paid" | "losing", prize);
   };
 
-  const cycleLeg = (ticketId: string, legId: string, current: string, stake: number) => {
-    const next =
-      current === "pending" ? "winning" :
-      current === "winning" ? "paid" :
-      current === "paid" ? "losing" : "pending";
-    const prize = next === "winning" ? Math.round(stake * 12) : undefined;
-    updateLegStatus(ticketId, legId, next as "pending" | "winning" | "paid" | "losing", prize);
-  };
+  void updateLegStatus; // exposé via le contexte, utilisable depuis la vue ticket
 
   const approveCashout = (id: string) => {
     updateStatus(id, "paid", tickets.find((t) => t.id === id)?.prize);
