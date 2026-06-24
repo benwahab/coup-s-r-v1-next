@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n";
 import { games, recentResults, pmuJackpot, hotNumbers, drawSchedule } from "@/lib/mock-data";
 import { generateSimTickets } from "@/lib/mock-stats";
 import { formatDate, formatFcfa, formatHour } from "@/lib/utils";
+import { nextDailyEvent, diffParts, drawNameForDate, nigerDateLabel } from "@/lib/schedule";
 import heroBg from "@/assets/hero-winners.jpg";
 
 export const Route = createFileRoute("/")({
@@ -22,18 +23,6 @@ export const Route = createFileRoute("/")({
 
 const gameLinks = { pmu: "/pmu", loto: "/loto-balsa", foot: "/pari-foot" } as const;
 
-/** Prochain événement quotidien à 3 jalons : ouverture → clôture → tirage. */
-function nextDailyEvent(s: { openHour: number; closeHour: number; drawHour: number }, now = new Date()) {
-  const open = new Date(now); open.setHours(s.openHour, 0, 0, 0);
-  const close = new Date(now); close.setHours(s.closeHour, 0, 0, 0);
-  const draw = new Date(now); draw.setHours(s.drawHour, 0, 0, 0);
-  if (now < open) return { label: "openAt" as const, target: open };
-  if (now < close) return { label: "closesIn" as const, target: close };
-  if (now < draw) return { label: "drawIn" as const, target: draw };
-  const tomorrow = new Date(open); tomorrow.setDate(tomorrow.getDate() + 1);
-  return { label: "openAt" as const, target: tomorrow };
-}
-
 function useCountdown(target: Date) {
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
@@ -42,30 +31,25 @@ function useCountdown(target: Date) {
     return () => clearInterval(id);
   }, []);
   if (now === null) return null;
-  const diff = Math.max(0, target.getTime() - now);
-  const d = Math.floor(diff / 86_400_000);
-  const h = Math.floor((diff / 3_600_000) % 24);
-  const m = Math.floor((diff / 60_000) % 60);
-  const s = Math.floor((diff / 1000) % 60);
-  return { d, h, m, s };
+  return diffParts(target, new Date(now));
 }
 
 function Index() {
   const { t } = useI18n();
   const lastLoto = recentResults.find((r) => r.gameId === "loto");
   const lastPmu = recentResults.find((r) => r.gameId === "pmu");
-  const pmuEvt = nextDailyEvent(drawSchedule.pmu);
-  const lotoEvt = nextDailyEvent(drawSchedule.loto);
+  const pmuEvt = nextDailyEvent(drawSchedule.pmu.openHour, drawSchedule.pmu.closeHour, drawSchedule.pmu.drawHour);
+  const lotoEvt = nextDailyEvent(drawSchedule.loto.openHour, drawSchedule.loto.closeHour, drawSchedule.loto.drawHour);
   const pmuCd = useCountdown(pmuEvt.target);
   const lotoCd = useCountdown(lotoEvt.target);
+  const lotoDrawName = drawNameForDate();
 
   // Gagnants du jour (mock déterministe)
   const sims = generateSimTickets();
   const todays = sims.filter((s) => s.daysAgo === 0 && (s.status === "winning" || s.status === "paid"));
   const todayWinnersCount = todays.length;
   const todayPaid = todays.reduce((s, t) => s + t.prize, 0);
-  const today = new Date();
-  const todayLabel = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
+  const todayLabel = nigerDateLabel();
 
   return (
     <div>
@@ -131,7 +115,7 @@ function Index() {
 
               <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-white/60">
-                  {pmuEvt.label === "openAt" ? `${t("openAt")} ${formatHour(drawSchedule.pmu.openHour)}` : t(pmuEvt.label)}
+                  {pmuEvt.stage === "openAt" ? `${t("openAt")} ${formatHour(drawSchedule.pmu.openHour)}` : t(pmuEvt.stage)}
                 </div>
                 {pmuCd ? (
                   <div className="mt-1.5 grid grid-cols-4 gap-1.5 tabular-nums">
@@ -166,6 +150,9 @@ function Index() {
                 </span>
               </div>
 
+              {/* Nom du tirage du jour */}
+              <div className="mt-1 font-display text-lg font-extrabold text-gold leading-tight">{lotoDrawName}</div>
+
               {/* Bloc gagnants du jour à la place du jackpot */}
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <div className="rounded-xl border border-white/10 bg-white/[0.04] p-2.5">
@@ -196,7 +183,7 @@ function Index() {
               </div>
 
               <div className="mt-3 text-[10px] font-bold uppercase tracking-widest text-white/60">
-                {lotoEvt.label === "openAt" ? `${t("openAt")} ${formatHour(drawSchedule.loto.openHour)}` : t(lotoEvt.label)}
+                {lotoEvt.stage === "openAt" ? `${t("openAt")} ${formatHour(drawSchedule.loto.openHour)}` : t(lotoEvt.stage)}
               </div>
               {lotoCd ? (
                 <div className="mt-1 grid grid-cols-4 gap-1.5 tabular-nums">
@@ -219,7 +206,7 @@ function Index() {
                 <Flame className="h-3.5 w-3.5 text-gold" /> {t("hotNumbers")} :
                 <span className="ml-1 font-bold text-gold tabular-nums">{hotNumbers.slice(0, 4).join(" · ")}</span>
               </div>
-              <Link to="/loto-balsa" className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-primary">
+              <Link to="/loto-balsa" className="mt-4 inline-flex items-center gap-2 rounded-full bg-gold-gradient px-5 py-2.5 font-bold text-[var(--gold-foreground)] shadow-gold transition hover:brightness-110">
                 {t("playNow")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>

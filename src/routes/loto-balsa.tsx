@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Sparkles, Shuffle, Eraser, Clock } from "lucide-react";
+import { Sparkles, Shuffle, Eraser, Clock, Plus, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
 import { PageHeader } from "@/components/AppShell";
 import { cn, formatFcfa, formatHour } from "@/lib/utils";
 import { lotoMultipliers, drawSchedule } from "@/lib/mock-data";
+import { drawNameForDate, nigerDateLabel } from "@/lib/schedule";
+import type { TicketLeg } from "@/lib/tickets";
 
 export const Route = createFileRoute("/loto-balsa")({
   head: () => ({
@@ -13,7 +15,7 @@ export const Route = createFileRoute("/loto-balsa")({
       { title: "Loto Balsa — LoNaNi" },
       { name: "description", content: "Choisissez vos numéros du Loto Balsa et jouez en ligne avec paiement mobile." },
       { property: "og:title", content: "Loto Balsa — Jouez en ligne" },
-      { property: "og:description", content: "Sélectionnez 6 numéros sur 49 et tentez votre chance." },
+      { property: "og:description", content: "Sélectionnez 1 à 5 boules sur 90 et tentez votre chance." },
     ],
   }),
   component: LotoPage,
@@ -23,17 +25,26 @@ const RANGE = 90;
 const MODES = [1, 2, 3, 4, 5] as const;
 type Mode = (typeof MODES)[number];
 const DEFAULT_STAKE = 500;
+const MIN_STAKE = 300;
+const MAX_STAKE = 100_000;
+const STAKE_CHIPS = [300, 500, 1000, 2000, 5000, 10_000];
 
 function LotoPage() {
   const { t } = useI18n();
   const [mode, setMode] = useState<Mode>(2);
   const [picks, setPicks] = useState<number[]>([]);
   const [stake, setStake] = useState(DEFAULT_STAKE);
+  const [cart, setCart] = useState<TicketLeg[]>([]);
 
-  const changeMode = (m: Mode) => {
-    setMode(m);
-    setPicks((prev) => prev.slice(0, m));
-  };
+  const drawName = drawNameForDate();
+  const dateLabel = nigerDateLabel();
+  const drawDateIso = useMemo(() => {
+    const d = new Date();
+    d.setHours(drawSchedule.loto.drawHour, 0, 0, 0);
+    return d.toISOString();
+  }, []);
+
+  const changeMode = (m: Mode) => { setMode(m); setPicks((prev) => prev.slice(0, m)); };
 
   const toggle = (n: number) =>
     setPicks((prev) =>
@@ -53,17 +64,53 @@ function LotoPage() {
   const picksLabel = sorted.length ? sorted.join(" · ") : "—";
 
   const multiplier = lotoMultipliers[mode];
-  const potentialWin = useMemo(() => stake * multiplier, [stake, multiplier]);
+  const potentialWin = stake * multiplier;
+
+  const currentLeg = (): TicketLeg | null => {
+    if (picks.length !== mode || stake < MIN_STAKE || stake > MAX_STAKE) return null;
+    return {
+      legId: `cur-${Date.now()}`,
+      gameId: "loto",
+      gameName: "Loto Balsa",
+      picks: sorted,
+      picksLabel: `${drawName} · ${mode} ${mode === 1 ? "boule" : "boules"} : ${picksLabel}`,
+      stake,
+      drawName,
+      drawDate: drawDateIso,
+      status: "pending",
+    };
+  };
+
+  const addGridToCart = () => {
+    const leg = currentLeg();
+    if (!leg) return;
+    setCart((prev) => [...prev, { ...leg, legId: `${Date.now()}-${prev.length}` }]);
+    setPicks([]);
+  };
+
+  const removeFromCart = (legId: string) =>
+    setCart((prev) => prev.filter((l) => l.legId !== legId));
+
+  // Si panier non vide ET grille courante prête, on l'ajoute automatiquement avant paiement
+  const liveLeg = currentLeg();
+  const effectiveLegs: TicketLeg[] =
+    cart.length > 0
+      ? (liveLeg ? [...cart, liveLeg] : cart)
+      : [];
+
+  const cartTotal = effectiveLegs.reduce((s, l) => s + l.stake, 0);
 
   return (
     <>
       <PageHeader title="Loto Balsa" subtitle={t("selectNumbers")} icon={<Sparkles className="h-5 w-5" />} />
 
-      {/* Bandeau horaires du jour */}
       <div className="mx-auto max-w-3xl px-4">
-        <div className="rounded-2xl border border-border bg-card-gradient p-3 flex flex-wrap items-center gap-3 justify-between">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            <Clock className="h-4 w-4 text-primary" /> {t("pmuDaily")}
+        <div className="rounded-2xl border border-gold/30 bg-card-gradient p-3 flex flex-wrap items-center gap-3 justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              <Clock className="h-3.5 w-3.5 text-primary" /> {t("today")} {dateLabel}
+            </div>
+            <div className="font-display text-base font-extrabold text-gold leading-tight">{drawName}</div>
           </div>
           <div className="grid grid-cols-3 gap-2 text-[11px]">
             {[
@@ -83,14 +130,17 @@ function LotoPage() {
       <BetFlow
         gameId="loto"
         gameName="Loto Balsa"
-        drawDate={new Date(Date.now() + 1000 * 60 * 60 * 24 * 2).toISOString()}
+        drawDate={drawDateIso}
+        drawName={drawName}
+        minStake={MIN_STAKE}
+        maxStake={MAX_STAKE}
+        legs={effectiveLegs.length ? effectiveLegs : undefined}
         selection={sorted}
-        picksLabel={`${mode} ${mode === 1 ? "boule" : "boules"} : ${picksLabel}`}
-        canContinue={picks.length === mode}
+        picksLabel={`${drawName} · ${mode} ${mode === 1 ? "boule" : "boules"} : ${picksLabel}`}
+        canContinue={effectiveLegs.length > 0 || picks.length === mode}
         defaultStake={stake}
         renderSelection={
           <div>
-            {/* Mode selector */}
             <div className="mb-4">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("pickMode")}</span>
@@ -100,17 +150,12 @@ function LotoPage() {
               </div>
               <div className="grid grid-cols-5 gap-1.5">
                 {MODES.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => changeMode(m)}
-                    className={cn(
-                      "rounded-xl border-2 py-2.5 text-center transition",
-                      mode === m
-                        ? "border-primary bg-primary/15 text-primary shadow-green"
-                        : "border-border bg-card/60 text-muted-foreground hover:border-primary/40",
-                    )}
-                  >
+                  <button key={m} type="button" onClick={() => changeMode(m)} className={cn(
+                    "rounded-xl border-2 py-2.5 text-center transition",
+                    mode === m
+                      ? "border-primary bg-primary/15 text-primary shadow-green"
+                      : "border-border bg-card/60 text-muted-foreground hover:border-primary/40",
+                  )}>
                     <div className="font-display text-lg font-bold leading-none">{m}</div>
                     <div className="mt-0.5 text-[10px] uppercase tracking-wider">x{lotoMultipliers[m].toLocaleString()}</div>
                   </button>
@@ -148,49 +193,81 @@ function LotoPage() {
                 const active = picks.includes(n);
                 const disabled = !active && picks.length >= mode;
                 return (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => toggle(n)}
-                    disabled={disabled}
-                    className={cn(
-                      "aspect-square rounded-full font-display text-sm font-bold tabular-nums transition",
-                      active
-                        ? "bg-gold-gradient text-[var(--gold-foreground)] shadow-gold scale-105"
-                        : "border border-border bg-card/60 text-foreground hover:border-primary hover:text-primary",
-                      disabled && "opacity-40 cursor-not-allowed",
-                    )}
-                  >
+                  <button key={n} type="button" onClick={() => toggle(n)} disabled={disabled} className={cn(
+                    "aspect-square rounded-full font-display text-sm font-bold tabular-nums transition",
+                    active
+                      ? "bg-gold-gradient text-[var(--gold-foreground)] shadow-gold scale-105"
+                      : "border border-border bg-card/60 text-foreground hover:border-primary hover:text-primary",
+                    disabled && "opacity-40 cursor-not-allowed",
+                  )}>
                     {n}
                   </button>
                 );
               })}
             </div>
 
-            {/* Potential win bar */}
-            <div className="mt-5 grid gap-2 rounded-2xl border border-primary/30 bg-primary/5 p-3 sm:grid-cols-3">
-              <label className="block sm:col-span-1">
+            {/* Mise unique : chips + input libre 300–100 000 */}
+            <div className="mt-5 rounded-2xl border border-primary/30 bg-primary/5 p-3">
+              <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("stake")} ({t("fcfa")})</span>
-                <input
-                  type="number"
-                  min={100}
-                  value={stake}
-                  onChange={(e) => setStake(Math.max(100, Number(e.target.value) || 0))}
-                  className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 font-display font-bold tabular-nums focus:border-primary outline-none"
-                />
-              </label>
-              <div className="sm:col-span-2 flex items-center justify-between rounded-xl bg-background/40 px-4 py-2.5">
+                <span className="text-[10px] text-muted-foreground">min 300 · max 100 000</span>
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+                {STAKE_CHIPS.map((v) => (
+                  <button key={v} type="button" onClick={() => setStake(v)} className={cn(
+                    "rounded-xl border-2 px-2 py-2 text-xs font-bold tabular-nums transition",
+                    stake === v ? "border-primary bg-primary/15 text-primary" : "border-border bg-card hover:border-primary/40",
+                  )}>{v.toLocaleString()}</button>
+                ))}
+              </div>
+              <input
+                type="number" min={MIN_STAKE} max={MAX_STAKE} value={stake}
+                onChange={(e) => setStake(Math.max(0, Math.min(MAX_STAKE, Number(e.target.value) || 0)))}
+                className="mt-2 w-full rounded-xl border border-input bg-background px-3 py-2 font-display font-bold tabular-nums focus:border-primary outline-none"
+              />
+              {stake > 0 && stake < MIN_STAKE && <p className="mt-1 text-[11px] text-destructive">{t("minStake")}</p>}
+              <div className="mt-3 flex items-center justify-between rounded-xl bg-background/40 px-3 py-2">
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("potentialWin")}</div>
-                  <div className="font-display text-2xl font-extrabold tabular-nums text-primary">
-                    {formatFcfa(potentialWin)} <span className="text-sm font-semibold text-muted-foreground">{t("fcfa")}</span>
+                  <div className="font-display text-xl font-extrabold tabular-nums text-primary">
+                    {formatFcfa(potentialWin)} <span className="text-xs font-semibold text-muted-foreground">{t("fcfa")}</span>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("multiplier")}</div>
-                  <div className="font-display text-xl font-bold text-gold">x{multiplier.toLocaleString()}</div>
+                  <div className="font-display text-base font-bold text-gold">x{multiplier.toLocaleString()}</div>
                 </div>
               </div>
+            </div>
+
+            {/* Multi-grilles : panier */}
+            <div className="mt-4 rounded-2xl border border-gold/30 bg-gold/5 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs font-bold uppercase tracking-widest text-gold">
+                  Panier · {cart.length} {cart.length > 1 ? t("grids") : t("grid").toLowerCase()}
+                </div>
+                <button type="button" onClick={addGridToCart} disabled={!liveLeg}
+                  className="inline-flex items-center gap-1 rounded-full bg-gold-gradient px-3 py-1.5 text-[11px] font-bold text-[var(--gold-foreground)] shadow-gold disabled:opacity-40">
+                  <Plus className="h-3 w-3" /> {t("addGrid")}
+                </button>
+              </div>
+              {cart.length > 0 && (
+                <ul className="mt-2 space-y-1.5">
+                  {cart.map((l, i) => (
+                    <li key={l.legId} className="flex items-center justify-between gap-2 rounded-lg bg-background/50 px-2.5 py-1.5 text-xs">
+                      <span className="min-w-0 truncate"><b className="text-primary mr-1">G{i + 1}</b>{l.picksLabel}</span>
+                      <span className="shrink-0 tabular-nums font-bold">{l.stake.toLocaleString()}</span>
+                      <button onClick={() => removeFromCart(l.legId)} className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {cartTotal > 0 && (
+                <div className="mt-2 flex items-center justify-between border-t border-gold/20 pt-2 text-xs">
+                  <span className="font-bold uppercase tracking-widest text-muted-foreground">{t("totalStake")}</span>
+                  <span className="font-display text-base font-extrabold tabular-nums text-gold">{cartTotal.toLocaleString()} {t("fcfa")}</span>
+                </div>
+              )}
             </div>
 
             {picks.length < mode && (

@@ -37,6 +37,8 @@ function TicketPage() {
   }
 
   const isWin = ticket.status === "winning" || ticket.status === "paid";
+  const legs = ticket.legs ?? [];
+  const winningLegs = legs.filter((l) => l.status === "winning" || l.status === "paid").length;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 print:p-0">
@@ -44,6 +46,11 @@ function TicketPage() {
         <div className="relative bg-hero px-6 py-6 text-white">
           <div className="text-xs uppercase tracking-widest text-white/70">{t("receipt")} • {ticket.gameName}</div>
           <div className="font-display text-2xl font-bold">LoNaNi — Loterie Nationale du Niger</div>
+          {ticket.drawName && (
+            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gold/20 px-2.5 py-0.5 text-xs font-bold text-gold">
+              {ticket.drawName}
+            </div>
+          )}
           <div className="mt-3 flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-gold" />
             <span className="text-xs text-white/80">Reçu officiel sécurisé</span>
@@ -55,7 +62,7 @@ function TicketPage() {
             <Trophy className="h-5 w-5" />
             <div>
               <div className="font-bold">{t("winNotice")}</div>
-              {ticket.prize && <div className="text-sm">{t("prizeAmount")} : {ticket.prize.toLocaleString()} {t("fcfa")}</div>}
+              {ticket.prize && <div className="text-sm">{t("prizeAmount")} : {ticket.prize.toLocaleString()} {t("fcfa")}{legs.length > 1 ? ` · ${winningLegs}/${legs.length} ${t("winningLegs")}` : ""}</div>}
             </div>
           </div>
         )}
@@ -66,8 +73,32 @@ function TicketPage() {
             <Row label={`${t("firstName")} / ${t("lastName")}`} value={[ticket.firstName, ticket.lastName].filter(Boolean).join(" ") || "—"} />
             <Row label={t("phone")} value={ticket.phone} />
             {ticket.email && <Row label={t("email")} value={ticket.email} />}
-            <Row label={ticket.gameId === "loto" ? t("numbers") : ticket.gameId === "pmu" ? t("horses") : t("matches")} value={<span className="whitespace-pre-wrap">{ticket.picksLabel}</span>} />
-            <Row label={t("stake")} value={<span className="font-display text-lg font-bold">{ticket.stake.toLocaleString()} {t("fcfa")}</span>} />
+            {legs.length > 1 ? (
+              <Row label={`${legs.length} ${t("legs")}`} value={
+                <ul className="space-y-2">
+                  {legs.map((l, i) => (
+                    <li key={l.legId} className="rounded-xl border border-border bg-secondary/40 px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-primary">{t("grid")} {i + 1}</span>
+                        <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                          l.status === "winning" || l.status === "paid" ? "bg-success/15 text-success" :
+                          l.status === "losing" ? "bg-muted text-muted-foreground" : "bg-secondary text-secondary-foreground")}>
+                          {l.status}
+                        </span>
+                      </div>
+                      <div className="mt-1 text-sm">{l.picksLabel}</div>
+                      <div className="mt-1 flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{l.drawName ?? ""}</span>
+                        <span className="font-display font-bold tabular-nums">{l.stake.toLocaleString()} {t("fcfa")}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              } />
+            ) : (
+              <Row label={ticket.gameId === "loto" ? t("numbers") : ticket.gameId === "pmu" ? t("horses") : t("matches")} value={<span className="whitespace-pre-wrap">{ticket.picksLabel}</span>} />
+            )}
+            <Row label={t("totalStake")} value={<span className="font-display text-lg font-bold">{ticket.stake.toLocaleString()} {t("fcfa")}</span>} />
             <Row label={t("payment")} value={ticket.payment} />
             <Row label={t("drawDate")} value={new Date(ticket.drawDate).toLocaleString()} />
             <Row label={t("status")} value={<StatusBadge status={ticket.status} />} />

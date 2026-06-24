@@ -23,9 +23,14 @@ type Tab = "overview" | "players" | "regions" | "balls" | "ops";
 
 function AdminPage() {
   const { t } = useI18n();
-  const { tickets, updateStatus } = useTickets();
+  const { tickets, updateStatus, updateLegStatus } = useTickets();
   const sims = useMemo(() => generateSimTickets(260), []);
   const [tab, setTab] = useState<Tab>("overview");
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const weekAgoIso = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
+  const [csvFrom, setCsvFrom] = useState(weekAgoIso);
+  const [csvTo, setCsvTo] = useState(todayIso);
+  const [csvScope, setCsvScope] = useState<"all" | "winners" | "cashout">("all");
 
   const [autoSms, setAutoSms] = useState(true);
   const [sentLog, setSentLog] = useState<{ id: string; phone: string; prize: number; at: number }[]>([]);
@@ -82,18 +87,28 @@ function AdminPage() {
   const [selectedBall, setSelectedBall] = useState<number | null>(null);
   const selBallStat = selectedBall ? ballStats.find((b) => b.ball === selectedBall) : null;
 
-  const exportCsv = () => {
-    const header = ["id", "game", "phone", "picks", "stake_fcfa", "payment", "status", "prize_fcfa", "draw_date", "created_at"];
-    const rows = tickets.map((t) => [
-      t.id, t.gameName, t.phone, `"${t.picksLabel.replace(/"/g, "''")}"`,
-      t.stake, t.payment, t.status, t.prize ?? 0, formatDate(t.drawDate), t.createdAt,
-    ].join(","));
-    const csv = [header.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const exportCsv = (scope: "all" | "winners" | "cashout" = csvScope) => {
+    const from = csvFrom; const to = csvTo;
+    const inRange = (iso: string) => iso.slice(0, 10) >= from && iso.slice(0, 10) <= to;
+    const live = tickets.filter((t) => inRange(t.createdAt));
+    const simRows = sims.filter((s) => s.iso >= from && s.iso <= to);
+    const filtered: { id: string; date: string; game: string; phone: string; region: string; picks: string; stake: number; status: string; payment: string; prize: number }[] = [
+      ...live.map((t) => ({ id: t.id, date: t.createdAt.slice(0, 10), game: t.gameName, phone: t.phone, region: t.region ?? "", picks: t.picksLabel, stake: t.stake, status: t.status, payment: t.payment, prize: t.prize ?? 0 })),
+      ...simRows.map((s) => ({ id: s.id, date: s.iso, game: s.gameId, phone: "—", region: s.region, picks: s.picks.join(" · "), stake: s.stake, status: s.status, payment: "sim", prize: s.prize })),
+    ];
+    const rows = filtered.filter((r) =>
+      scope === "all" ? true :
+      scope === "winners" ? (r.status === "winning" || r.status === "paid") :
+      r.status === "paid",
+    );
+    const header = ["id", "date", "jeu", "telephone", "region", "selections", "mise_fcfa", "statut", "paiement", "gain_fcfa"];
+    const csvBody = rows.map((r) => [r.id, r.date, r.game, r.phone, r.region, `"${r.picks.replace(/"/g, "''")}"`, r.stake, r.status, r.payment, r.prize].join(","));
+    const csv = [header.join(","), ...csvBody].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `lonani-tickets-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `lonani-${scope}-${from}_${to}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -106,6 +121,8 @@ function AdminPage() {
     const prize = next === "winning" ? Math.round((tickets.find(t => t.id === id)?.stake ?? 0) * 12) : undefined;
     updateStatus(id, next as "pending" | "winning" | "paid" | "losing", prize);
   };
+
+  void updateLegStatus; // exposé via le contexte, utilisable depuis la vue ticket
 
   const approveCashout = (id: string) => {
     updateStatus(id, "paid", tickets.find((t) => t.id === id)?.prize);
@@ -171,9 +188,18 @@ function AdminPage() {
             <section className="mt-4 rounded-3xl border border-border bg-card shadow-soft">
               <div className="flex items-center justify-between border-b border-border px-5 py-3">
                 <h2 className="font-display text-lg font-bold">Tickets (live)</h2>
-                <button onClick={exportCsv} disabled={!tickets.length} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/40 disabled:opacity-40">
-                  <Download className="h-3.5 w-3.5" /> {t("exportCsv")}
-                </button>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <input type="date" value={csvFrom} onChange={(e) => setCsvFrom(e.target.value)} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]" />
+                  <input type="date" value={csvTo} onChange={(e) => setCsvTo(e.target.value)} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]" />
+                  <select value={csvScope} onChange={(e) => setCsvScope(e.target.value as "all" | "winners" | "cashout")} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]">
+                    <option value="all">Tous</option>
+                    <option value="winners">Gagnants</option>
+                    <option value="cashout">Encaissés</option>
+                  </select>
+                  <button onClick={() => exportCsv()} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/40">
+                    <Download className="h-3.5 w-3.5" /> {t("exportCsv")}
+                  </button>
+                </div>
               </div>
               {tickets.length === 0 ? (
                 <p className="px-5 py-10 text-center text-sm text-muted-foreground">Aucun ticket joueur pour le moment.</p>
