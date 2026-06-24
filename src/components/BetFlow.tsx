@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, ShieldCheck, Smartphone, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useTickets } from "@/lib/tickets";
-import { paymentMethods, regions, type GameId } from "@/lib/mock-data";
+import { useTickets, type TicketLeg } from "@/lib/tickets";
+import { regions, type GameId } from "@/lib/mock-data";
 import { useAccount } from "@/lib/account";
+import { detectOperator, mockAccountHolder } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -16,36 +17,75 @@ interface Props {
   canContinue: boolean;
   renderSelection: ReactNode;
   defaultStake?: number;
+  /** Si fourni, le BetFlow part avec ces grilles déjà empilées (Loto multi-grilles). */
+  legs?: TicketLeg[];
+  /** Nom du tirage du jour (Loto) à attacher au ticket. */
+  drawName?: string;
+  /** Borne mise par jeu : Loto = 300/100000. */
+  minStake?: number;
+  maxStake?: number;
 }
 
-const STAKES = [100, 200, 500, 1000, 2000, 5000];
+const STAKES = [300, 500, 1000, 2000, 5000, 10000];
 
-export function BetFlow({ gameId, gameName, drawDate, selection, picksLabel, canContinue, renderSelection, defaultStake = 500 }: Props) {
+export function BetFlow({
+  gameId, gameName, drawDate, selection, picksLabel, canContinue, renderSelection,
+  defaultStake = 500, legs, drawName, minStake = 100, maxStake = 100_000,
+}: Props) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { addTicket } = useTickets();
   const { account } = useAccount();
   const [step, setStep] = useState(1);
   const [stake, setStake] = useState(defaultStake);
-  const [firstName, setFirstName] = useState(account?.firstName ?? "");
-  const [lastName, setLastName] = useState(account?.lastName ?? "");
   const [phone, setPhone] = useState(account?.phone ?? "");
   const [region, setRegion] = useState<string>(account?.region ?? regions[0]);
-  const [email, setEmail] = useState("");
-  const [payment, setPayment] = useState(paymentMethods[0].id);
+  const [validated, setValidated] = useState(false);
+  const [mmPwd, setMmPwd] = useState("");
+  const [mmError, setMmError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
 
-  const totalSteps = 4;
+  // 1 = sélection ; 2 = mise (sauté si legs fournies avec stakes) ; 3 = validation ; 4 = identité ; 5 = paiement
+  const totalSteps = 5;
   const phoneOk = /^[+\d][\d\s]{6,}$/.test(phone);
+  const operator = phone ? detectOperator(phone) : null;
+  const holder = phone ? mockAccountHolder(phone) : "";
+
+  const allLegs: TicketLeg[] = legs?.length
+    ? legs
+    : [{
+        legId: `${Date.now()}-0`, gameId, gameName,
+        picks: selection, picksLabel, stake, drawName, drawDate, status: "pending",
+      }];
+  const totalStake = allLegs.reduce((s, l) => s + l.stake, 0);
+
+  // Simulation déterministe : "fonds insuffisants" si dernier chiffre du téléphone < 3
+  const simulatedFundsOk = (() => {
+    const last = Number((phone.match(/\d/g) ?? ["9"]).slice(-1)[0]);
+    return last >= 3;
+  })();
 
   const finish = async () => {
+    setMmError(null);
+    if (!/^\d{4,6}$/.test(mmPwd)) { setMmError(t("mmPasswordHint")); return; }
     setPaying(true);
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, 1400));
+    if (!simulatedFundsOk) {
+      setPaying(false);
+      setMmError(t("insufficientFunds"));
+      return;
+    }
+    // Représentation legacy (1er leg) pour compat
+    const first = allLegs[0];
     const ticket = addTicket({
-      gameId, gameName, firstName, lastName, phone, email, region,
-      picks: selection, picksLabel,
-      stake, payment: paymentMethods.find((p) => p.id === payment)!.name,
-      drawDate,
+      gameId: first.gameId, gameName: first.gameName,
+      firstName: account?.firstName, lastName: account?.lastName, phone, region,
+      picks: first.picks, picksLabel: allLegs.map(l => l.picksLabel).join(" | "),
+      stake: totalStake,
+      payment: operator?.name ?? "Mobile Money",
+      drawDate: first.drawDate,
+      drawName,
+      legs: allLegs,
     });
     navigate({ to: "/ticket/$id", params: { id: ticket.id } });
   };
@@ -57,7 +97,7 @@ export function BetFlow({ gameId, gameName, drawDate, selection, picksLabel, can
         <span>{t("step")} {step} {t("of")} {totalSteps}</span>
         <span className="text-primary">{gameName}</span>
       </div>
-      <div className="mb-6 grid grid-cols-4 gap-1">
+      <div className="mb-6 grid grid-cols-5 gap-1">
         {Array.from({ length: totalSteps }).map((_, i) => (
           <div key={i} className={cn("h-1.5 rounded-full", i < step ? "bg-gold-gradient" : "bg-muted")} />
         ))}
@@ -72,8 +112,13 @@ export function BetFlow({ gameId, gameName, drawDate, selection, picksLabel, can
 
       {step === 2 && (
         <Card title={t("stake")}>
+          {legs?.length ? (
+            <p className="-mt-2 mb-3 text-sm text-muted-foreground">
+              Mises définies par grille — {allLegs.length} {t("grids")} · {t("totalStake")}: <b className="tabular-nums">{totalStake.toLocaleString()} {t("fcfa")}</b>
+            </p>
+          ) : (<>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-            {STAKES.map((v) => (
+            {STAKES.filter(v => v >= minStake && v <= maxStake).map((v) => (
               <button
                 key={v}
                 type="button"
@@ -89,80 +134,124 @@ export function BetFlow({ gameId, gameName, drawDate, selection, picksLabel, can
           </div>
           <div className="mt-4">
             <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              Autre montant ({t("fcfa")})
+              Autre montant ({t("fcfa")}) — min {minStake.toLocaleString()} · max {maxStake.toLocaleString()}
             </label>
             <input
               type="number"
-              min={100}
+              min={minStake}
+              max={maxStake}
               value={stake}
-              onChange={(e) => setStake(Number(e.target.value) || 0)}
+              onChange={(e) => setStake(Math.max(0, Math.min(maxStake, Number(e.target.value) || 0)))}
               className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-lg font-bold tabular-nums focus:border-primary outline-none"
             />
+            {stake > 0 && stake < minStake && <p className="mt-1 text-xs text-destructive">{t("minStake")}</p>}
+            {stake > maxStake && <p className="mt-1 text-xs text-destructive">{t("maxStake")}</p>}
           </div>
-          <Footer onBack={() => setStep(1)} onNext={() => setStep(3)} disabled={stake < 100} />
+          </>)}
+          <Footer onBack={() => setStep(1)} onNext={() => setStep(3)} disabled={!legs?.length && (stake < minStake || stake > maxStake)} />
         </Card>
       )}
 
       {step === 3 && (
-        <Card title={t("identity")}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label={`${t("firstName")} (${t("optional")})`} value={firstName} onChange={setFirstName} />
-            <Field label={`${t("lastName")} (${t("optional")})`} value={lastName} onChange={setLastName} />
-            <Field label={t("phone")} value={phone} onChange={setPhone} type="tel" placeholder="+227 90 00 00 00" required wide />
-            <label className="block sm:col-span-2">
-              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("region")}</span>
-              <select
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-                className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:border-primary outline-none"
-              >
-                {regions.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </label>
-            <Field label={`${t("email")} (${t("optional")})`} value={email} onChange={setEmail} type="email" wide />
+        <Card title={t("finalReview")}>
+          <div className="rounded-2xl border border-border bg-secondary/40 p-4">
+            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">{gameName}{drawName ? ` — ${drawName}` : ""}</div>
+            <ul className="space-y-2">
+              {allLegs.map((l, i) => (
+                <li key={l.legId} className="flex items-start justify-between gap-3 rounded-xl bg-card px-3 py-2">
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-primary">{t("grid")} {i + 1}</div>
+                    <div className="text-sm font-semibold break-words">{l.picksLabel}</div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="font-display text-base font-extrabold tabular-nums">{l.stake.toLocaleString()}</div>
+                    <div className="text-[10px] text-muted-foreground">{t("fcfa")}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+              <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("totalStake")}</span>
+              <span className="font-display text-2xl font-extrabold tabular-nums text-primary">{totalStake.toLocaleString()} <span className="text-xs font-semibold text-muted-foreground">{t("fcfa")}</span></span>
+            </div>
           </div>
-          <Footer onBack={() => setStep(2)} onNext={() => setStep(4)} disabled={!phoneOk} />
+          <label className="mt-4 flex items-start gap-2.5 cursor-pointer">
+            <input type="checkbox" checked={validated} onChange={(e) => setValidated(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
+            <span className="text-sm">{t("validateSelection")}</span>
+          </label>
+          <Footer onBack={() => setStep(2)} onNext={() => setStep(4)} disabled={!validated} />
         </Card>
       )}
 
       {step === 4 && (
+        <Card title={t("identity")}>
+          <p className="-mt-2 mb-3 text-sm text-muted-foreground">
+            {account ? `Bonjour ${account.firstName}, confirmez votre numéro et votre région.` : "Renseignez le numéro qui sera débité."}
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label={t("phone")} value={phone} onChange={(v) => { setPhone(v); }} type="tel" placeholder="+227 90 00 00 00" required wide />
+            <label className="block sm:col-span-2">
+              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("region")}</span>
+              <select value={region} onChange={(e) => setRegion(e.target.value)} className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:border-primary outline-none">
+                {regions.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </label>
+          </div>
+          <Footer onBack={() => setStep(3)} onNext={() => setStep(5)} disabled={!phoneOk} />
+        </Card>
+      )}
+
+      {step === 5 && (
         <Card title={t("payment")}>
-          <p className="-mt-2 mb-3 text-sm text-muted-foreground">{t("choosePayment")}</p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {paymentMethods.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setPayment(m.id)}
-                className={cn(
-                  "flex items-center gap-3 rounded-2xl border-2 px-4 py-4 text-left transition",
-                  payment === m.id ? "border-primary bg-primary/5 shadow-soft" : "border-border bg-card hover:border-primary/40",
-                )}
-              >
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl font-bold text-white" style={{ backgroundColor: m.color }}>
-                  {m.name.charAt(0)}
-                </span>
-                <span className="font-semibold">{m.name}</span>
-              </button>
-            ))}
+          <div className="rounded-2xl border border-border bg-secondary/40 p-4">
+            <div className="flex items-center gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-bold text-white" style={{ backgroundColor: operator?.color }}>
+                <Smartphone className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("operator")} · {t("accountDetected")}</div>
+                <div className="font-display text-base font-extrabold truncate">{operator?.name}</div>
+                <div className="text-xs text-muted-foreground truncate">{holder} · {phone}</div>
+              </div>
+              <button type="button" onClick={() => setStep(4)} className="text-xs font-bold text-primary underline">{t("changeNumber")}</button>
+            </div>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-border bg-secondary/50 p-4">
-            <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("summary")}</div>
-            <div className="mt-2 flex items-baseline justify-between">
-              <span className="font-semibold">{gameName}</span>
-              <span className="font-display text-2xl font-bold tabular-nums">{stake.toLocaleString()} {t("fcfa")}</span>
-            </div>
-            <div className="mt-1 text-sm text-muted-foreground line-clamp-2">{picksLabel}</div>
+          <div className="mt-4 flex items-baseline justify-between rounded-2xl border border-gold/30 bg-gold/5 px-4 py-3">
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("totalStake")}</span>
+            <span className="font-display text-2xl font-extrabold tabular-nums text-gold">{totalStake.toLocaleString()} <span className="text-xs text-muted-foreground">{t("fcfa")}</span></span>
           </div>
+
+          <label className="mt-4 block">
+            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("mmPassword")} · {t("mmPasswordHint")}</span>
+            <input
+              type="password" inputMode="numeric" autoComplete="off" maxLength={6}
+              value={mmPwd}
+              onChange={(e) => { setMmPwd(e.target.value.replace(/\D/g, "")); setMmError(null); }}
+              className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-lg tracking-[0.5em] font-bold focus:border-primary outline-none"
+              placeholder="••••"
+            />
+          </label>
+
+          {mmError && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <X className="h-4 w-4 mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <div className="font-bold">{mmError}</div>
+                {mmError === t("insufficientFunds") && (
+                  <button type="button" onClick={() => setStep(4)} className="mt-1 text-xs font-bold underline">{t("changeNumber")}</button>
+                )}
+              </div>
+            </div>
+          )}
 
           <button
             type="button"
-            disabled={paying}
+            disabled={paying || mmPwd.length < 4}
             onClick={finish}
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gold-gradient px-6 py-4 text-lg font-bold text-[var(--gold-foreground)] shadow-gold transition hover:brightness-105 disabled:opacity-70"
           >
-            {paying ? <><Loader2 className="h-5 w-5 animate-spin" /> {t("paying")}</> : <>{t("confirm")} <ArrowRight className="h-5 w-5" /></>}
+            {paying ? <><Loader2 className="h-5 w-5 animate-spin" /> {t("paying")}</> : <><Check className="h-5 w-5" /> {t("confirmPayment")}</>}
           </button>
 
           <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
