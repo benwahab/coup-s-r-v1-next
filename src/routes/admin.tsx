@@ -23,9 +23,14 @@ type Tab = "overview" | "players" | "regions" | "balls" | "ops";
 
 function AdminPage() {
   const { t } = useI18n();
-  const { tickets, updateStatus } = useTickets();
+  const { tickets, updateStatus, updateLegStatus } = useTickets();
   const sims = useMemo(() => generateSimTickets(260), []);
   const [tab, setTab] = useState<Tab>("overview");
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const weekAgoIso = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
+  const [csvFrom, setCsvFrom] = useState(weekAgoIso);
+  const [csvTo, setCsvTo] = useState(todayIso);
+  const [csvScope, setCsvScope] = useState<"all" | "winners" | "cashout">("all");
 
   const [autoSms, setAutoSms] = useState(true);
   const [sentLog, setSentLog] = useState<{ id: string; phone: string; prize: number; at: number }[]>([]);
@@ -82,18 +87,28 @@ function AdminPage() {
   const [selectedBall, setSelectedBall] = useState<number | null>(null);
   const selBallStat = selectedBall ? ballStats.find((b) => b.ball === selectedBall) : null;
 
-  const exportCsv = () => {
-    const header = ["id", "game", "phone", "picks", "stake_fcfa", "payment", "status", "prize_fcfa", "draw_date", "created_at"];
-    const rows = tickets.map((t) => [
-      t.id, t.gameName, t.phone, `"${t.picksLabel.replace(/"/g, "''")}"`,
-      t.stake, t.payment, t.status, t.prize ?? 0, formatDate(t.drawDate), t.createdAt,
-    ].join(","));
-    const csv = [header.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const exportCsv = (scope: "all" | "winners" | "cashout" = csvScope) => {
+    const from = csvFrom; const to = csvTo;
+    const inRange = (iso: string) => iso.slice(0, 10) >= from && iso.slice(0, 10) <= to;
+    const live = tickets.filter((t) => inRange(t.createdAt));
+    const simRows = sims.filter((s) => s.iso >= from && s.iso <= to);
+    const filtered: { id: string; date: string; game: string; phone: string; region: string; picks: string; stake: number; status: string; payment: string; prize: number }[] = [
+      ...live.map((t) => ({ id: t.id, date: t.createdAt.slice(0, 10), game: t.gameName, phone: t.phone, region: t.region ?? "", picks: t.picksLabel, stake: t.stake, status: t.status, payment: t.payment, prize: t.prize ?? 0 })),
+      ...simRows.map((s) => ({ id: `SIM-${s.iso}-${s.player.slice(0, 3)}-${Math.round(s.stake)}`, date: s.iso, game: s.game, phone: s.phone, region: s.region, picks: s.picksLabel, stake: s.stake, status: s.status, payment: s.payment, prize: s.prize })),
+    ];
+    const rows = filtered.filter((r) =>
+      scope === "all" ? true :
+      scope === "winners" ? (r.status === "winning" || r.status === "paid") :
+      r.status === "paid",
+    );
+    const header = ["id", "date", "jeu", "telephone", "region", "selections", "mise_fcfa", "statut", "paiement", "gain_fcfa"];
+    const csvBody = rows.map((r) => [r.id, r.date, r.game, r.phone, r.region, `"${r.picks.replace(/"/g, "''")}"`, r.stake, r.status, r.payment, r.prize].join(","));
+    const csv = [header.join(","), ...csvBody].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `lonani-tickets-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `lonani-${scope}-${from}_${to}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -105,6 +120,15 @@ function AdminPage() {
       current === "paid" ? "losing" : "pending";
     const prize = next === "winning" ? Math.round((tickets.find(t => t.id === id)?.stake ?? 0) * 12) : undefined;
     updateStatus(id, next as "pending" | "winning" | "paid" | "losing", prize);
+  };
+
+  const cycleLeg = (ticketId: string, legId: string, current: string, stake: number) => {
+    const next =
+      current === "pending" ? "winning" :
+      current === "winning" ? "paid" :
+      current === "paid" ? "losing" : "pending";
+    const prize = next === "winning" ? Math.round(stake * 12) : undefined;
+    updateLegStatus(ticketId, legId, next as "pending" | "winning" | "paid" | "losing", prize);
   };
 
   const approveCashout = (id: string) => {
