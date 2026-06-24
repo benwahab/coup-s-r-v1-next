@@ -1,62 +1,84 @@
-## Objectif
-Faire évoluer LoNaNi vers un produit plus crédible : Loto Balsa devient quotidien, l'accueil affiche les compteurs sans cagnotte gonflée, Pari Foot prend une vraie structure sportsbook, on ajoute un compte joueur simple, l'admin devient pro avec analytics régionales + boules, et on intègre une IA Pronostics.
+# Plan d'évolution LoNaNi
 
-## 1. Page d'accueil (`src/routes/index.tsx`)
-- **PMU (carte principale)** : date du jour (DD/MM/YYYY), badge "Tirage quotidien", **Heure d'ouverture** (configurable, ex. 08:00), **Heure de clôture** (14:00), **Heure du tirage** (15:00), compte à rebours dynamique vers le prochain événement.
-- **Loto Balsa (carte secondaire, sous PMU)** : devient **quotidien**. Affiche heure d'ouverture / clôture / tirage + compte à rebours + numéros chauds (déjà fait). **Pas de montant jackpot.**
-- À la place de la cagnotte Loto, afficher un bloc temps réel : **Gagnants du jour** (nombre) + **Montant total gagné aujourd'hui** (somme mock dérivée des tickets).
+Périmètre large — je découpe en 7 chantiers indépendants. Tout reste frontend + mock data (pas de Lovable Cloud sauf IA déjà branchée).
 
-## 2. Loto Balsa (`src/routes/loto-balsa.tsx` + `mock-data.ts`)
-- `drawSchedule.loto` passe en quotidien : `openHour: 8, closeHour: 19, drawHour: 20, daily: true`.
-- Retirer `lotoJackpot` de l'UI (garder le multiplicateur x70…x20000 inchangé).
-- Page jeu : bandeau avec horaires du jour + compte à rebours.
+## 1. Fuseau horaire Niger (Africa/Niamey, UTC+1, pas de DST)
 
-## 3. Pari Foot façon 1xBet (`src/routes/pari-foot.tsx` + `mock-data.ts`)
-- Étendre `footMatches` : ~20 matchs répartis en **Compétitions** :
-  - Premier League, La Liga, Serie A, Bundesliga, Ligue 1
-  - Ligue des Champions, Europa League
-  - CAN, Coupe du Monde (qualifs)
-- Structure `{ id, league, home, away, date, odds: {1,X,2} }`.
-- UI sportsbook : sidebar/onglets championnats à gauche (desktop) / chips scrollables (mobile), liste de matchs avec logos texte, 3 cotes cliquables (1 / X / 2), panier (bet slip) flottant à droite qui calcule la cote combinée et le gain potentiel. Conserver le flux de mise existant en sortie de panier.
+- Nouveau helper `src/lib/schedule.ts`:
+  - `nowNiger()` → Date corrigée UTC+1
+  - `nextDraw(game)` → calcule la prochaine ouverture / clôture / tirage du jour
+  - `drawNameForDate(date)` → renvoie le nom du tirage Balsa selon le jour:
+    - Lun: MAMAKI, Mar: SOUDJI, Mer: ARZIKI, Jeu: GOMNI, Ven: IRMA SABOU, Sam: FARAHA, Dim: BALSA
+- Countdown précis à la seconde sur `index.tsx` et `loto-balsa.tsx`.
+- Horaires: PMU 08:00 → clôture 14:00 → tirage 15:00. Loto Balsa 08:00 → clôture 19:00 → tirage 20:00.
 
-## 4. Compte joueur (nouveau)
-- Nouvelle route `src/routes/compte.tsx` : formulaire d'inscription simple — **Nom**, **Prénom**, **Région** (select : Niamey, Maradi, Zinder, Tahoua, Agadez, Dosso, Tillabéri, Diffa), **Téléphone** (8 chiffres).
-- Stockage local (`localStorage`) via un hook `useAccount()` dans `src/lib/account.tsx` (mock V1).
-- AppShell : si pas de compte → bouton "Créer un compte" ; sinon avatar + prénom + lien "Mon compte".
-- À la mise (BetFlow), pré-remplir le numéro avec celui du compte. Persister la région sur chaque ticket (`region` dans mock tickets) pour alimenter les stats admin.
+## 2. Page d'accueil
 
-## 5. Admin pro (`src/routes/admin.tsx`)
-Refonte en onglets : **Vue d'ensemble**, **Joueurs**, **Régions**, **Boules**, **SMS & encaissements**, **IA Pronostics**.
-- **Vue d'ensemble** : KPIs (joueurs actifs, tickets, montant misé total, gain payé, marge brute) + graphique 7 jours (déjà existant, amélioré).
-- **Joueurs** : tableau live (nom, région, tél, tickets, misé, gagné) avec recherche + filtre région.
-- **Régions** : barres horizontales montant misé / région + montant gagné / région + tendance (delta vs 7j) → permet de "dégager une tendance de jeux".
-- **Boules** (Loto) : grille 1–90 où chaque boule affiche le **nombre de fois jouée** ; au survol/clic, panneau latéral montre la décomposition **jouée seule** vs **en combinaison avec X autres**, plus top 5 paires co-occurrentes.
-- **SMS & encaissements** : conserver l'existant.
+- Bouton "Jouer maintenant" Loto Balsa = même style premium gold-gradient que PMU (gradient, ombre, icône, badge nom du tirage du jour).
+- Badge dynamique sous Loto Balsa: "Aujourd'hui · Tirage IRMA SABOU".
+- Countdown synchronisé Niger.
 
-## 6. IA Pronostics (nouveau)
-- Activer **Lovable Cloud** (requis pour appeler l'IA en sécurité côté serveur).
-- Server function `src/lib/ai-pronos.functions.ts` utilisant Lovable AI Gateway (`google/gemini-3-flash-preview`) avec `Output.object` :
-  - `analyzePmu({ date })` → pour chaque cheval : score 0–100, force, faiblesse, position prédite. Renvoie un tiercé + quinté recommandé.
-  - `analyzeLoto({ history })` → analyse de rotation des boules, boules chaudes/froides détectées, 3 grilles suggérées avec justification.
-- UI : nouvelle page `src/routes/pronostics.tsx` enrichie d'un onglet "IA" (la page existe déjà ; on ajoute la section IA avec bouton "Analyser maintenant", spinner, rendu structuré). Accessible aussi depuis admin (onglet IA Pronostics) pour préview opérateur.
-- **Note importante** : la consigne mentionne "analyser les plateformes en ligne". V1 = analyse basée sur l'historique mock + connaissances générales du modèle (pas de scraping live de sites tiers, hors périmètre légal/technique d'une V1 maquette). À documenter dans l'UI ("Analyse basée sur l'historique de la plateforme et heuristiques IA").
+## 3. Loto Balsa — multi-tirages + mise
 
-## 7. i18n / utils
-- Ajouter clés FR : `openAt`, `closeAt`, `drawAt`, `todayWinners`, `totalPaidToday`, `createAccount`, `myAccount`, `region`, `phone`, `firstName`, `lastName`, leagues, `aiAnalyze`, `aiPmuTitle`, `aiLotoTitle`, etc.
-- Helper `formatTime(hour)` → "HH:00".
+- Supprimer le bloc mise dupliqué (un seul).
+- Mise min **300 FCFA**, max **100 000 FCFA**, input manuel libre + chips rapides (300/500/1000/2000/5000/10000).
+- Nom du tirage du jour affiché en en-tête + stocké sur le ticket (`drawName`).
+- **Multi-grilles**: bouton "+ Ajouter une grille" pour empiler plusieurs sélections (1–5 boules) avant paiement. Chaque grille a sa propre mise. Total cumulé affiché en bas.
+- Un seul reçu agrégeant toutes les grilles (voir §5).
 
-## Détails techniques
-- Pas de DB réelle pour comptes/tickets en V1 : `localStorage` + mock seeds enrichis (≥ 200 tickets simulés répartis sur 8 régions et 90 boules) pour rendre les stats admin crédibles dès le 1er chargement.
-- Seeds générés de façon **déterministe** (PRNG seedé) pour éviter les mismatches SSR.
-- Activation Lovable Cloud uniquement pour la partie IA (clé `LOVABLE_API_KEY` côté serveur). Le reste reste frontend.
-- Aucun changement au design system / palette.
+## 4. Bet slip clair + étape de confirmation (PMU & Pari Foot)
 
-## Fichiers impactés
-- edit : `src/routes/index.tsx`, `src/routes/loto-balsa.tsx`, `src/routes/pari-foot.tsx`, `src/routes/admin.tsx`, `src/routes/pronostics.tsx`, `src/lib/mock-data.ts`, `src/lib/i18n.tsx`, `src/lib/tickets.tsx`, `src/components/AppShell.tsx`, `src/components/BetFlow.tsx`, `src/lib/utils.ts`
-- create : `src/routes/compte.tsx`, `src/lib/account.tsx`, `src/lib/ai-pronos.functions.ts`, `src/lib/ai-gateway.server.ts`, `src/lib/mock-stats.ts` (générateur seedé)
+- Nouvelle étape "Récap & validation" insérée avant paiement:
+  - Liste des sélections (numéros chevaux / matchs avec choix 1/X/2)
+  - Cote totale (Foot) ou nb chevaux (PMU)
+  - Mise par grille + total
+  - Case à cocher "Je valide mes sélections"
+- Pari Foot: bet slip flottant déjà présent → ajouter total cote en gros + bouton "Valider mes paris".
+- PMU: idem, liste ordonnée des chevaux choisis.
 
-## Questions avant de coder
-1. **Heures d'ouverture officielles** — je propose PMU 08:00 → clôture 14:00 → tirage 15:00 ; Loto Balsa 08:00 → clôture 19:00 → tirage 20:00. OK ou tu préfères d'autres horaires ?
-2. **IA & Lovable Cloud** : ok pour activer Cloud (nécessaire pour la fonction IA serveur sécurisée) ?
+## 5. Tickets multi-jeux + reçu groupé
 
-Si OK sur ces 2 points → j'implémente tout d'un coup.
+- `Ticket` accepte `legs: TicketLeg[]` (chaque grille = un leg avec picks/mise/drawName/status).
+- `addTicket` accepte un tableau de legs; `total = sum(legs.stake)`.
+- Page `ticket/$id`: affiche tous les legs avec statut individuel (gagnant/perdant/en attente) et nom du tirage.
+- PDF reçu reflète la liste.
+
+## 6. Étape 3 simplifiée (paiement mobile money simulé)
+
+- Si compte existant → étape 3 montre uniquement **téléphone + région** (pré-remplis), pas de nom/prénom/email.
+- Étape 4 (paiement) refonte:
+  1. Choix opérateur (auto-détecté depuis l'indicatif/numéro: Airtel/Moov/Orange/Amanata/MyNita via préfixe simulé)
+  2. Affichage "Compte détecté: M. XYZ" (mock)
+  3. Saisie **mot de passe mobile money** (4–6 chiffres)
+  4. Validation → 30% du temps simule "Fonds insuffisants" si stake > seuil aléatoire déterministe ; bouton "Changer de numéro" rejoue
+  5. Sinon succès → ticket créé
+- Toujours mock, aucun vrai paiement.
+
+## 7. Admin
+
+### Export CSV
+- Sélecteur de période (date début / date fin) + bouton "Exporter CSV":
+  - Tickets (id, date, joueur, région, jeu, picks, mise, statut, paiement, gain)
+  - Gagnants uniquement
+  - Encaissements (paiements approuvés)
+- Génération côté client via Blob; nom: `lonani-tickets-YYYYMMDD-YYYYMMDD.csv`.
+
+### Détection multi-legs gagnants
+- Vue tickets: pour un reçu multi-grilles, badge "2/3 gagnants" + liste des legs avec leur status. Bouton "Marquer gagnant" par leg.
+
+### Panneau IA détaillé
+- Nouvelle route `/pronostics` enrichie (ou panneau dans existant): pour PMU → score par cheval (forme, jockey, distance, terrain) + justification texte; pour Loto → chaleur/rotation par boule + 3 grilles recommandées avec raison. Bouton "Utiliser cette grille" → préremplit la page de jeu.
+- IA déjà branchée via `ai-pronos.functions.ts`, j'étends le schéma de sortie + l'UI.
+
+## Fichiers touchés
+
+**Créés**: `src/lib/schedule.ts`, `src/lib/mobile-money.ts`, `src/lib/csv-export.ts`
+
+**Modifiés**: `src/routes/index.tsx`, `src/routes/loto-balsa.tsx`, `src/routes/pmu.tsx`, `src/routes/pari-foot.tsx`, `src/routes/admin.tsx`, `src/routes/pronostics.tsx`, `src/routes/ticket.$id.tsx`, `src/components/BetFlow.tsx`, `src/lib/tickets.tsx`, `src/lib/mock-data.ts`, `src/lib/ai-pronos.functions.ts`, `src/lib/i18n.tsx`, `src/lib/receipt-pdf.ts`
+
+## Notes
+- Pas de vrai mobile money / SMS — tout simulé côté frontend.
+- L'IA reste sur Gemini via gateway déjà configuré, sortie structurée enrichie.
+- Aucun changement de design système (gold/green conservés).
+
+Confirme et je lance l'implémentation.
