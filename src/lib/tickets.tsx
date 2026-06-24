@@ -3,6 +3,20 @@ import type { GameId } from "./mock-data";
 
 export type TicketStatus = "pending" | "losing" | "winning" | "paid";
 
+/** Une "jambe" du ticket : une grille de loto, un tiercé PMU, un pari foot. */
+export interface TicketLeg {
+  legId: string;
+  gameId: GameId;
+  gameName: string;
+  picks: (string | number)[];
+  picksLabel: string;
+  stake: number;
+  drawName?: string;
+  drawDate: string;
+  status: TicketStatus;
+  prize?: number;
+}
+
 export interface Ticket {
   id: string;
   gameId: GameId;
@@ -20,6 +34,9 @@ export interface Ticket {
   drawDate: string;
   status: TicketStatus;
   prize?: number;
+  /** Présent si le reçu groupe plusieurs grilles/jeux. Sinon le ticket = 1 leg implicite. */
+  legs?: TicketLeg[];
+  drawName?: string;
 }
 
 interface Ctx {
@@ -27,6 +44,7 @@ interface Ctx {
   addTicket: (t: Omit<Ticket, "id" | "createdAt" | "status">) => Ticket;
   getTicket: (id: string) => Ticket | undefined;
   updateStatus: (id: string, status: TicketStatus, prize?: number) => void;
+  updateLegStatus: (ticketId: string, legId: string, status: TicketStatus, prize?: number) => void;
 }
 
 const TicketsCtx = createContext<Ctx | null>(null);
@@ -51,7 +69,8 @@ export function TicketsProvider({ children }: { children: ReactNode }) {
   }, [tickets]);
 
   const addTicket: Ctx["addTicket"] = (t) => {
-    const ticket: Ticket = { ...t, id: newId(), createdAt: new Date().toISOString(), status: "pending" };
+    const legs = t.legs?.map((l, i) => ({ ...l, legId: l.legId || `${newId()}-${i}` }));
+    const ticket: Ticket = { ...t, legs, id: newId(), createdAt: new Date().toISOString(), status: "pending" };
     setTickets((prev) => [ticket, ...prev]);
     return ticket;
   };
@@ -59,9 +78,23 @@ export function TicketsProvider({ children }: { children: ReactNode }) {
   const updateStatus: Ctx["updateStatus"] = (id, status, prize) => {
     setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, status, prize } : t)));
   };
+  const updateLegStatus: Ctx["updateLegStatus"] = (ticketId, legId, status, prize) => {
+    setTickets((prev) => prev.map((t) => {
+      if (t.id !== ticketId || !t.legs) return t;
+      const legs = t.legs.map((l) => l.legId === legId ? { ...l, status, prize } : l);
+      // Statut global : si au moins une gagnante non payée → winning ; tout payé → paid ; tout perdant → losing ; sinon pending
+      const all = legs.map(l => l.status);
+      let global: TicketStatus = "pending";
+      if (all.every(s => s === "paid")) global = "paid";
+      else if (all.some(s => s === "winning" || s === "paid")) global = "winning";
+      else if (all.every(s => s === "losing")) global = "losing";
+      const totalPrize = legs.reduce((s, l) => s + (l.prize ?? 0), 0);
+      return { ...t, legs, status: global, prize: totalPrize || undefined };
+    }));
+  };
 
   return (
-    <TicketsCtx.Provider value={{ tickets, addTicket, getTicket, updateStatus }}>
+    <TicketsCtx.Provider value={{ tickets, addTicket, getTicket, updateStatus, updateLegStatus }}>
       {children}
     </TicketsCtx.Provider>
   );
