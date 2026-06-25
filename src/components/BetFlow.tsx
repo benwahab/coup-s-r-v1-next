@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Check, Loader2, ShieldCheck, Smartphone, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -50,11 +50,10 @@ export function BetFlow({
   const [paying, setPaying] = useState(false);
   const [simpleMode, setSimpleMode] = useState(true);
 
-  // Si lockedStake change (PMU : nouveau type de pari ou autre nb de chevaux), on s'aligne
-  // pour que l'étape 3 reflète le montant correct.
-  if (lockedStake != null && stake !== lockedStake) {
-    setStake(lockedStake);
-  }
+  // Si lockedStake change (PMU : nouveau type de pari ou autre nb de chevaux), on s'aligne.
+  useEffect(() => {
+    if (lockedStake != null) setStake(lockedStake);
+  }, [lockedStake]);
 
   // 1 = sélection ; 2 = mise (sauté si legs fournies avec stakes) ; 3 = validation ; 4 = identité ; 5 = paiement
   const totalSteps = 5;
