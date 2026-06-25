@@ -24,26 +24,37 @@ interface Props {
   /** Borne mise par jeu : Loto = 300/100000. */
   minStake?: number;
   maxStake?: number;
+  /** Cote globale pour calcul du gain potentiel (PMU/Pari Foot). 1 par défaut. */
+  odds?: number;
+  /** Si fourni, force le montant (ex. PMU = combos × baseStake) et masque les chips. */
+  lockedStake?: number;
 }
 
 const STAKES = [300, 500, 1000, 2000, 5000, 10000];
 
 export function BetFlow({
   gameId, gameName, drawDate, selection, picksLabel, canContinue, renderSelection,
-  defaultStake = 500, legs, drawName, minStake = 100, maxStake = 100_000,
+  defaultStake = 500, legs, drawName, minStake = 100, maxStake = 100_000, odds = 1, lockedStake,
 }: Props) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { addTicket } = useTickets();
   const { account } = useAccount();
   const [step, setStep] = useState(1);
-  const [stake, setStake] = useState(defaultStake);
+  const [stake, setStake] = useState(lockedStake ?? defaultStake);
   const [phone, setPhone] = useState(account?.phone ?? "");
   const [region, setRegion] = useState<string>(account?.region ?? regions[0]);
   const [validated, setValidated] = useState(false);
   const [mmPwd, setMmPwd] = useState("");
   const [mmError, setMmError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
+  const [simpleMode, setSimpleMode] = useState(true);
+
+  // Si lockedStake change (PMU : nouveau type de pari ou autre nb de chevaux), on s'aligne
+  // pour que l'étape 3 reflète le montant correct.
+  if (lockedStake != null && stake !== lockedStake) {
+    setStake(lockedStake);
+  }
 
   // 1 = sélection ; 2 = mise (sauté si legs fournies avec stakes) ; 3 = validation ; 4 = identité ; 5 = paiement
   const totalSteps = 5;
@@ -58,6 +69,7 @@ export function BetFlow({
         picks: selection, picksLabel, stake, drawName, drawDate, status: "pending",
       }];
   const totalStake = allLegs.reduce((s, l) => s + l.stake, 0);
+  const potentialWin = Math.round(totalStake * odds);
 
   // Simulation déterministe : "fonds insuffisants" si dernier chiffre du téléphone < 3
   const simulatedFundsOk = (() => {
@@ -112,7 +124,11 @@ export function BetFlow({
 
       {step === 2 && (
         <Card title={t("stake")}>
-          {legs?.length ? (
+          {lockedStake != null ? (
+            <p className="-mt-2 mb-3 text-sm text-muted-foreground">
+              Mise calculée automatiquement selon votre pari · <b className="tabular-nums">{lockedStake.toLocaleString()} {t("fcfa")}</b>
+            </p>
+          ) : legs?.length ? (
             <p className="-mt-2 mb-3 text-sm text-muted-foreground">
               Mises définies par grille — {allLegs.length} {t("grids")} · {t("totalStake")}: <b className="tabular-nums">{totalStake.toLocaleString()} {t("fcfa")}</b>
             </p>
@@ -148,7 +164,7 @@ export function BetFlow({
             {stake > maxStake && <p className="mt-1 text-xs text-destructive">{t("maxStake")}</p>}
           </div>
           </>)}
-          <Footer onBack={() => setStep(1)} onNext={() => setStep(3)} disabled={!legs?.length && (stake < minStake || stake > maxStake)} />
+          <Footer onBack={() => setStep(1)} onNext={() => setStep(3)} disabled={lockedStake == null && !legs?.length && (stake < minStake || stake > maxStake)} />
         </Card>
       )}
 
@@ -162,6 +178,9 @@ export function BetFlow({
                   <div className="min-w-0">
                     <div className="text-[10px] font-bold uppercase tracking-widest text-primary">{t("grid")} {i + 1}</div>
                     <div className="text-sm font-semibold break-words">{l.picksLabel}</div>
+                    {odds > 1 && (
+                      <div className="text-[11px] text-muted-foreground">{t("potentialWin")}: <b className="text-success tabular-nums">{Math.round(l.stake * odds).toLocaleString()} {t("fcfa")}</b></div>
+                    )}
                   </div>
                   <div className="shrink-0 text-right">
                     <div className="font-display text-base font-extrabold tabular-nums">{l.stake.toLocaleString()}</div>
@@ -174,35 +193,59 @@ export function BetFlow({
               <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("totalStake")}</span>
               <span className="font-display text-2xl font-extrabold tabular-nums text-primary">{totalStake.toLocaleString()} <span className="text-xs font-semibold text-muted-foreground">{t("fcfa")}</span></span>
             </div>
+            {odds > 1 && (
+              <div className="mt-2 flex items-center justify-between rounded-xl bg-gold/10 px-3 py-2">
+                <span className="text-xs font-bold uppercase tracking-widest text-gold">{t("potentialWin")}</span>
+                <span className="font-display text-2xl font-extrabold tabular-nums text-gold">{potentialWin.toLocaleString()} <span className="text-xs">{t("fcfa")}</span></span>
+              </div>
+            )}
+            {odds > 1 && (
+              <div className="mt-1 text-[11px] text-muted-foreground text-right">Cote globale · ×{odds.toFixed(2)}</div>
+            )}
           </div>
           <label className="mt-4 flex items-start gap-2.5 cursor-pointer">
             <input type="checkbox" checked={validated} onChange={(e) => setValidated(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
             <span className="text-sm">{t("validateSelection")}</span>
           </label>
-          <Footer onBack={() => setStep(2)} onNext={() => setStep(4)} disabled={!validated} />
+          <Footer onBack={() => setStep(2)} onNext={() => setStep(account ? 5 : 4)} disabled={!validated} />
         </Card>
       )}
 
       {step === 4 && (
         <Card title={t("identity")}>
-          <p className="-mt-2 mb-3 text-sm text-muted-foreground">
-            {account ? `Bonjour ${account.firstName}, confirmez votre numéro et votre région.` : "Renseignez le numéro qui sera débité."}
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label={t("phone")} value={phone} onChange={(v) => { setPhone(v); }} type="tel" placeholder="+227 90 00 00 00" required wide />
-            <label className="block sm:col-span-2">
+          <div className="-mt-2 mb-3 flex items-center justify-between gap-2">
+            <p className="text-sm text-muted-foreground">{account ? `Bonjour ${account.firstName}, confirmez votre numéro.` : "Entrez le numéro qui sera débité."}</p>
+            <button type="button" onClick={() => setSimpleMode((v) => !v)} className={cn("shrink-0 rounded-full border px-3 py-1 text-[11px] font-bold transition", simpleMode ? "border-success/40 bg-success/10 text-success" : "border-border bg-card text-muted-foreground")}>
+              {simpleMode ? "🟢 Mode simple" : "Mode détaillé"}
+            </button>
+          </div>
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("phone")} *</span>
+            <input
+              type="tel" inputMode="tel" autoComplete="tel" pattern="[0-9+ ]*"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+227 90 00 00 00"
+              className={cn("mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 focus:border-primary outline-none", simpleMode ? "text-2xl font-extrabold tracking-wider" : "text-base")}
+            />
+          </label>
+          {!simpleMode && (
+            <label className="block mt-3">
               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("region")}</span>
               <select value={region} onChange={(e) => setRegion(e.target.value)} className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:border-primary outline-none">
                 {regions.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
             </label>
-          </div>
+          )}
           <Footer onBack={() => setStep(3)} onNext={() => setStep(5)} disabled={!phoneOk} />
         </Card>
       )}
 
       {step === 5 && (
         <Card title={t("payment")}>
+          {account && (
+            <button type="button" onClick={() => setStep(4)} className="-mt-2 mb-3 text-[11px] font-bold text-primary underline">Modifier mon numéro</button>
+          )}
           <div className="rounded-2xl border border-border bg-secondary/40 p-4">
             <div className="flex items-center gap-3">
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-bold text-white" style={{ backgroundColor: operator?.color }}>
@@ -221,6 +264,12 @@ export function BetFlow({
             <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("totalStake")}</span>
             <span className="font-display text-2xl font-extrabold tabular-nums text-gold">{totalStake.toLocaleString()} <span className="text-xs text-muted-foreground">{t("fcfa")}</span></span>
           </div>
+          {odds > 1 && (
+            <div className="mt-2 flex items-baseline justify-between rounded-2xl border border-success/30 bg-success/5 px-4 py-3">
+              <span className="text-xs font-bold uppercase tracking-widest text-success">{t("potentialWin")}</span>
+              <span className="font-display text-2xl font-extrabold tabular-nums text-success">{potentialWin.toLocaleString()} <span className="text-xs">{t("fcfa")}</span></span>
+            </div>
+          )}
 
           <label className="mt-4 block">
             <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("mmPassword")} · {t("mmPasswordHint")}</span>
