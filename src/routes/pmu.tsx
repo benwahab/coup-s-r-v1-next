@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Trophy } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Trophy, Info } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
 import { PageHeader } from "@/components/AppShell";
 import { horses } from "@/lib/mock-data";
+import { pmuBets, findBet, type PmuBetId } from "@/lib/pmu-bets";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/pmu")({
@@ -19,20 +20,31 @@ export const Route = createFileRoute("/pmu")({
   component: PmuPage,
 });
 
-const MAX = 5;
-
 function PmuPage() {
   const { t } = useI18n();
+  const [betId, setBetId] = useState<PmuBetId>("tierce_d");
   const [picks, setPicks] = useState<number[]>([]);
+  const bet = findBet(betId);
+  const partants = useMemo(() => horses.filter((h) => h.status === "partant"), []);
+  const nonPartants = useMemo(() => horses.filter((h) => h.status === "non-partant"), []);
 
-  const toggle = (n: number) =>
-    setPicks((prev) =>
-      prev.includes(n) ? prev.filter((x) => x !== n) : prev.length < MAX ? [...prev, n] : prev,
-    );
+  const toggle = (n: number) => {
+    const horse = horses.find((h) => h.number === n);
+    if (!horse || horse.status === "non-partant") return;
+    setPicks((prev) => prev.includes(n) ? prev.filter((x) => x !== n) : prev.length < bet.maxPicks ? [...prev, n] : prev);
+  };
+  const onBetChange = (id: PmuBetId) => {
+    setBetId(id);
+    const next = findBet(id);
+    setPicks((p) => p.slice(0, next.maxPicks));
+  };
 
+  const combos = bet.combos(picks.length);
+  const totalStake = combos * bet.baseStake;
   const picksLabel = picks.length
-    ? picks.map((n) => `${n}. ${horses.find((h) => h.number === n)?.name ?? ""}`).join(" • ")
-    : "—";
+    ? `[${bet.short}] ${picks.map((n, i) => `${bet.ordered ? `${i + 1}. ` : ""}${n}. ${horses.find((h) => h.number === n)?.name ?? ""}`).join(" • ")}`
+    : `[${bet.short}] —`;
+  const canContinue = picks.length >= bet.minPicks && picks.length <= bet.maxPicks;
 
   return (
     <>
@@ -43,53 +55,118 @@ function PmuPage() {
         drawDate={new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString()}
         selection={picks}
         picksLabel={picksLabel}
-        canContinue={picks.length >= 3}
+        canContinue={canContinue}
+        odds={bet.odds}
+        lockedStake={totalStake}
+        defaultStake={bet.baseStake}
+        minStake={bet.baseStake}
         renderSelection={
           <div>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-display text-xl font-bold">{t("selectHorses")}</h2>
-              <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold tabular-nums">
-                {picks.length}/{MAX}
+            {/* Sélecteur type de pari */}
+            <div className="mb-3">
+              <h2 className="font-display text-xl font-bold">1. Quel pari ?</h2>
+              <p className="text-xs text-muted-foreground">Choisissez le type de pari, puis vos chevaux.</p>
+            </div>
+            <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-2">
+              {pmuBets.map((b) => {
+                const active = b.id === betId;
+                return (
+                  <button key={b.id} type="button" onClick={() => onBetChange(b.id)} className={cn(
+                    "shrink-0 inline-flex items-center gap-1.5 rounded-full border-2 px-3 py-2 text-xs font-bold whitespace-nowrap transition min-h-11",
+                    active ? "border-primary bg-primary/15 text-primary shadow-soft" : "border-border bg-card text-muted-foreground hover:border-primary/40",
+                  )}>
+                    <span className="text-base leading-none">{b.emoji}</span> {b.short}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+              <div className="flex items-start gap-2">
+                <Info className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                <div className="min-w-0">
+                  <div className="font-bold text-sm">{bet.name}</div>
+                  <div className="text-xs text-muted-foreground">{bet.help}</div>
+                  <div className="mt-1 text-[11px] tabular-nums">
+                    {bet.minPicks === bet.maxPicks ? `${bet.minPicks} cheval${bet.minPicks > 1 ? "x" : ""}` : `${bet.minPicks}–${bet.maxPicks} chevaux`} · base {bet.baseStake} FCFA · cote ×{bet.odds}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sélection chevaux */}
+            <div className="mt-5 mb-2 flex items-center justify-between">
+              <h2 className="font-display text-xl font-bold">2. Chevaux partants</h2>
+              <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold tabular-nums">
+                {picks.length}/{bet.maxPicks}
               </span>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
-              {horses.map((h) => {
+              {partants.map((h) => {
                 const active = picks.includes(h.number);
                 const order = picks.indexOf(h.number) + 1;
                 return (
-                  <button
-                    key={h.number}
-                    type="button"
-                    onClick={() => toggle(h.number)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition",
-                      active
-                        ? "border-primary bg-primary/10 shadow-soft"
-                        : "border-border bg-card hover:border-primary/40",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "grid h-11 w-11 shrink-0 place-items-center rounded-full font-display text-lg font-bold",
-                        active ? "bg-gold-gradient text-[var(--gold-foreground)] shadow-gold" : "bg-secondary text-secondary-foreground",
-                      )}
-                    >
-                      {h.number}
-                    </span>
+                  <button key={h.number} type="button" onClick={() => toggle(h.number)} className={cn(
+                    "flex items-center gap-3 rounded-2xl border-2 px-3 py-3 text-left transition min-h-16",
+                    active ? "border-primary bg-primary/10 shadow-soft" : "border-border bg-card hover:border-primary/40",
+                  )}>
+                    <span className={cn(
+                      "grid h-11 w-11 shrink-0 place-items-center rounded-full font-display text-lg font-bold",
+                      active ? "bg-gold-gradient text-[var(--gold-foreground)] shadow-gold" : "bg-secondary text-secondary-foreground",
+                    )}>{h.number}</span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-bold">{h.name}</span>
-                      <span className="block truncate text-xs text-muted-foreground">{h.jockey}</span>
+                      <span className="block truncate font-bold">{h.name} <span className="ml-1 text-[10px] font-normal italic text-muted-foreground">/ {h.intlName}</span></span>
+                      <span className="block truncate text-xs text-muted-foreground">{h.jockey} · {h.weight}kg</span>
+                      <span className="block text-[10px] font-bold text-primary tabular-nums">★ V:{Math.round(h.winRate*100)}% · P:{Math.round(h.placeRate*100)}% · {h.form}</span>
                     </span>
                     {active && (
                       <span className="grid h-7 w-7 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                        {order}
+                        {bet.ordered ? order : "✓"}
                       </span>
                     )}
                   </button>
                 );
               })}
             </div>
-            {picks.length < 3 && <p className="mt-3 text-sm text-muted-foreground">{t("needMin")} 3 chevaux.</p>}
+
+            {nonPartants.length > 0 && (
+              <>
+                <h3 className="mt-5 mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">Non-partants</h3>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {nonPartants.map((h) => (
+                    <div key={h.number} className="flex items-center gap-3 rounded-2xl border-2 border-dashed border-border bg-muted/40 px-3 py-2.5 opacity-60">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-muted font-display text-base font-bold line-through">{h.number}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-bold line-through">{h.name}</span>
+                        <span className="block truncate text-xs text-muted-foreground">{h.jockey}</span>
+                      </span>
+                      <span className="shrink-0 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold uppercase text-destructive">NP</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Récap dynamique */}
+            <div className="mt-5 rounded-2xl border border-gold/30 bg-gold/5 p-4">
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Combinaisons</div>
+                  <div className="font-display text-xl font-extrabold tabular-nums">{combos}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Mise totale</div>
+                  <div className="font-display text-xl font-extrabold tabular-nums text-gold">{totalStake.toLocaleString()}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Gain potentiel</div>
+                  <div className="font-display text-xl font-extrabold tabular-nums text-success">{Math.round(totalStake * bet.odds).toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+
+            {!canContinue && picks.length < bet.minPicks && (
+              <p className="mt-3 text-sm text-muted-foreground">Sélectionnez au moins <b>{bet.minPicks}</b> cheval{bet.minPicks > 1 ? "x" : ""}.</p>
+            )}
           </div>
         }
       />
