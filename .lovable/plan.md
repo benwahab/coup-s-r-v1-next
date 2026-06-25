@@ -1,84 +1,81 @@
-# Plan d'évolution LoNaNi
+## Objectif
 
-Périmètre large — je découpe en 7 chantiers indépendants. Tout reste frontend + mock data (pas de Lovable Cloud sauf IA déjà branchée).
+Professionnaliser la chaîne "pari → reçu → vérification" et rendre le PMU complet, fluide et accessible (utilisateur analphabète), tout en gardant le design actuel.
 
-## 1. Fuseau horaire Niger (Africa/Niamey, UTC+1, pas de DST)
+## 1. SMS automatique de gain (mock + hook réel optionnel)
 
-- Nouveau helper `src/lib/schedule.ts`:
-  - `nowNiger()` → Date corrigée UTC+1
-  - `nextDraw(game)` → calcule la prochaine ouverture / clôture / tirage du jour
-  - `drawNameForDate(date)` → renvoie le nom du tirage Balsa selon le jour:
-    - Lun: MAMAKI, Mar: SOUDJI, Mer: ARZIKI, Jeu: GOMNI, Ven: IRMA SABOU, Sam: FARAHA, Dim: BALSA
-- Countdown précis à la seconde sur `index.tsx` et `loto-balsa.tsx`.
-- Horaires: PMU 08:00 → clôture 14:00 → tirage 15:00. Loto Balsa 08:00 → clôture 19:00 → tirage 20:00.
+- `src/lib/sms.ts` : `sendWinSms(ticket, leg?)` qui formate :
+  `"LoNaNi: BRAVO! Ticket #{id} ({drawName}) gagne {amount} FCFA. Reçu: {origin}/verify/{token}"`
+- Déclenchement automatique côté Admin quand un leg/ticket passe à `won` (dans `admin.tsx` après `markLegWon`/`markWon`).
+- Mode mock par défaut : log + toast + push dans `localStorage.lonani.sms` pour démo, visible dans l'onglet "Ops" de l'admin (table des SMS envoyés).
+- Hook prêt pour Twilio/GatewayAPI : `if (import.meta.env.VITE_SMS_PROVIDER) { fetch('/api/public/sms', ...) }` — non câblé sans secret.
 
-## 2. Page d'accueil
+## 2. QR Code signé + page de vérification
 
-- Bouton "Jouer maintenant" Loto Balsa = même style premium gold-gradient que PMU (gradient, ombre, icône, badge nom du tirage du jour).
-- Badge dynamique sous Loto Balsa: "Aujourd'hui · Tirage IRMA SABOU".
-- Countdown synchronisé Niger.
+- `src/lib/ticket-token.ts` :
+  - `signToken(ticket, legId?)` → base64url(`{tid, lid?, st, ts}`) + HMAC-SHA256 court (clé `LONANI_LOCAL_SIGN` stockée dans `localStorage` la 1ère fois → cohérent dans la même installation pour la démo).
+  - `verifyToken(token)` retourne `{ valid, ticketId, legId, reason? }`.
+- QR code (lib `qrcode` déjà présente) encode `https://<origin>/verify/<token>`.
+- Nouvelle route `src/routes/verify.$token.tsx` : page publique qui décode, vérifie la signature, retrouve le ticket dans le store local et affiche badge **✅ Authentique** ou **❌ Invalide**, avec récap leg / statut / montant.
+- `receipt-pdf.ts` : QR pointe désormais sur l'URL `/verify/<token>` au lieu du payload brut.
 
-## 3. Loto Balsa — multi-tirages + mise
+## 3. Bet slip — récap clair par leg
 
-- Supprimer le bloc mise dupliqué (un seul).
-- Mise min **300 FCFA**, max **100 000 FCFA**, input manuel libre + chips rapides (300/500/1000/2000/5000/10000).
-- Nom du tirage du jour affiché en en-tête + stocké sur le ticket (`drawName`).
-- **Multi-grilles**: bouton "+ Ajouter une grille" pour empiler plusieurs sélections (1–5 boules) avant paiement. Chaque grille a sa propre mise. Total cumulé affiché en bas.
-- Un seul reçu agrégeant toutes les grilles (voir §5).
+Dans `BetFlow.tsx` étape 3 (déjà existante) :
+- Ajout colonne **Gain potentiel** = `stake * odds` (odds par défaut selon `gameId` + `betType` PMU ; 1 pour Loto multi-grilles, géré séparément côté Loto).
+- Ligne **Total mises** + **Gain potentiel total** mis en valeur (gold).
+- Checkbox de validation déjà en place, on garde.
 
-## 4. Bet slip clair + étape de confirmation (PMU & Pari Foot)
+## 4. Mobile First — 3 clics + mode simplifié
 
-- Nouvelle étape "Récap & validation" insérée avant paiement:
-  - Liste des sélections (numéros chevaux / matchs avec choix 1/X/2)
-  - Cote totale (Foot) ou nb chevaux (PMU)
-  - Mise par grille + total
-  - Case à cocher "Je valide mes sélections"
-- Pari Foot: bet slip flottant déjà présent → ajouter total cote en gros + bouton "Valider mes paris".
-- PMU: idem, liste ordonnée des chevaux choisis.
+- Étape 1 PMU/Loto : boutons d'action `min-h-14`, icônes grandes.
+- Étape 4 (identité) :
+  - `inputMode="tel"` + `pattern="[0-9]*"` + `autoComplete="tel"` pour clavier numérique.
+  - Toggle **"Mode simple 🟢"** en haut : masque la région (auto = compte ou Niamey), agrandit la police (text-xl), réduit à 1 champ visible (téléphone) avec gros bouton "Continuer".
+- Préselection : si `account` existe, on saute directement de l'étape 3 → 5 (paiement), avec un petit lien "Modifier mon numéro".
 
-## 5. Tickets multi-jeux + reçu groupé
+## 5. PMU étape 1 — Grille pro
 
-- `Ticket` accepte `legs: TicketLeg[]` (chaque grille = un leg avec picks/mise/drawName/status).
-- `addTicket` accepte un tableau de legs; `total = sum(legs.stake)`.
-- Page `ticket/$id`: affiche tous les legs avec statut individuel (gagnant/perdant/en attente) et nom du tirage.
-- PDF reçu reflète la liste.
+Refonte `src/routes/pmu.tsx` + extension `mock-data.ts` :
 
-## 6. Étape 3 simplifiée (paiement mobile money simulé)
+### Données chevaux enrichies
+```ts
+horses: [{ number, name, intlName, jockey, status: "partant"|"non-partant", form: "1a2a3p", winRate, placeRate, weight }]
+```
 
-- Si compte existant → étape 3 montre uniquement **téléphone + région** (pré-remplis), pas de nom/prénom/email.
-- Étape 4 (paiement) refonte:
-  1. Choix opérateur (auto-détecté depuis l'indicatif/numéro: Airtel/Moov/Orange/Amanata/MyNita via préfixe simulé)
-  2. Affichage "Compte détecté: M. XYZ" (mock)
-  3. Saisie **mot de passe mobile money** (4–6 chiffres)
-  4. Validation → 30% du temps simule "Fonds insuffisants" si stake > seuil aléatoire déterministe ; bouton "Changer de numéro" rejoue
-  5. Sinon succès → ticket créé
-- Toujours mock, aucun vrai paiement.
+### UI étape 1
+- Bandeau **Type de pari** (chips horizontales scrollables) :
+  `Simple Gagnant`, `Simple Placé`, `Couplé Gagnant`, `Couplé Placé`, `Tiercé`, `Quarté`, `Quinté+`, `Champ Réduit`, `Combiné`.
+- Chaque type a `{ minPicks, maxPicks, baseStake, odds, helpFr }` — affiché en gros sous les chips.
+- Grille 2 sections : **Partants** (cliquables, fond clair) et **Non-partants** (grisés, non cliquables, badge "NP").
+- Carte cheval : N°, nom local + `intlName` (italique), jockey, mini stats (`★ V:18% · P:42%`), poids.
+- Sélection numérotée (ordre cliqué) pour Tiercé/Quarté/Quinté+ → label "1er, 2e, 3e" ; pour Couplé sans ordre → juste cases.
+- Calcul auto **nb combinaisons** (Combiné/Champ Réduit) et mise totale = `combos × baseStake`, affiché en gros gold avant "Continuer".
+- Texte d'aide court par type (`helpFr`) pour analphabète + pictogramme.
 
-## 7. Admin
+### Logique
+- `getCombinations(betType, picks)` : C(n,k) ou permutations selon ordre.
+- `canContinue` = `picks.length >= type.minPicks && picks.length <= type.maxPicks`.
+- `BetFlow` reçoit `defaultStake = type.baseStake * combos`, `minStake = type.baseStake`, `picksLabel` inclut `[Tiercé Ordre]` etc.
 
-### Export CSV
-- Sélecteur de période (date début / date fin) + bouton "Exporter CSV":
-  - Tickets (id, date, joueur, région, jeu, picks, mise, statut, paiement, gain)
-  - Gagnants uniquement
-  - Encaissements (paiements approuvés)
-- Génération côté client via Blob; nom: `lonani-tickets-YYYYMMDD-YYYYMMDD.csv`.
+## 6. Fichiers
 
-### Détection multi-legs gagnants
-- Vue tickets: pour un reçu multi-grilles, badge "2/3 gagnants" + liste des legs avec leur status. Bouton "Marquer gagnant" par leg.
+**Créés**
+- `src/lib/sms.ts`
+- `src/lib/ticket-token.ts`
+- `src/lib/pmu-bets.ts` (types de paris + combinatoire)
+- `src/routes/verify.$token.tsx`
 
-### Panneau IA détaillé
-- Nouvelle route `/pronostics` enrichie (ou panneau dans existant): pour PMU → score par cheval (forme, jockey, distance, terrain) + justification texte; pour Loto → chaleur/rotation par boule + 3 grilles recommandées avec raison. Bouton "Utiliser cette grille" → préremplit la page de jeu.
-- IA déjà branchée via `ai-pronos.functions.ts`, j'étends le schéma de sortie + l'UI.
+**Édités**
+- `src/routes/pmu.tsx` (refonte étape 1)
+- `src/components/BetFlow.tsx` (gain potentiel, mode simple, clavier num, skip identité)
+- `src/lib/mock-data.ts` (chevaux enrichis + non-partants)
+- `src/lib/receipt-pdf.ts` (QR → /verify/<token>)
+- `src/routes/admin.tsx` (déclenche `sendWinSms` au marquage gagnant, onglet Ops listant les SMS)
+- `src/lib/i18n.tsx` (nouvelles clés)
 
-## Fichiers touchés
+## Hors-scope (à confirmer plus tard)
+- Branchement SMS réel (nécessite secret Twilio/GatewayAPI).
+- Persistance multi-device (resterait localStorage tant qu'on n'active pas Lovable Cloud).
+- Cotes PMU dynamiques (on garde des cotes mock par type de pari).
 
-**Créés**: `src/lib/schedule.ts`, `src/lib/mobile-money.ts`, `src/lib/csv-export.ts`
-
-**Modifiés**: `src/routes/index.tsx`, `src/routes/loto-balsa.tsx`, `src/routes/pmu.tsx`, `src/routes/pari-foot.tsx`, `src/routes/admin.tsx`, `src/routes/pronostics.tsx`, `src/routes/ticket.$id.tsx`, `src/components/BetFlow.tsx`, `src/lib/tickets.tsx`, `src/lib/mock-data.ts`, `src/lib/ai-pronos.functions.ts`, `src/lib/i18n.tsx`, `src/lib/receipt-pdf.ts`
-
-## Notes
-- Pas de vrai mobile money / SMS — tout simulé côté frontend.
-- L'IA reste sur Gemini via gateway déjà configuré, sortie structurée enrichie.
-- Aucun changement de design système (gold/green conservés).
-
-Confirme et je lance l'implémentation.

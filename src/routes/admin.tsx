@@ -6,6 +6,7 @@ import { useTickets } from "@/lib/tickets";
 import { PageHeader } from "@/components/AppShell";
 import { cn, formatFcfa, formatDate } from "@/lib/utils";
 import { computeBallStats, computePlayerStats, computeRegionStats, generateSimTickets } from "@/lib/mock-stats";
+import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — LoNaNi" }] }),
@@ -33,21 +34,24 @@ function AdminPage() {
   const [csvScope, setCsvScope] = useState<"all" | "winners" | "cashout">("all");
 
   const [autoSms, setAutoSms] = useState(true);
-  const [sentLog, setSentLog] = useState<{ id: string; phone: string; prize: number; at: number }[]>([]);
+  const [sentLog, setSentLog] = useState<SmsEntry[]>([]);
   const [cashoutRequests, setCashoutRequests] = useState<string[]>([]);
+
+  // Charge le log SMS au montage (persisté en localStorage)
+  useEffect(() => { setSentLog(readSmsLog()); }, []);
 
   // Auto-SMS: whenever a ticket flips to "winning" and we haven't notified yet, log a "sent" entry
   // and create a cash-out request on behalf of the winner.
   useEffect(() => {
     if (!autoSms) return;
     const winners = tickets.filter((t) => t.status === "winning");
-    const known = new Set(sentLog.map((s) => s.id));
+    const known = new Set(sentLog.map((s) => s.id.split("#")[0]));
     const fresh = winners.filter((w) => !known.has(w.id));
     if (fresh.length === 0) return;
-    setSentLog((prev) => [
-      ...fresh.map((w) => ({ id: w.id, phone: w.phone, prize: w.prize ?? 0, at: Date.now() })),
-      ...prev,
-    ]);
+    (async () => {
+      const entries = await Promise.all(fresh.map((w) => sendWinSms(w)));
+      setSentLog((prev) => [...entries, ...prev]);
+    })();
     setCashoutRequests((prev) => Array.from(new Set([...fresh.map((w) => w.id), ...prev])));
   }, [tickets, autoSms, sentLog]);
 
@@ -406,12 +410,12 @@ function AdminPage() {
                 ) : (
                   <ul className="divide-y divide-border">
                     {sentLog.slice(0, 8).map((s) => (
-                      <li key={s.id + s.at} className="px-5 py-3 text-sm">
+                       <li key={s.id + s.at} className="px-5 py-3 text-sm">
                         <div className="flex items-center justify-between">
                           <span className="font-mono text-xs font-bold">{s.id}</span>
                           <span className="text-[11px] text-muted-foreground tabular-nums">{new Date(s.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground">→ {s.phone} : « Bravo ! Votre ticket {s.id} est gagnant ({formatFcfa(s.prize)} FCFA). Répondez OUI pour encaisser. »</p>
+                        <p className="mt-1 break-words text-xs text-muted-foreground">→ {s.phone} : « {s.body} »</p>
                       </li>
                     ))}
                   </ul>

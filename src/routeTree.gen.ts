@@ -19,6 +19,7 @@ import { Route as LotoBalsaRouteImport } from './routes/loto-balsa'
 import { Route as CompteRouteImport } from './routes/compte'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as VerifyTokenRouteImport } from './routes/verify.$token'
 import { Route as TicketIdRouteImport } from './routes/ticket.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -71,6 +72,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VerifyTokenRoute = VerifyTokenRouteImport.update({
+  id: '/verify/$token',
+  path: '/verify/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TicketIdRoute = TicketIdRouteImport.update({
   id: '/ticket/$id',
   path: '/ticket/$id',
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/resultats': typeof ResultatsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ticket/$id': typeof TicketIdRoute
+  '/verify/$token': typeof VerifyTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/resultats': typeof ResultatsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ticket/$id': typeof TicketIdRoute
+  '/verify/$token': typeof VerifyTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   '/resultats': typeof ResultatsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ticket/$id': typeof TicketIdRoute
+  '/verify/$token': typeof VerifyTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/resultats'
     | '/sitemap.xml'
     | '/ticket/$id'
+    | '/verify/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/resultats'
     | '/sitemap.xml'
     | '/ticket/$id'
+    | '/verify/$token'
   id:
     | '__root__'
     | '/'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/resultats'
     | '/sitemap.xml'
     | '/ticket/$id'
+    | '/verify/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -171,6 +183,7 @@ export interface RootRouteChildren {
   ResultatsRoute: typeof ResultatsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TicketIdRoute: typeof TicketIdRoute
+  VerifyTokenRoute: typeof VerifyTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -245,6 +258,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/verify/$token': {
+      id: '/verify/$token'
+      path: '/verify/$token'
+      fullPath: '/verify/$token'
+      preLoaderRoute: typeof VerifyTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ticket/$id': {
       id: '/ticket/$id'
       path: '/ticket/$id'
@@ -267,17 +287,8 @@ const rootRouteChildren: RootRouteChildren = {
   ResultatsRoute: ResultatsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TicketIdRoute: TicketIdRoute,
+  VerifyTokenRoute: VerifyTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
