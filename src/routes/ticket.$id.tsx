@@ -5,6 +5,7 @@ import { Download, Home, Printer, ShieldCheck, Trophy } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTickets } from "@/lib/tickets";
 import { downloadTicketPdf } from "@/lib/receipt-pdf";
+import { signTicketToken } from "@/lib/ticket-token";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/ticket/$id")({
@@ -21,8 +22,13 @@ function TicketPage() {
 
   useEffect(() => {
     if (!ticket) return;
-    QRCode.toDataURL(`LONANI|${ticket.id}|${ticket.phone}|${ticket.stake}`, { margin: 1, width: 280 })
-      .then(setQr).catch(() => undefined);
+    (async () => {
+      const token = await signTicketToken(ticket.id);
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const url = `${origin}/verify/${token}`;
+      const dataUrl = await QRCode.toDataURL(url, { margin: 1, width: 280 });
+      setQr(dataUrl);
+    })().catch(() => undefined);
   }, [ticket]);
 
   if (!ticket) {

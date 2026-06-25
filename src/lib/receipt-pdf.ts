@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import type { Ticket } from "./tickets";
+import { signTicketToken } from "./ticket-token";
 
 export async function downloadTicketPdf(t: Ticket) {
   const doc = new jsPDF({ unit: "pt", format: "a5" });
@@ -40,8 +41,10 @@ export async function downloadTicketPdf(t: Ticket) {
   line("Date tirage", new Date(t.drawDate).toLocaleString());
   line("Statut", t.status.toUpperCase());
 
-  // QR
-  const qr = await QRCode.toDataURL(`LONANI|${t.id}|${t.phone}|${t.stake}`, { margin: 1, width: 220 });
+  // QR signé → page de vérification publique
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const token = await signTicketToken(t.id);
+  const qr = await QRCode.toDataURL(`${origin}/verify/${token}`, { margin: 1, width: 220 });
   doc.addImage(qr, "PNG", w - 150, 90, 120, 120);
   doc.setFontSize(8);
   doc.setTextColor(110, 110, 110);
