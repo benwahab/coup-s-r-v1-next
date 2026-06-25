@@ -27,7 +27,8 @@ async function getKey(): Promise<CryptoKey> {
     raw = b64urlEncode(r);
     localStorage.setItem(KEY_NAME, raw);
   }
-  return crypto.subtle.importKey("raw", b64urlDecode(raw), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
+  const keyBytes = b64urlDecode(raw);
+  return crypto.subtle.importKey("raw", keyBytes.buffer.slice(keyBytes.byteOffset, keyBytes.byteOffset + keyBytes.byteLength) as ArrayBuffer, { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
 }
 
 interface Payload { tid: string; lid?: string; ts: number }
