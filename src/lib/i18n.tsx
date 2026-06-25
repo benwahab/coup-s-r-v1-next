@@ -176,6 +176,9 @@ const dict = {
     useThisGrid: "Utiliser cette grille",
     legs: "jeux",
     winningLegs: "gagnants",
+    verifyTicket: "Vérification de ticket",
+    authentic: "Ticket authentique",
+    notAuthentic: "Ticket non valide",
   },
   en: {
     appName: "LoNaNi",
@@ -349,6 +352,9 @@ const dict = {
     useThisGrid: "Use this grid",
     legs: "games",
     winningLegs: "winning",
+    verifyTicket: "Ticket verification",
+    authentic: "Authentic ticket",
+    notAuthentic: "Invalid ticket",
   },
 } as const;
 
