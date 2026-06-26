@@ -1,13 +1,18 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { Home, Trophy, Sparkles, Ticket as TicketIcon, ShieldCheck, Globe2, UserCircle2 } from "lucide-react";
+import { Home, Trophy, Sparkles, Ticket as TicketIcon, ShieldCheck, Globe2, UserCircle2, LogIn } from "lucide-react";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
+import { useAuth } from "@/lib/auth";
+import { SiteFooter } from "@/components/SiteFooter";
 import { cn } from "@/lib/utils";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useI18n();
   const { account } = useAccount();
+  const { authed, remainingLockMs, isPermanent } = useAuth();
+  const lockMs = remainingLockMs();
+  const locked = isPermanent() || lockMs > 0;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const navItems: { to: string; label: string; icon: typeof Home; exact?: boolean }[] = [
@@ -31,6 +36,26 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </Link>
           <div className="flex items-center gap-1.5">
+            <span
+              title="Interdit aux mineurs"
+              className="hidden xs:inline-flex h-7 items-center justify-center rounded-full border border-red-500/60 bg-red-500/10 px-2 font-display text-[10px] font-black uppercase tracking-wider text-red-400 sm:inline-flex"
+            >
+              -18
+            </span>
+            {!authed && (
+              <Link
+                to="/auth"
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition shadow-soft",
+                  locked
+                    ? "bg-red-500 text-white hover:bg-red-600"
+                    : "bg-gold-gradient text-[var(--gold-foreground)] shadow-gold hover:brightness-110",
+                )}
+              >
+                <LogIn className="h-3.5 w-3.5" />
+                <span>{locked ? "Bloqué" : t("login") || "Connexion"}</span>
+              </Link>
+            )}
             <Link
               to="/compte"
               className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition"
@@ -50,6 +75,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <main className="flex-1 pb-24">{children}</main>
+
+      <SiteFooter />
 
       {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-card/95 backdrop-blur shadow-elevated">
