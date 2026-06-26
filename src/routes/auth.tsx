@@ -52,9 +52,10 @@ function AuthPage() {
     abortRef.current = ac;
     // @ts-expect-error - OTPCredential is not in TS lib
     navigator.credentials.get({ otp: { transport: ["sms"] }, signal: ac.signal })
-      .then((cred: { code?: string } | null) => {
-        if (cred?.code) {
-          setOtp(cred.code);
+      .then((cred) => {
+        const code = (cred as unknown as { code?: string } | null)?.code;
+        if (code) {
+          setOtp(code);
           setAutoRead("ok");
         }
       })
