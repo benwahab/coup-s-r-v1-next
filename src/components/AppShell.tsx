@@ -53,7 +53,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
               >
                 <LogIn className="h-3.5 w-3.5" />
-                <span>{locked ? "Bloqué" : t("login") || "Connexion"}</span>
+                <span>{locked ? "Bloqué" : "Connexion"}</span>
               </Link>
             )}
             <Link
