@@ -104,13 +104,27 @@ export function BetFlow({
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       {/* Stepper */}
-      <div className="mb-5 flex items-center justify-between text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-        <span>{t("step")} {step} {t("of")} {totalSteps}</span>
-        <span className="text-primary">{gameName}</span>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => goBackFrom(step)}
+          className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> {t("back")}
+        </button>
+        <span className="text-xs font-semibold uppercase tracking-widest text-primary">{gameName}</span>
       </div>
-      <div className="mb-6 grid grid-cols-5 gap-1">
+      <div className="mb-3 flex items-center justify-between text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        <span>{t("step")} {stepIndex} {t("of")} {totalSteps}</span>
+        {!gameOpen && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+            <Clock className="h-3 w-3" /> Jeu fermé · paiement à {String(openHour).padStart(2, "0")}h
+          </span>
+        )}
+      </div>
+      <div className="mb-6 grid gap-1" style={{ gridTemplateColumns: `repeat(${totalSteps}, minmax(0, 1fr))` }}>
         {Array.from({ length: totalSteps }).map((_, i) => (
-          <div key={i} className={cn("h-1.5 rounded-full", i < step ? "bg-gold-gradient" : "bg-muted")} />
+          <div key={i} className={cn("h-1.5 rounded-full", i < stepIndex ? "bg-gold-gradient" : "bg-muted")} />
         ))}
       </div>
 
