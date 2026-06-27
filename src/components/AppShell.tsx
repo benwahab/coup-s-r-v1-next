@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { Home, Trophy, Sparkles, Ticket as TicketIcon, ShieldCheck, Globe2, UserCircle2, LogIn } from "lucide-react";
+import { Home, Trophy, Sparkles, Ticket as TicketIcon, ShieldCheck, Globe2, UserCircle2, LogIn, LogOut, Clock3 } from "lucide-react";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { useAuth } from "@/lib/auth";
@@ -10,9 +10,11 @@ import { cn } from "@/lib/utils";
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useI18n();
   const { account } = useAccount();
-  const { authed, remainingLockMs, isPermanent } = useAuth();
+  const { authed, remainingLockMs, isPermanent, logout, sessionRemainingMs, session } = useAuth();
   const lockMs = remainingLockMs();
   const locked = isPermanent() || lockMs > 0;
+  const sessMs = authed ? sessionRemainingMs() : 0;
+  const sessMin = Math.ceil(sessMs / 60000);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const navItems: { to: string; label: string; icon: typeof Home; exact?: boolean }[] = [
@@ -55,6 +57,26 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <LogIn className="h-3.5 w-3.5" />
                 <span>{locked ? "Bloqué" : "Connexion"}</span>
               </Link>
+            )}
+            {authed && (
+              <>
+                <span
+                  title={`Session expirée après 30 min d'inactivité — il reste ${sessMin} min`}
+                  className="hidden sm:inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300"
+                >
+                  <Clock3 className="h-3 w-3" />
+                  Session {sessMin}min
+                </span>
+                <button
+                  type="button"
+                  onClick={() => logout("user")}
+                  title={session ? `Connecté : +227 ${session.phone}` : ""}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-300 transition hover:bg-red-500/20"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span className="hidden xs:inline sm:inline">Déconnexion</span>
+                </button>
+              </>
             )}
             <Link
               to="/compte"

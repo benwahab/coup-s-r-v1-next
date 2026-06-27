@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Goal, Trophy, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
+import { isGameOpen } from "@/lib/schedule";
 import { PageHeader } from "@/components/AppShell";
 import { footMatches, leagues } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
@@ -80,6 +81,8 @@ function FootPage() {
         selection={list.map(([id, o]) => `${id}:${o}`)}
         picksLabel={`${picksLabel} | Cote totale ×${totalOdds.toFixed(2)}`}
         canContinue={list.length >= 1}
+        gameOpen={isGameOpen(8, 22)}
+        openHour={8}
         renderSelection={
           <div>
             <div className="mb-3 flex items-center justify-between">

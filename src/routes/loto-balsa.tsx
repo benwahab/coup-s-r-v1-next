@@ -6,7 +6,7 @@ import { BetFlow } from "@/components/BetFlow";
 import { PageHeader } from "@/components/AppShell";
 import { cn, formatFcfa, formatHour } from "@/lib/utils";
 import { lotoMultipliers, drawSchedule } from "@/lib/mock-data";
-import { drawNameForDate, nigerDateLabel } from "@/lib/schedule";
+import { drawNameForDate, nigerDateLabel, isGameOpen } from "@/lib/schedule";
 import type { TicketLeg } from "@/lib/tickets";
 
 export const Route = createFileRoute("/loto-balsa")({
@@ -139,6 +139,9 @@ function LotoPage() {
         picksLabel={`${drawName} · ${mode} ${mode === 1 ? "boule" : "boules"} : ${picksLabel}`}
         canContinue={effectiveLegs.length > 0 || picks.length === mode}
         defaultStake={stake}
+        skipStake
+        gameOpen={isGameOpen(8, 19)}
+        openHour={8}
         renderSelection={
           <div>
             <div className="mb-4">
