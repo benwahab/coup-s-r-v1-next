@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Trophy, Info } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
+import { isGameOpen } from "@/lib/schedule";
 import { PageHeader } from "@/components/AppShell";
 import { horses } from "@/lib/mock-data";
 import { pmuBets, findBet, type PmuBetId } from "@/lib/pmu-bets";
@@ -60,8 +61,8 @@ function PmuPage() {
         lockedStake={totalStake}
         defaultStake={bet.baseStake}
         minStake={bet.baseStake}
-        gameOpen={isGameOpen(PMU_OPEN, PMU_CLOSE)}
-        openHour={PMU_OPEN}
+        gameOpen={isGameOpen(8, 14)}
+        openHour={8}
         renderSelection={
           <div>
             {/* Sélecteur type de pari */}
