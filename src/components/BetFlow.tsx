@@ -1,11 +1,12 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Check, Loader2, ShieldCheck, Smartphone, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, ShieldCheck, Smartphone, X, Save, Clock, CheckCircle2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTickets, type TicketLeg } from "@/lib/tickets";
-import { regions, type GameId } from "@/lib/mock-data";
+import { regions, paymentMethods, type GameId } from "@/lib/mock-data";
 import { useAccount } from "@/lib/account";
 import { detectOperator, mockAccountHolder } from "@/lib/schedule";
+import { useDrafts } from "@/lib/drafts";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -28,6 +29,12 @@ interface Props {
   odds?: number;
   /** Si fourni, force le montant (ex. PMU = combos × baseStake) et masque les chips. */
   lockedStake?: number;
+  /** Saute l'étape "Mise" — utile pour Loto Balsa (mise fixée à l'étape 1). */
+  skipStake?: boolean;
+  /** Jeu actuellement ouvert au paiement ? Si false → uniquement sauvegarde en brouillon. */
+  gameOpen?: boolean;
+  /** Heure d'ouverture (pour mémoriser un brouillon). */
+  openHour?: number;
 }
 
 const STAKES = [300, 500, 1000, 2000, 5000, 10000];
@@ -35,10 +42,12 @@ const STAKES = [300, 500, 1000, 2000, 5000, 10000];
 export function BetFlow({
   gameId, gameName, drawDate, selection, picksLabel, canContinue, renderSelection,
   defaultStake = 500, legs, drawName, minStake = 100, maxStake = 100_000, odds = 1, lockedStake,
+  skipStake = false, gameOpen = true, openHour = 8,
 }: Props) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { addTicket } = useTickets();
+  const { addDraft } = useDrafts();
   const { account } = useAccount();
   const [step, setStep] = useState(1);
   const [stake, setStake] = useState(lockedStake ?? defaultStake);
@@ -49,16 +58,37 @@ export function BetFlow({
   const [mmError, setMmError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
   const [simpleMode, setSimpleMode] = useState(true);
+  const [paymentId, setPaymentId] = useState<string>("airtel");
+  const [saving, setSaving] = useState(false);
 
   // Si lockedStake change (PMU : nouveau type de pari ou autre nb de chevaux), on s'aligne.
   useEffect(() => {
     if (lockedStake != null) setStake(lockedStake);
   }, [lockedStake]);
 
-  // 1 = sélection ; 2 = mise (sauté si legs fournies avec stakes) ; 3 = validation ; 4 = identité ; 5 = paiement
-  const totalSteps = 5;
+  // 1 = sélection ; 2 = mise (sauté si skipStake) ; 3 = validation ; 4 = numéro+opérateur+région ; 5 = compte+mot de passe
+  const visibleSteps = useMemo(
+    () => (skipStake ? [1, 3, 4, 5] : [1, 2, 3, 4, 5]),
+    [skipStake],
+  );
+  const totalSteps = visibleSteps.length;
+  const stepIndex = Math.max(1, visibleSteps.indexOf(step) + 1);
+  const goNextFrom = (s: number) => {
+    const i = visibleSteps.indexOf(s);
+    if (i >= 0 && i < visibleSteps.length - 1) setStep(visibleSteps[i + 1]);
+  };
+  const goBackFrom = (s: number) => {
+    const i = visibleSteps.indexOf(s);
+    if (i > 0) setStep(visibleSteps[i - 1]);
+    else if (typeof window !== "undefined") window.history.back();
+  };
+
   const phoneOk = /^[+\d][\d\s]{6,}$/.test(phone);
-  const operator = phone ? detectOperator(phone) : null;
+  const operatorAuto = phone ? detectOperator(phone) : null;
+  useEffect(() => {
+    if (operatorAuto) setPaymentId(operatorAuto.id);
+  }, [operatorAuto?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const selectedPayment = paymentMethods.find((p) => p.id === paymentId) ?? paymentMethods[0];
   const holder = phone ? mockAccountHolder(phone) : "";
 
   const allLegs: TicketLeg[] = legs?.length
@@ -93,7 +123,7 @@ export function BetFlow({
       firstName: account?.firstName, lastName: account?.lastName, phone, region,
       picks: first.picks, picksLabel: allLegs.map(l => l.picksLabel).join(" | "),
       stake: totalStake,
-      payment: operator?.name ?? "Mobile Money",
+      payment: selectedPayment.name,
       drawDate: first.drawDate,
       drawName,
       legs: allLegs,
@@ -131,11 +161,11 @@ export function BetFlow({
       {step === 1 && (
         <Card>
           {renderSelection}
-          <Footer onBack={() => history.back()} onNext={() => setStep(2)} disabled={!canContinue} />
+          <Footer onBack={() => goBackFrom(1)} onNext={() => goNextFrom(1)} disabled={!canContinue} />
         </Card>
       )}
 
-      {step === 2 && (
+      {step === 2 && !skipStake && (
         <Card title={t("stake")}>
           {lockedStake != null ? (
             <p className="-mt-2 mb-3 text-sm text-muted-foreground">
@@ -177,7 +207,7 @@ export function BetFlow({
             {stake > maxStake && <p className="mt-1 text-xs text-destructive">{t("maxStake")}</p>}
           </div>
           </>)}
-          <Footer onBack={() => setStep(1)} onNext={() => setStep(3)} disabled={lockedStake == null && !legs?.length && (stake < minStake || stake > maxStake)} />
+          <Footer onBack={() => goBackFrom(2)} onNext={() => goNextFrom(2)} disabled={lockedStake == null && !legs?.length && (stake < minStake || stake > maxStake)} />
         </Card>
       )}
 
@@ -220,14 +250,14 @@ export function BetFlow({
             <input type="checkbox" checked={validated} onChange={(e) => setValidated(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
             <span className="text-sm">{t("validateSelection")}</span>
           </label>
-          <Footer onBack={() => setStep(2)} onNext={() => setStep(account ? 5 : 4)} disabled={!validated} />
+          <Footer onBack={() => goBackFrom(3)} onNext={() => goNextFrom(3)} disabled={!validated} />
         </Card>
       )}
 
       {step === 4 && (
         <Card title={t("identity")}>
           <div className="-mt-2 mb-3 flex items-center justify-between gap-2">
-            <p className="text-sm text-muted-foreground">{account ? `Bonjour ${account.firstName}, confirmez votre numéro.` : "Entrez le numéro qui sera débité."}</p>
+            <p className="text-sm text-muted-foreground">{account ? `Bonjour ${account.firstName}, confirmez votre numéro.` : "Entrez le numéro à débiter, choisissez l'opérateur puis la région."}</p>
             <button type="button" onClick={() => setSimpleMode((v) => !v)} className={cn("shrink-0 rounded-full border px-3 py-1 text-[11px] font-bold transition", simpleMode ? "border-success/40 bg-success/10 text-success" : "border-border bg-card text-muted-foreground")}>
               {simpleMode ? "🟢 Mode simple" : "Mode détaillé"}
             </button>
@@ -242,36 +272,84 @@ export function BetFlow({
               className={cn("mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 focus:border-primary outline-none", simpleMode ? "text-2xl font-extrabold tracking-wider" : "text-base")}
             />
           </label>
-          {!simpleMode && (
-            <label className="block mt-3">
-              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("region")}</span>
-              <select value={region} onChange={(e) => setRegion(e.target.value)} className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:border-primary outline-none">
-                {regions.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </label>
-          )}
-          <Footer onBack={() => setStep(3)} onNext={() => setStep(5)} disabled={!phoneOk} />
+          <div className="mt-5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Mode de paiement *</span>
+              {operatorAuto && (
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
+                  Détecté : {operatorAuto.name}
+                </span>
+              )}
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {paymentMethods.map((p) => {
+                const sel = p.id === paymentId;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setPaymentId(p.id)}
+                    className={cn(
+                      "flex min-h-14 items-center gap-2 rounded-2xl border-2 px-3 py-3 text-left font-semibold transition",
+                      sel ? "border-primary bg-primary/10 shadow-soft" : "border-border bg-card hover:border-primary/40",
+                    )}
+                  >
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-white" style={{ backgroundColor: p.color }}>
+                      <Smartphone className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 truncate text-sm">{p.name}</span>
+                    {sel && <Check className="ml-auto h-4 w-4 text-primary" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <label className="block mt-5">
+            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("region")} *</span>
+            <select value={region} onChange={(e) => setRegion(e.target.value)} className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:border-primary outline-none">
+              {regions.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </label>
+          <Footer onBack={() => goBackFrom(4)} onNext={() => goNextFrom(4)} disabled={!phoneOk || !paymentId || !region} />
         </Card>
       )}
 
       {step === 5 && (
         <Card title={t("payment")}>
-          {account && (
-            <button type="button" onClick={() => setStep(4)} className="-mt-2 mb-3 text-[11px] font-bold text-primary underline">Modifier mon numéro</button>
-          )}
+          <div className="-mt-2 mb-3 flex flex-wrap items-center gap-3 text-[11px]">
+            <button type="button" onClick={() => setStep(4)} className="font-bold text-primary underline">Modifier numéro / opérateur</button>
+            <button type="button" onClick={() => setStep(3)} className="font-bold text-primary underline">Modifier ma sélection</button>
+          </div>
           <div className="rounded-2xl border border-border bg-secondary/40 p-4">
             <div className="flex items-center gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-bold text-white" style={{ backgroundColor: operator?.color }}>
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-bold text-white" style={{ backgroundColor: selectedPayment.color }}>
                 <Smartphone className="h-5 w-5" />
               </span>
               <div className="min-w-0 flex-1">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("operator")} · {t("accountDetected")}</div>
-                <div className="font-display text-base font-extrabold truncate">{operator?.name}</div>
-                <div className="text-xs text-muted-foreground truncate">{holder} · {phone}</div>
+                <div className="font-display text-base font-extrabold truncate">{selectedPayment.name}</div>
+                <div className="text-sm font-bold truncate">{holder}</div>
+                <div className="text-xs text-muted-foreground truncate">+227 {phone} · {region}</div>
               </div>
               <button type="button" onClick={() => setStep(4)} className="text-xs font-bold text-primary underline">{t("changeNumber")}</button>
             </div>
+            <label className="mt-3 flex items-start gap-2.5 cursor-pointer rounded-xl bg-card/70 px-3 py-2">
+              <input type="checkbox" checked={validated} onChange={(e) => setValidated(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
+              <span className="text-sm">
+                Je valide que <b>{holder}</b> est bien le titulaire du compte <b>{selectedPayment.name}</b> au <b>+227 {phone}</b>.
+              </span>
+            </label>
           </div>
+
+          {!gameOpen && (
+            <div className="mt-4 flex items-start gap-2 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-3 text-amber-200">
+              <Clock className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="min-w-0 text-sm">
+                <b className="font-bold">Jeu fermé pour cette session.</b><br />
+                Les paiements rouvrent à <b>{String(openHour).padStart(2, "0")}h00</b>. Vous pouvez enregistrer votre pari en brouillon et le payer dès la réouverture.
+              </div>
+            </div>
+          )}
 
           <div className="mt-4 flex items-baseline justify-between rounded-2xl border border-gold/30 bg-gold/5 px-4 py-3">
             <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("totalStake")}</span>
@@ -284,16 +362,18 @@ export function BetFlow({
             </div>
           )}
 
-          <label className="mt-4 block">
-            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("mmPassword")} · {t("mmPasswordHint")}</span>
-            <input
-              type="password" inputMode="numeric" autoComplete="off" maxLength={6}
-              value={mmPwd}
-              onChange={(e) => { setMmPwd(e.target.value.replace(/\D/g, "")); setMmError(null); }}
-              className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-lg tracking-[0.5em] font-bold focus:border-primary outline-none"
-              placeholder="••••"
-            />
-          </label>
+          {gameOpen && (
+            <label className="mt-4 block">
+              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("mmPassword")} · {t("mmPasswordHint")}</span>
+              <input
+                type="password" inputMode="numeric" autoComplete="off" maxLength={6}
+                value={mmPwd}
+                onChange={(e) => { setMmPwd(e.target.value.replace(/\D/g, "")); setMmError(null); }}
+                className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-lg tracking-[0.5em] font-bold focus:border-primary outline-none"
+                placeholder="••••"
+              />
+            </label>
+          )}
 
           {mmError && (
             <div className="mt-3 flex items-start gap-2 rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -307,14 +387,45 @@ export function BetFlow({
             </div>
           )}
 
-          <button
-            type="button"
-            disabled={paying || mmPwd.length < 4}
-            onClick={finish}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gold-gradient px-6 py-4 text-lg font-bold text-[var(--gold-foreground)] shadow-gold transition hover:brightness-105 disabled:opacity-70"
-          >
-            {paying ? <><Loader2 className="h-5 w-5 animate-spin" /> {t("paying")}</> : <><Check className="h-5 w-5" /> {t("confirmPayment")}</>}
-          </button>
+          {gameOpen ? (
+            <button
+              type="button"
+              disabled={paying || mmPwd.length < 4 || !validated}
+              onClick={finish}
+              className="mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gold-gradient px-6 py-4 text-lg font-extrabold text-[var(--gold-foreground)] shadow-gold transition hover:brightness-105 disabled:opacity-70"
+            >
+              {paying ? <><Loader2 className="h-5 w-5 animate-spin" /> {t("paying")}</> : <><Check className="h-5 w-5" /> {t("confirmPayment")}</>}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={saving || !validated}
+              onClick={async () => {
+                setSaving(true);
+                await new Promise((r) => setTimeout(r, 400));
+                addDraft({
+                  gameId, gameName, drawName, drawDate,
+                  legs: allLegs,
+                  picksLabel: allLegs.map((l) => l.picksLabel).join(" | "),
+                  totalStake,
+                  phone, region,
+                  paymentId: selectedPayment.id, paymentName: selectedPayment.name,
+                  openHour,
+                });
+                navigate({ to: "/mes-tickets" });
+              }}
+              className="mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border-2 border-amber-400 bg-amber-500/15 px-6 py-4 text-lg font-extrabold text-amber-300 transition hover:bg-amber-500/25 disabled:opacity-70"
+            >
+              {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+              Enregistrer pour plus tard
+            </button>
+          )}
+
+          {validated && (
+            <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-emerald-400">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Compte validé
+            </p>
+          )}
 
           <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
             <ShieldCheck className="h-3.5 w-3.5" /> {t("secured")}
