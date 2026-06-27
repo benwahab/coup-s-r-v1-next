@@ -80,6 +80,8 @@ function FootPage() {
         selection={list.map(([id, o]) => `${id}:${o}`)}
         picksLabel={`${picksLabel} | Cote totale ×${totalOdds.toFixed(2)}`}
         canContinue={list.length >= 1}
+        gameOpen={isGameOpen(8, 22)}
+        openHour={8}
         renderSelection={
           <div>
             <div className="mb-3 flex items-center justify-between">

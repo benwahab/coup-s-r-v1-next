@@ -60,6 +60,8 @@ function PmuPage() {
         lockedStake={totalStake}
         defaultStake={bet.baseStake}
         minStake={bet.baseStake}
+        gameOpen={isGameOpen(PMU_OPEN, PMU_CLOSE)}
+        openHour={PMU_OPEN}
         renderSelection={
           <div>
             {/* Sélecteur type de pari */}

@@ -139,6 +139,9 @@ function LotoPage() {
         picksLabel={`${drawName} · ${mode} ${mode === 1 ? "boule" : "boules"} : ${picksLabel}`}
         canContinue={effectiveLegs.length > 0 || picks.length === mode}
         defaultStake={stake}
+        skipStake
+        gameOpen={isGameOpen(LOTO_OPEN, LOTO_CLOSE)}
+        openHour={LOTO_OPEN}
         renderSelection={
           <div>
             <div className="mb-4">
