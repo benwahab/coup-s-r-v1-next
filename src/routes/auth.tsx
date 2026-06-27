@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Phone, Lock, ShieldAlert, Loader2, ArrowRight, KeyRound, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Phone, Lock, ShieldAlert, Loader2, ArrowRight, KeyRound, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useAccount } from "@/lib/account";
 
@@ -30,11 +30,13 @@ function AuthPage() {
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [phone, setPhone] = useState(account?.phone ?? "");
   const [otp, setOtp] = useState("");
+  const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [autoRead, setAutoRead] = useState<"idle" | "listening" | "ok" | "unavailable">("idle");
   const [demoCode, setDemoCode] = useState<string | null>(null);
+  const [resendIn, setResendIn] = useState(0); // secondes restantes avant de pouvoir renvoyer
   const abortRef = useRef<AbortController | null>(null);
 
   const lockMs = remainingLockMs();
@@ -63,6 +65,13 @@ function AuthPage() {
     return () => ac.abort();
   }, [step]);
 
+  // Décompte renvoi
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const id = setInterval(() => setResendIn((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [resendIn]);
+
   const sendCode = async () => {
     setError(null);
     if (!/^\d{8}$/.test(phone)) {
@@ -71,10 +80,20 @@ function AuthPage() {
     }
     setSending(true);
     try {
-      const code = await requestOtp(phone);
-      setDemoCode(code); // démo uniquement
+      const res = await requestOtp(phone);
+      if (!res.ok) {
+        const mins = Math.ceil((res.rate.retryInMs ?? 60_000) / 60_000);
+        setError(
+          res.rate.reason === "phone"
+            ? `Trop de tentatives depuis ce numéro. Réessayez dans ~${mins} min.`
+            : `Trop de tentatives depuis cet appareil. Réessayez dans ~${mins} min.`
+        );
+        return;
+      }
+      setDemoCode(res.code); // démo uniquement
       setStep("otp");
       setInfo("Code envoyé par SMS au " + phone);
+      setResendIn(60);
     } finally { setSending(false); }
   };
 
@@ -87,7 +106,10 @@ function AuthPage() {
       setTimeout(() => navigate({ to: "/" }), 600);
       return;
     }
-    if (res.reason === "permanent") {
+    if (res.reason === "rate-limited") {
+      const mins = Math.ceil(((res.rate?.retryInMs) ?? 60_000) / 60_000);
+      setError(`Trop de tentatives. Réessayez dans ~${mins} min.`);
+    } else if (res.reason === "permanent") {
       setError("Compte bloqué. Veuillez contacter le service clientèle.");
     } else if (res.reason === "locked") {
       setError("Trop de tentatives. Compte bloqué pendant 1 heure.");
@@ -97,6 +119,24 @@ function AuthPage() {
       setError(`Code OTP incorrect. Il vous reste ${res.remaining} tentative(s).`);
     }
     setOtp("");
+  };
+
+  // Met à jour les 6 cases à partir d'une valeur OTP (paste, autofill...)
+  const setDigit = (idx: number, val: string) => {
+    const clean = val.replace(/\D/g, "");
+    if (!clean) {
+      const arr = otp.split("");
+      arr[idx] = "";
+      setOtp(arr.join("").slice(0, 6));
+      return;
+    }
+    // Si on colle plusieurs chiffres, on remplit à partir de idx
+    const arr = otp.padEnd(6, " ").split("");
+    for (let i = 0; i < clean.length && idx + i < 6; i++) arr[idx + i] = clean[i];
+    const next = arr.join("").replace(/\s/g, "").slice(0, 6);
+    setOtp(next);
+    const focusIdx = Math.min(5, idx + clean.length);
+    inputsRef.current[focusIdx]?.focus();
   };
 
   return (
@@ -203,25 +243,38 @@ function AuthPage() {
                 </div>
               )}
 
-              <label className="block">
-                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Code OTP (6 chiffres)</span>
-                <div className="mt-2 flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-3">
-                  <Lock className="h-5 w-5 text-muted-foreground" />
-                  <input
-                    autoFocus
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    pattern="[0-9]*"
-                    maxLength={6}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                    placeholder="••••••"
-                    disabled={locked}
-                    className="flex-1 bg-transparent text-center text-2xl font-extrabold tracking-[0.5em] tabular-nums outline-none"
-                  />
+              <div className="block">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold uppercase tracking-widest text-foreground">Code SMS</span>
+                  <span className="text-[11px] text-muted-foreground">6 chiffres reçus par SMS</span>
                 </div>
-              </label>
+                <div className="mt-3 grid grid-cols-6 gap-2">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => { inputsRef.current[i] = el; }}
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete={i === 0 ? "one-time-code" : "off"}
+                      maxLength={1}
+                      aria-label={`Chiffre ${i + 1} sur 6`}
+                      value={otp[i] ?? ""}
+                      disabled={locked}
+                      onChange={(e) => setDigit(i, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Backspace" && !otp[i] && i > 0) {
+                          inputsRef.current[i - 1]?.focus();
+                        }
+                      }}
+                      onPaste={(e) => {
+                        const txt = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+                        if (txt) { e.preventDefault(); setDigit(0, txt); }
+                      }}
+                      className="h-16 w-full rounded-2xl border-2 border-border bg-background text-center font-display text-3xl font-extrabold tabular-nums outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+                    />
+                  ))}
+                </div>
+              </div>
 
               {demoCode && (
                 <div className="rounded-xl border border-dashed border-border bg-secondary/30 px-3 py-2 text-center text-[11px] text-muted-foreground">
@@ -235,16 +288,19 @@ function AuthPage() {
               <button
                 onClick={submitOtp}
                 disabled={locked || otp.length !== 6}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-gold-gradient px-5 py-3.5 font-bold text-[var(--gold-foreground)] shadow-gold transition hover:brightness-110 disabled:opacity-60"
+                className="flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-gold-gradient px-5 py-4 text-base font-extrabold uppercase tracking-wide text-[var(--gold-foreground)] shadow-gold transition hover:brightness-110 disabled:opacity-60"
               >
                 Se connecter <ArrowRight className="h-4 w-4" />
               </button>
               <button
                 onClick={sendCode}
-                disabled={locked || sending}
-                className="w-full text-xs font-bold text-primary hover:underline disabled:opacity-50"
+                disabled={locked || sending || resendIn > 0}
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-border bg-background px-5 py-3 text-sm font-bold text-foreground transition hover:border-primary/50 disabled:opacity-60"
               >
-                Renvoyer le code
+                <RefreshCw className={`h-4 w-4 ${sending ? "animate-spin" : ""}`} />
+                {resendIn > 0
+                  ? `Renvoyer le code dans ${resendIn}s`
+                  : "Renvoyer le code SMS"}
               </button>
             </>
           )}
