@@ -92,7 +92,7 @@ export function detectOperator(phone: string): { id: string; name: string; color
   const first = clean.charAt(0);
   // Préfixes simulés calés sur l'écosystème Niger.
   if (["9"].includes(first)) return { id: "airtel", name: "Airtel Money", color: "#E40000" };
-  if (["8"].includes(first)) return { id: "moov", name: "Moov Money", color: "#005EB8" };
+  if (["8"].includes(first)) return { id: "moov", name: "Moov Flooz", color: "#005EB8" };
   if (["7"].includes(first)) return { id: "zamani", name: "Zamani Cash", color: "#1A6B5E" };
   if (["6"].includes(first)) return { id: "nita", name: "Nita", color: "#FFB300" };
   if (["5"].includes(first)) return { id: "amanata", name: "Amanata", color: "#0F766E" };
@@ -105,4 +105,20 @@ export function mockAccountHolder(phone: string): string {
   const noms = ["M. Souley", "Mme Aïcha", "M. Oumarou", "Mme Hadiza", "M. Boubacar", "Mme Mariama", "M. Hassane", "Mme Fatima"];
   const sum = phone.replace(/\D/g, "").split("").reduce((a, c) => a + Number(c), 0);
   return noms[sum % noms.length];
+}
+
+/** Indique si un jeu est ouvert à la prise de paris à l'instant t (Niger TZ). */
+export function isGameOpen(openHour: number, closeHour: number, now: Date = new Date()): boolean {
+  const p = nigerParts(now);
+  const open = nigerInstant(p.year, p.month, p.day, openHour);
+  const close = nigerInstant(p.year, p.month, p.day, closeHour);
+  return now >= open && now < close;
+}
+
+/** Renvoie l'instant de réouverture (lendemain à openHour) si actuellement fermé. */
+export function nextOpenInstant(openHour: number, now: Date = new Date()): Date {
+  const p = nigerParts(now);
+  const todayOpen = nigerInstant(p.year, p.month, p.day, openHour);
+  if (now < todayOpen) return todayOpen;
+  return new Date(todayOpen.getTime() + 24 * 3600 * 1000);
 }
