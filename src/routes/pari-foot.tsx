@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Goal, Trophy, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
+import { isGameOpen } from "@/lib/schedule";
 import { PageHeader } from "@/components/AppShell";
 import { footMatches, leagues } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
