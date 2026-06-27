@@ -21,6 +21,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { TicketsProvider } from "@/lib/tickets";
 import { AccountProvider } from "@/lib/account";
 import { AuthProvider } from "@/lib/auth";
+import { DraftsProvider } from "@/lib/drafts";
 import { AppShell } from "@/components/AppShell";
 import { Splash } from "@/components/Splash";
 
@@ -133,11 +134,13 @@ function RootComponent() {
         <AccountProvider>
           <AuthProvider>
             <TicketsProvider>
-              <Splash />
-              <AppShell>
-                {/* Required: nested routes render here. */}
-                <Outlet />
-              </AppShell>
+              <DraftsProvider>
+                <Splash />
+                <AppShell>
+                  {/* Required: nested routes render here. */}
+                  <Outlet />
+                </AppShell>
+              </DraftsProvider>
             </TicketsProvider>
           </AuthProvider>
         </AccountProvider>
