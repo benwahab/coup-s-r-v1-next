@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Phone, Lock, ShieldAlert, Loader2, ArrowRight, KeyRound, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
+import { Phone, ShieldAlert, Loader2, ArrowRight, KeyRound, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useAccount } from "@/lib/account";
 
@@ -200,7 +200,7 @@ function AuthPage() {
                 onClick={sendCode}
                 disabled={locked || sending || phone.length !== 8}
                 className={[
-                  "flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 font-bold transition",
+                  "flex min-h-14 w-full items-center justify-center gap-2 rounded-full px-5 py-4 text-base font-extrabold uppercase tracking-wide transition",
                   locked
                     ? "bg-red-500 text-white"
                     : "bg-gold-gradient text-[var(--gold-foreground)] shadow-gold hover:brightness-110",
