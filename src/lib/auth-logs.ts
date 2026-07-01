@@ -27,6 +27,14 @@ const MAX_PER_PHONE = 5;
 const MAX_PER_IP = 10;
 const MAX_LOG = 200;
 
+// Fenêtres additionnelles (token-bucket-like)
+const MIN_WINDOW_MS = 60_000;
+const HOUR_WINDOW_MS = 60 * 60_000;
+const MAX_PER_PHONE_1MIN = 3;
+const MAX_PER_PHONE_1H = 20;
+const MAX_PER_IP_1MIN = 10;
+const MAX_PER_IP_1H = 60;
+
 function isBrowser() { return typeof window !== "undefined"; }
 
 export function getMockIp(): string {
@@ -65,6 +73,12 @@ export function checkRate(phone: string): RateCheck {
   const a = loadAttempts();
   const ph = gc(a.byPhone[phone] ?? [], now);
   const ipList = gc(a.byIp[ip] ?? [], now);
+  // Micro-fenêtre 1 min (anti-flood)
+  const ph1 = ph.filter((t) => now - t < MIN_WINDOW_MS);
+  const ip1 = ipList.filter((t) => now - t < MIN_WINDOW_MS);
+  if (ph1.length >= MAX_PER_PHONE_1MIN) return { ok: false, reason: "phone", retryInMs: MIN_WINDOW_MS - (now - ph1[0]) };
+  if (ip1.length >= MAX_PER_IP_1MIN) return { ok: false, reason: "ip", retryInMs: MIN_WINDOW_MS - (now - ip1[0]) };
+  // Fenêtre 15 min existante
   if (ph.length >= MAX_PER_PHONE) {
     const retryInMs = WINDOW_MS - (now - ph[0]);
     return { ok: false, reason: "phone", retryInMs };
@@ -73,6 +87,11 @@ export function checkRate(phone: string): RateCheck {
     const retryInMs = WINDOW_MS - (now - ipList[0]);
     return { ok: false, reason: "ip", retryInMs };
   }
+  // Fenêtre 1 h (protection long terme)
+  const phH = (a.byPhone[phone] ?? []).filter((t) => now - t < HOUR_WINDOW_MS);
+  const ipH = (a.byIp[ip] ?? []).filter((t) => now - t < HOUR_WINDOW_MS);
+  if (phH.length >= MAX_PER_PHONE_1H) return { ok: false, reason: "phone", retryInMs: HOUR_WINDOW_MS - (now - phH[0]) };
+  if (ipH.length >= MAX_PER_IP_1H) return { ok: false, reason: "ip", retryInMs: HOUR_WINDOW_MS - (now - ipH[0]) };
   return { ok: true };
 }
 
@@ -107,4 +126,9 @@ export function readAuthLog(): AuthEvent[] {
   } catch { return []; }
 }
 
-export const RATE_LIMITS = { WINDOW_MS, MAX_PER_PHONE, MAX_PER_IP } as const;
+export const RATE_LIMITS = {
+  WINDOW_MS, MAX_PER_PHONE, MAX_PER_IP,
+  MIN_WINDOW_MS, HOUR_WINDOW_MS,
+  MAX_PER_PHONE_1MIN, MAX_PER_PHONE_1H,
+  MAX_PER_IP_1MIN, MAX_PER_IP_1H,
+} as const;

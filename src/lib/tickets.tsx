@@ -61,7 +61,17 @@ export function TicketsProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return;
     const raw = localStorage.getItem(KEY);
     if (raw) {
-      try { setTickets(JSON.parse(raw)); } catch { /* ignore */ }
+      try {
+        const parsed: Ticket[] = JSON.parse(raw);
+        // Purge automatique après 7 jours (on conserve les gagnants non payés pour permettre l'encaissement).
+        const now = Date.now();
+        const kept = parsed.filter((t) => {
+          const age = now - new Date(t.createdAt).getTime();
+          if (age < 7 * 86_400_000) return true;
+          return t.status === "winning"; // gagnants non-encaissés conservés
+        });
+        setTickets(kept);
+      } catch { /* ignore */ }
     }
   }, []);
   useEffect(() => {

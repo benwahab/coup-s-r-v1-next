@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ShieldCheck, TrendingUp, Users, Wallet, Trophy, Send, FileText, Download, MessageCircle, Check, BellRing, Sparkles, MapPin, Circle, BarChart3 } from "lucide-react";
+import { ShieldCheck, TrendingUp, Users, Wallet, Trophy, Send, Download, MessageCircle, Check, BellRing, Sparkles, MapPin, Circle, BarChart3, LogIn, LifeBuoy, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useTickets } from "@/lib/tickets";
@@ -7,6 +7,9 @@ import { PageHeader } from "@/components/AppShell";
 import { cn, formatFcfa, formatDate } from "@/lib/utils";
 import { computeBallStats, computePlayerStats, computeRegionStats, generateSimTickets } from "@/lib/mock-stats";
 import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
+import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
+import { useDrafts } from "@/lib/drafts";
+import { listIntents } from "@/lib/payments";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — LoNaNi" }] }),
@@ -20,11 +23,12 @@ const statusColor: Record<string, string> = {
   paid: "bg-success text-success-foreground",
 };
 
-type Tab = "overview" | "players" | "regions" | "balls" | "ops";
+type Tab = "overview" | "players" | "regions" | "balls" | "ops" | "logs" | "claims";
 
 function AdminPage() {
   const { t } = useI18n();
   const { tickets, updateStatus, updateLegStatus } = useTickets();
+  const { drafts, removeDraft } = useDrafts();
   const sims = useMemo(() => generateSimTickets(260), []);
   const [tab, setTab] = useState<Tab>("overview");
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -139,7 +143,46 @@ function AdminPage() {
     { id: "regions", label: t("regions"), icon: MapPin },
     { id: "balls", label: t("ballsStats"), icon: Circle },
     { id: "ops", label: "SMS & Encaissements", icon: Send },
+    { id: "logs", label: "Journal connexions", icon: LogIn },
+    { id: "claims", label: "Réclamations", icon: LifeBuoy },
   ];
+
+  // === Journal de connexions ===
+  const [authLog, setAuthLog] = useState<AuthEvent[]>([]);
+  useEffect(() => { setAuthLog(readAuthLog()); }, [tab]);
+  const [logPhone, setLogPhone] = useState("");
+  const [logIp, setLogIp] = useState("");
+  const [logKind, setLogKind] = useState<AuthEventKind | "all">("all");
+  const filteredLog = useMemo(() => authLog.filter((e) =>
+    (logKind === "all" || e.kind === logKind) &&
+    (!logPhone || e.phone.includes(logPhone)) &&
+    (!logIp || e.ip.includes(logIp)),
+  ), [authLog, logPhone, logIp, logKind]);
+
+  const exportLogsCsv = () => {
+    const header = ["horodatage", "telephone", "ip", "evenement", "note"];
+    const body = filteredLog.map((e) => [
+      new Date(e.at).toISOString(), e.phone, e.ip, e.kind, `"${(e.note ?? "").replace(/"/g, "''")}"`,
+    ].join(","));
+    const csv = [header.join(","), ...body].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `lonani-auth-logs.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // === Réclamations ===
+  const [claimPhone, setClaimPhone] = useState("");
+  const claim = useMemo(() => {
+    if (!claimPhone) return null;
+    const norm = claimPhone.replace(/\s/g, "");
+    return {
+      tickets: tickets.filter((t) => t.phone.replace(/\s/g, "").includes(norm)),
+      drafts: drafts.filter((d) => (d.phone ?? "").replace(/\s/g, "").includes(norm)),
+      authEvents: authLog.filter((e) => e.phone.replace(/\s/g, "").includes(norm)).slice(0, 20),
+      intents: listIntents().filter((i) => i.phone.replace(/\s/g, "").includes(norm)).slice(0, 20),
+    };
+  }, [claimPhone, tickets, drafts, authLog]);
 
   return (
     <>
@@ -423,6 +466,168 @@ function AdminPage() {
               </section>
             </div>
           </>
+        )}
+
+        {tab === "logs" && (
+          <section className="mt-5 rounded-3xl border border-border bg-card shadow-soft">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
+              <h2 className="font-display text-lg font-bold">Journal des connexions</h2>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <input value={logPhone} onChange={(e) => setLogPhone(e.target.value)} placeholder="Filtrer numéro" className="rounded-full border border-border bg-background px-3 py-1 text-[11px]" />
+                <input value={logIp} onChange={(e) => setLogIp(e.target.value)} placeholder="Filtrer IP" className="rounded-full border border-border bg-background px-3 py-1 text-[11px]" />
+                <select value={logKind} onChange={(e) => setLogKind(e.target.value as AuthEventKind | "all")} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]">
+                  <option value="all">Tous</option>
+                  <option value="otp-request">OTP demandé</option>
+                  <option value="verify-ok">Vérification OK</option>
+                  <option value="verify-fail">Vérification échec</option>
+                  <option value="locked">Verrouillage</option>
+                  <option value="rate-limited">Rate limit</option>
+                  <option value="logout">Déconnexion</option>
+                  <option value="session-expired">Session expirée</option>
+                </select>
+                <button onClick={exportLogsCsv} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/40">
+                  <Download className="h-3.5 w-3.5" /> Export CSV
+                </button>
+              </div>
+            </div>
+            {filteredLog.length === 0 ? (
+              <p className="px-5 py-10 text-center text-sm text-muted-foreground">Aucun événement — les tentatives de connexion apparaîtront ici en temps réel.</p>
+            ) : (
+              <div className="max-h-[420px] overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-secondary/60 backdrop-blur text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2 text-left">Horodatage</th>
+                      <th className="px-3 py-2 text-left">Numéro</th>
+                      <th className="px-3 py-2 text-left">IP</th>
+                      <th className="px-3 py-2 text-left">Événement</th>
+                      <th className="px-3 py-2 text-left">Note</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredLog.slice(0, 200).map((e, i) => (
+                      <tr key={i}>
+                        <td className="px-3 py-2 tabular-nums text-muted-foreground">{new Date(e.at).toLocaleString("fr-FR", { hour12: false })}</td>
+                        <td className="px-3 py-2 font-mono">{e.phone || "—"}</td>
+                        <td className="px-3 py-2 font-mono text-muted-foreground">{e.ip}</td>
+                        <td className="px-3 py-2"><span className={cn(
+                          "rounded-full px-2 py-0.5 text-[10px] font-bold",
+                          e.kind === "verify-ok" ? "bg-success/15 text-success" :
+                          e.kind === "verify-fail" ? "bg-destructive/15 text-destructive" :
+                          e.kind === "locked" || e.kind === "rate-limited" ? "bg-amber-500/15 text-amber-400" :
+                          "bg-secondary text-muted-foreground",
+                        )}>{e.kind}</span></td>
+                        <td className="px-3 py-2 text-muted-foreground">{e.note ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        )}
+
+        {tab === "claims" && (
+          <section className="mt-5 space-y-4">
+            <div className="rounded-3xl border border-border bg-card p-5 shadow-soft">
+              <h2 className="font-display text-lg font-bold">Réclamations — recherche par numéro</h2>
+              <p className="text-xs text-muted-foreground">Saisissez le numéro du joueur pour consulter l'ensemble de son historique (tickets, brouillons, paiements, connexions) et intervenir.</p>
+              <div className="mt-3 flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input value={claimPhone} onChange={(e) => setClaimPhone(e.target.value)} placeholder="ex. +227 90 12 34 56" className="w-full rounded-2xl border border-border bg-background pl-10 pr-3 py-2.5 text-sm" />
+                </div>
+                {claimPhone && (
+                  <button onClick={() => setClaimPhone("")} className="rounded-full border border-border bg-background p-2 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
+                )}
+              </div>
+            </div>
+
+            {claim && (
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="rounded-3xl border border-border bg-card shadow-soft">
+                  <div className="border-b border-border px-5 py-3 flex items-center justify-between">
+                    <h3 className="font-display font-bold">Tickets ({claim.tickets.length})</h3>
+                  </div>
+                  {claim.tickets.length === 0 ? <p className="p-5 text-xs text-muted-foreground">Aucun ticket trouvé.</p> : (
+                    <ul className="divide-y divide-border max-h-72 overflow-y-auto">
+                      {claim.tickets.map((tk) => (
+                        <li key={tk.id} className="p-3 text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono font-bold">{tk.id}</span>
+                            <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", statusColor[tk.status])}>{tk.status}</span>
+                          </div>
+                          <div className="mt-0.5 text-muted-foreground truncate">{tk.gameName} · {formatFcfa(tk.stake)} FCFA</div>
+                          <div className="mt-1 flex gap-1.5">
+                            <button onClick={() => updateStatus(tk.id, "paid", tk.prize ?? tk.stake * 12)} className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-bold text-success">Marquer payé</button>
+                            <button onClick={() => updateStatus(tk.id, "losing")} className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold text-destructive">Annuler</button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="rounded-3xl border border-border bg-card shadow-soft">
+                  <div className="border-b border-border px-5 py-3">
+                    <h3 className="font-display font-bold">Brouillons ({claim.drafts.length})</h3>
+                  </div>
+                  {claim.drafts.length === 0 ? <p className="p-5 text-xs text-muted-foreground">Aucun brouillon.</p> : (
+                    <ul className="divide-y divide-border max-h-72 overflow-y-auto">
+                      {claim.drafts.map((d) => (
+                        <li key={d.id} className="p-3 text-xs flex items-center justify-between">
+                          <div className="min-w-0">
+                            <div className="font-mono font-bold">{d.id}</div>
+                            <div className="text-muted-foreground truncate">{d.gameName} · {formatFcfa(d.totalStake)} FCFA</div>
+                          </div>
+                          <button onClick={() => removeDraft(d.id)} className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold text-destructive">Supprimer</button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="rounded-3xl border border-border bg-card shadow-soft">
+                  <div className="border-b border-border px-5 py-3">
+                    <h3 className="font-display font-bold">Événements auth ({claim.authEvents.length})</h3>
+                  </div>
+                  {claim.authEvents.length === 0 ? <p className="p-5 text-xs text-muted-foreground">Aucun événement récent.</p> : (
+                    <ul className="divide-y divide-border max-h-72 overflow-y-auto">
+                      {claim.authEvents.map((e, i) => (
+                        <li key={i} className="p-3 text-xs flex items-center justify-between gap-2">
+                          <span className="text-muted-foreground">{new Date(e.at).toLocaleString("fr-FR", { hour12: false })}</span>
+                          <span className="font-bold">{e.kind}</span>
+                          <span className="font-mono text-muted-foreground">{e.ip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="rounded-3xl border border-border bg-card shadow-soft">
+                  <div className="border-b border-border px-5 py-3">
+                    <h3 className="font-display font-bold">Paiements ({claim.intents.length})</h3>
+                  </div>
+                  {claim.intents.length === 0 ? <p className="p-5 text-xs text-muted-foreground">Aucun paiement enregistré.</p> : (
+                    <ul className="divide-y divide-border max-h-72 overflow-y-auto">
+                      {claim.intents.map((p) => (
+                        <li key={p.txRef} className="p-3 text-xs flex items-center justify-between gap-2">
+                          <span className="font-mono">{p.txRef}</span>
+                          <span className="tabular-nums font-bold">{formatFcfa(p.amount)} FCFA</span>
+                          <span className={cn(
+                            "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                            p.status === "confirmed" ? "bg-success/15 text-success" :
+                            p.status === "failed" ? "bg-destructive/15 text-destructive" :
+                            "bg-secondary text-muted-foreground",
+                          )}>{p.status}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
         )}
 
       </div>
