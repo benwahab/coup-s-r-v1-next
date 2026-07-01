@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Check, Loader2, ShieldCheck, Smartphone, X, Save, Clock, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, ShieldCheck, Smartphone, X, Save, Clock, CheckCircle2, Zap } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTickets, type TicketLeg } from "@/lib/tickets";
 import { regions, paymentMethods, type GameId } from "@/lib/mock-data";
 import { useAccount } from "@/lib/account";
 import { detectOperator, mockAccountHolder } from "@/lib/schedule";
 import { useDrafts } from "@/lib/drafts";
+import { beginPayment, checkDuplicate, confirmPayment, failPayment, paymentKey } from "@/lib/payments";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -49,6 +50,9 @@ export function BetFlow({
   const { addTicket } = useTickets();
   const { addDraft } = useDrafts();
   const { account } = useAccount();
+  // Mode express : compte complet + jeu ouvert → parcours 3 clics (sélection → validation → mot de passe)
+  const accountComplete = !!(account && account.phone && account.region);
+  const [expressMode, setExpressMode] = useState(accountComplete);
   const [step, setStep] = useState(1);
   const [stake, setStake] = useState(lockedStake ?? defaultStake);
   const [phone, setPhone] = useState(account?.phone ?? "");
@@ -67,10 +71,11 @@ export function BetFlow({
   }, [lockedStake]);
 
   // 1 = sélection ; 2 = mise (sauté si skipStake) ; 3 = validation ; 4 = numéro+opérateur+région ; 5 = compte+mot de passe
-  const visibleSteps = useMemo(
-    () => (skipStake ? [1, 3, 4, 5] : [1, 2, 3, 4, 5]),
-    [skipStake],
-  );
+  // Mode express : on saute Mise (déjà connue) + Identité (déjà en compte) → 3 écrans max.
+  const visibleSteps = useMemo(() => {
+    if (expressMode && accountComplete) return skipStake ? [1, 3, 5] : [1, 3, 5];
+    return skipStake ? [1, 3, 4, 5] : [1, 2, 3, 4, 5];
+  }, [skipStake, expressMode, accountComplete]);
   const totalSteps = visibleSteps.length;
   const stepIndex = Math.max(1, visibleSteps.indexOf(step) + 1);
   const goNextFrom = (s: number) => {
@@ -91,6 +96,9 @@ export function BetFlow({
   const selectedPayment = paymentMethods.find((p) => p.id === paymentId) ?? paymentMethods[0];
   const holder = phone ? mockAccountHolder(phone) : "";
 
+  // État anti-doublon pour bloquer un double-clic ou une soumission déjà encaissée.
+  const [duplicateMsg, setDuplicateMsg] = useState<string | null>(null);
+
   const allLegs: TicketLeg[] = legs?.length
     ? legs
     : [{
@@ -108,10 +116,26 @@ export function BetFlow({
 
   const finish = async () => {
     setMmError(null);
+    setDuplicateMsg(null);
     if (!/^\d{4,6}$/.test(mmPwd)) { setMmError(t("mmPasswordHint")); return; }
+    // 1) Anti-doublon : même joueur, même mise, même sélection → refus
+    const selectionKey = allLegs.map((l) => `${l.gameId}#${l.picksLabel}`).join("||");
+    const pk = paymentKey({ phone, amount: totalStake, gameId, selection: selectionKey });
+    const dup = checkDuplicate(pk);
+    if (dup.duplicate) {
+      setDuplicateMsg(
+        dup.intent?.status === "confirmed"
+          ? `Paiement déjà encaissé (${dup.intent.txRef}). Consultez « Mes tickets ».`
+          : `Un paiement identique est déjà en cours. Patientez quelques secondes.`,
+      );
+      return;
+    }
+    // 2) On ouvre l'intention (verrou fenêtre 30s)
+    const intent = beginPayment({ key: pk, gameId, phone, amount: totalStake });
     setPaying(true);
     await new Promise((r) => setTimeout(r, 1400));
     if (!simulatedFundsOk) {
+      failPayment(intent.txRef);
       setPaying(false);
       setMmError(t("insufficientFunds"));
       return;
@@ -123,11 +147,12 @@ export function BetFlow({
       firstName: account?.firstName, lastName: account?.lastName, phone, region,
       picks: first.picks, picksLabel: allLegs.map(l => l.picksLabel).join(" | "),
       stake: totalStake,
-      payment: selectedPayment.name,
+      payment: `${selectedPayment.name} · ${intent.txRef}`,
       drawDate: first.drawDate,
       drawName,
       legs: allLegs,
     });
+    confirmPayment(intent.txRef);
     navigate({ to: "/ticket/$id", params: { id: ticket.id } });
   };
 
@@ -142,7 +167,24 @@ export function BetFlow({
         >
           <ArrowLeft className="h-3.5 w-3.5" /> {t("back")}
         </button>
-        <span className="text-xs font-semibold uppercase tracking-widest text-primary">{gameName}</span>
+        <div className="flex items-center gap-2">
+          {accountComplete && (
+            <button
+              type="button"
+              onClick={() => setExpressMode((v) => !v)}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold transition",
+                expressMode
+                  ? "border-gold/60 bg-gold/15 text-gold shadow-gold"
+                  : "border-border bg-card text-muted-foreground",
+              )}
+              title="Parcours en 3 clics : validation → paiement"
+            >
+              <Zap className="h-3 w-3" /> {expressMode ? "Express 3 clics" : "Mode avancé"}
+            </button>
+          )}
+          <span className="text-xs font-semibold uppercase tracking-widest text-primary">{gameName}</span>
+        </div>
       </div>
       <div className="mb-3 flex items-center justify-between text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         <span>{t("step")} {stepIndex} {t("of")} {totalSteps}</span>
