@@ -429,6 +429,16 @@ export function BetFlow({
             </div>
           )}
 
+          {duplicateMsg && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+              <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <div className="font-bold">Paiement bloqué (anti-doublon)</div>
+                <div className="text-xs">{duplicateMsg}</div>
+              </div>
+            </div>
+          )}
+
           {gameOpen ? (
             <button
               type="button"
