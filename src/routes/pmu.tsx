@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Trophy, Info } from "lucide-react";
+import { Trophy, Info, Plus, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
 import { isGameOpen } from "@/lib/schedule";
 import { PageHeader } from "@/components/AppShell";
 import { horses } from "@/lib/mock-data";
 import { pmuBets, findBet, type PmuBetId } from "@/lib/pmu-bets";
+import type { TicketLeg } from "@/lib/tickets";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/pmu")({
@@ -25,6 +26,7 @@ function PmuPage() {
   const { t } = useI18n();
   const [betId, setBetId] = useState<PmuBetId>("tierce_d");
   const [picks, setPicks] = useState<number[]>([]);
+  const [cart, setCart] = useState<TicketLeg[]>([]);
   const bet = findBet(betId);
   const partants = useMemo(() => horses.filter((h) => h.status === "partant"), []);
   const nonPartants = useMemo(() => horses.filter((h) => h.status === "non-partant"), []);
@@ -45,7 +47,34 @@ function PmuPage() {
   const picksLabel = picks.length
     ? `[${bet.short}] ${picks.map((n, i) => `${bet.ordered ? `${i + 1}. ` : ""}${n}. ${horses.find((h) => h.number === n)?.name ?? ""}`).join(" • ")}`
     : `[${bet.short}] —`;
-  const canContinue = picks.length >= bet.minPicks && picks.length <= bet.maxPicks;
+  const currentValid = picks.length >= bet.minPicks && picks.length <= bet.maxPicks;
+  const canContinue = currentValid || cart.length > 0;
+
+  const drawDateIso = useMemo(() => new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), []);
+
+  const addCurrentToCart = () => {
+    if (!currentValid) return;
+    const leg: TicketLeg = {
+      legId: `${Date.now()}-${cart.length}`,
+      gameId: "pmu", gameName: "PMU",
+      picks: [...picks], picksLabel, stake: totalStake,
+      drawDate: drawDateIso, status: "pending",
+    };
+    setCart((p) => [...p, leg]);
+    setPicks([]);
+  };
+  const removeFromCart = (id: string) => setCart((p) => p.filter((l) => l.legId !== id));
+
+  const liveLeg: TicketLeg | null = currentValid ? {
+    legId: `cur-${Date.now()}`,
+    gameId: "pmu", gameName: "PMU",
+    picks: [...picks], picksLabel, stake: totalStake,
+    drawDate: drawDateIso, status: "pending",
+  } : null;
+  const effectiveLegs: TicketLeg[] = cart.length > 0
+    ? (liveLeg ? [...cart, liveLeg] : cart)
+    : [];
+  const cartTotal = effectiveLegs.reduce((s, l) => s + l.stake, 0);
 
   return (
     <>
@@ -53,12 +82,13 @@ function PmuPage() {
       <BetFlow
         gameId="pmu"
         gameName="PMU"
-        drawDate={new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString()}
+        drawDate={drawDateIso}
+        legs={effectiveLegs.length ? effectiveLegs : undefined}
         selection={picks}
         picksLabel={picksLabel}
         canContinue={canContinue}
         odds={bet.odds}
-        lockedStake={totalStake}
+        lockedStake={effectiveLegs.length ? undefined : totalStake}
         defaultStake={bet.baseStake}
         minStake={bet.baseStake}
         gameOpen={isGameOpen(8, 14)}
