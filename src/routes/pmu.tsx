@@ -197,6 +197,36 @@ function PmuPage() {
               </div>
             </div>
 
+            {/* Panier multi-tirages PMU */}
+            <div className="mt-4 rounded-2xl border border-gold/30 bg-gold/5 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs font-bold uppercase tracking-widest text-gold">
+                  Panier · {cart.length} tirage{cart.length > 1 ? "s" : ""}
+                </div>
+                <button type="button" onClick={addCurrentToCart} disabled={!currentValid}
+                  className="inline-flex items-center gap-1 rounded-full bg-gold-gradient px-3 py-1.5 text-[11px] font-bold text-[var(--gold-foreground)] shadow-gold disabled:opacity-40">
+                  <Plus className="h-3 w-3" /> Ajouter ce pari
+                </button>
+              </div>
+              {cart.length > 0 && (
+                <ul className="mt-2 space-y-1.5">
+                  {cart.map((l, i) => (
+                    <li key={l.legId} className="flex items-center justify-between gap-2 rounded-lg bg-background/50 px-2.5 py-1.5 text-xs">
+                      <span className="min-w-0 truncate"><b className="text-primary mr-1">T{i + 1}</b>{l.picksLabel}</span>
+                      <span className="shrink-0 tabular-nums font-bold">{l.stake.toLocaleString()}</span>
+                      <button onClick={() => removeFromCart(l.legId)} className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {cartTotal > 0 && (
+                <div className="mt-2 flex items-center justify-between border-t border-gold/20 pt-2 text-xs">
+                  <span className="font-bold uppercase tracking-widest text-muted-foreground">Mise totale</span>
+                  <span className="font-display text-base font-extrabold tabular-nums text-gold">{cartTotal.toLocaleString()} FCFA</span>
+                </div>
+              )}
+            </div>
+
             {!canContinue && picks.length < bet.minPicks && (
               <p className="mt-3 text-sm text-muted-foreground">Sélectionnez au moins <b>{bet.minPicks}</b> cheval{bet.minPicks > 1 ? "x" : ""}.</p>
             )}
