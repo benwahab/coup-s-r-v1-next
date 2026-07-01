@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { TicketLeg } from "./tickets";
 import type { GameId } from "./mock-data";
+import { currentSessionId } from "./session-window";
 
 /** Un brouillon = pari sauvegardé pour paiement ultérieur (jeu fermé au moment du choix). */
 export interface Draft {
@@ -19,6 +20,8 @@ export interface Draft {
   savedAt: string;
   /** Heure d'ouverture du jeu (pour calcul du déblocage paiement). */
   openHour: number;
+  /** Session de jeu de rattachement — purge auto quand une nouvelle s'ouvre. */
+  sessionId?: string;
 }
 
 const KEY = "lonani.drafts";
@@ -36,7 +39,15 @@ export function DraftsProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return;
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) setDrafts(JSON.parse(raw));
+      if (raw) {
+        const parsed: Draft[] = JSON.parse(raw);
+        // Purge auto : tout brouillon rattaché à une session révolue disparaît.
+        const kept = parsed.filter((d) => {
+          if (!d.sessionId) return true; // legacy, on garde
+          return d.sessionId === currentSessionId(d.gameId);
+        });
+        setDrafts(kept);
+      }
     } catch { /* ignore */ }
   }, []);
   useEffect(() => {
@@ -45,7 +56,7 @@ export function DraftsProvider({ children }: { children: ReactNode }) {
 
   const addDraft: Ctx["addDraft"] = (d) => {
     const id = `DR-${Math.floor(Math.random() * 9_000_000) + 1_000_000}`;
-    const draft: Draft = { ...d, id, savedAt: new Date().toISOString() };
+    const draft: Draft = { ...d, id, savedAt: new Date().toISOString(), sessionId: currentSessionId(d.gameId) };
     setDrafts((p) => [draft, ...p]);
     return draft;
   };
