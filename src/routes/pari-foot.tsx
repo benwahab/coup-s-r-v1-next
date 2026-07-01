@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Goal, Trophy, X } from "lucide-react";
+import { Goal, Trophy, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
 import { isGameOpen } from "@/lib/schedule";
 import { PageHeader } from "@/components/AppShell";
 import { footMatches, leagues } from "@/lib/mock-data";
+import { marketsForMatch, oddForPick, labelForPick } from "@/lib/foot-markets";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/pari-foot")({
@@ -20,27 +21,38 @@ export const Route = createFileRoute("/pari-foot")({
   component: FootPage,
 });
 
-type Outcome = "1" | "X" | "2";
-
 function FootPage() {
   const { t } = useI18n();
-  const [picks, setPicks] = useState<Record<string, Outcome>>({});
+  // clé pick = "matchId:marketId:optionKey" (permet marchés multiples par match)
+  const [picks, setPicks] = useState<Record<string, true>>({});
   const [league, setLeague] = useState<string>("all");
+  const [openMatch, setOpenMatch] = useState<string | null>(null);
+  const [mode, setMode] = useState<"combi" | "simple">("combi");
 
-  const select = (id: string, o: Outcome) => setPicks((p) => ({ ...p, [id]: o }));
-  const removePick = (id: string) => setPicks((p) => { const { [id]: _, ...rest } = p; return rest; });
+  const togglePick = (key: string) => setPicks((p) => {
+    if (p[key]) { const { [key]: _, ...rest } = p; return rest; }
+    return { ...p, [key]: true };
+  });
+  const removePick = (key: string) => setPicks((p) => { const { [key]: _, ...rest } = p; return rest; });
 
-  const list = Object.entries(picks);
+  const list = Object.keys(picks);
   const picksLabel = list.length
-    ? list.map(([id, o]) => {
-        const m = footMatches.find((x) => x.id === id)!;
-        return `${m.home} v ${m.away}: ${o}`;
+    ? list.map((k) => {
+        const [mid] = k.split(":");
+        const m = footMatches.find((x) => x.id === mid);
+        return m ? labelForPick(k, m) : k;
       }).join(" • ")
     : "—";
 
   const totalOdds = useMemo(
-    () => list.reduce((acc, [id, o]) => acc * (footMatches.find((m) => m.id === id)?.odds[o] ?? 1), 1),
-    [list],
+    () => mode === "combi"
+      ? list.reduce((acc, k) => {
+          const [mid] = k.split(":");
+          const m = footMatches.find((x) => x.id === mid);
+          return acc * (m ? oddForPick(k, m) : 1);
+        }, 1)
+      : 1,
+    [list, mode],
   );
 
   const visibleMatches = league === "all" ? footMatches : footMatches.filter((m) => m.league === league);
@@ -78,18 +90,29 @@ function FootPage() {
         gameId="foot"
         gameName="Pari Foot"
         drawDate={new Date(Date.now() + 1000 * 60 * 60 * 36).toISOString()}
-        selection={list.map(([id, o]) => `${id}:${o}`)}
-        picksLabel={`${picksLabel} | Cote totale ×${totalOdds.toFixed(2)}`}
+        selection={list}
+        picksLabel={`[${mode === "combi" ? "Combiné" : "Simple"}] ${picksLabel} | Cote ×${totalOdds.toFixed(2)}`}
         canContinue={list.length >= 1}
         gameOpen={isGameOpen(8, 22)}
         openHour={8}
+        odds={totalOdds}
         renderSelection={
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-xl font-bold">{t("selectMatches")}</h2>
-              <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold tabular-nums">
-                {list.length} {t("picks")}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <div className="flex rounded-full border border-border bg-card p-0.5">
+                  {(["combi", "simple"] as const).map((mo) => (
+                    <button key={mo} onClick={() => setMode(mo)} className={cn(
+                      "rounded-full px-2.5 py-1 text-[10px] font-bold uppercase transition",
+                      mode === mo ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                    )}>{mo === "combi" ? "Combiné" : "Simple"}</button>
+                  ))}
+                </div>
+                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold tabular-nums">
+                  {list.length} pari{list.length > 1 ? "s" : ""}
+                </span>
+              </div>
             </div>
 
             {/* Bet slip */}
@@ -104,13 +127,16 @@ function FootPage() {
                   </span>
                 </div>
                 <ul className="space-y-1.5">
-                  {list.map(([id, o]) => {
-                    const m = footMatches.find((x) => x.id === id)!;
+                  {list.map((k) => {
+                    const [mid] = k.split(":");
+                    const m = footMatches.find((x) => x.id === mid);
+                    if (!m) return null;
+                    const odd = oddForPick(k, m);
                     return (
-                      <li key={id} className="flex items-center justify-between gap-2 rounded-lg bg-background/40 px-2.5 py-1.5 text-xs">
-                        <span className="truncate"><span className="font-bold text-primary mr-1">{o}</span>{m.home} – {m.away}</span>
-                        <span className="tabular-nums font-bold">{m.odds[o].toFixed(2)}</span>
-                        <button onClick={() => removePick(id)} className="text-muted-foreground hover:text-destructive">
+                      <li key={k} className="flex items-center justify-between gap-2 rounded-lg bg-background/40 px-2.5 py-1.5 text-xs">
+                        <span className="truncate">{labelForPick(k, m)}</span>
+                        <span className="tabular-nums font-bold">{odd.toFixed(2)}</span>
+                        <button onClick={() => removePick(k)} className="text-muted-foreground hover:text-destructive">
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </li>
@@ -122,8 +148,10 @@ function FootPage() {
 
             <ul className="space-y-3">
               {visibleMatches.map((m) => {
-                const sel = picks[m.id];
                 const lg = leagues.find((l) => l.id === m.league);
+                const isOpen = openMatch === m.id;
+                const matchPicks = list.filter((k) => k.startsWith(m.id + ":")).length;
+                const markets = marketsForMatch(m);
                 return (
                   <li key={m.id} className="rounded-2xl border border-border bg-card p-3 shadow-soft">
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -135,14 +163,16 @@ function FootPage() {
                       <span className="text-xs text-muted-foreground">vs</span>
                       <span className="min-w-0 truncate font-bold text-right">{m.away}</span>
                     </div>
+                    {/* 1X2 rapide toujours visible */}
                     <div className="mt-3 grid grid-cols-3 gap-2">
-                      {(["1", "X", "2"] as Outcome[]).map((o) => {
-                        const active = sel === o;
+                      {(["1", "X", "2"] as const).map((o) => {
+                        const key = `${m.id}:1x2:${o}`;
+                        const active = !!picks[key];
                         return (
                           <button
                             key={o}
                             type="button"
-                            onClick={() => select(m.id, o)}
+                            onClick={() => togglePick(key)}
                             className={cn(
                               "rounded-xl border-2 px-3 py-3 text-center font-display font-bold transition",
                               active
@@ -158,6 +188,57 @@ function FootPage() {
                         );
                       })}
                     </div>
+                    {/* Toggle marchés étendus */}
+                    <button
+                      type="button"
+                      onClick={() => setOpenMatch(isOpen ? null : m.id)}
+                      className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-secondary/40 px-3 py-2 text-xs font-bold text-muted-foreground hover:text-primary hover:border-primary/40"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        + {markets.length - 1} marchés
+                        {matchPicks > 1 && (
+                          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] text-primary">{matchPicks} sélections</span>
+                        )}
+                      </span>
+                      {isOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </button>
+                    {isOpen && (
+                      <div className="mt-3 space-y-3">
+                        {markets.slice(1).map((mk) => (
+                          <div key={mk.id}>
+                            <div className="mb-1 flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-foreground">{mk.name}</span>
+                              <span className="text-[9px] uppercase tracking-widest text-muted-foreground">{mk.group}</span>
+                            </div>
+                            <div className={cn(
+                              "grid gap-1.5",
+                              mk.options.length > 4 ? "grid-cols-3 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-4",
+                            )}>
+                              {mk.options.map((opt) => {
+                                const key = `${m.id}:${mk.id}:${opt.key}`;
+                                const active = !!picks[key];
+                                return (
+                                  <button
+                                    key={opt.key}
+                                    type="button"
+                                    onClick={() => togglePick(key)}
+                                    className={cn(
+                                      "rounded-lg border-2 px-2 py-1.5 text-center text-[11px] transition",
+                                      active
+                                        ? "border-primary bg-primary/10 text-primary"
+                                        : "border-border bg-background hover:border-primary/40",
+                                    )}
+                                  >
+                                    <div className="font-semibold truncate leading-tight">{opt.label}</div>
+                                    <div className="text-[10px] font-bold tabular-nums text-muted-foreground">{opt.odd.toFixed(2)}</div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </li>
                 );
               })}
