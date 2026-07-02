@@ -207,4 +207,101 @@
     color: var(--muted-foreground);
     background: oklch(1 0 0 / 0.03);
   }
+
+  /* =========================================================
+     Coup Sûr — dégradés émeraude profond + accent orange laqué
+     Utilisés sur la page d'accueil rebrand.
+     ========================================================= */
+  .bg-cs-hero {
+    background:
+      radial-gradient(1000px 600px at 50% 0%, rgba(16, 185, 129, 0.22), transparent 60%),
+      radial-gradient(700px 500px at 90% 100%, rgba(255, 138, 0, 0.10), transparent 65%),
+      linear-gradient(160deg, #051F1A 0%, #072922 40%, #0B3B30 100%);
+  }
+  .bg-cs-deep {
+    background: linear-gradient(180deg, #051F1A 0%, #072922 100%);
+  }
+  .bg-cs-panel {
+    background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%);
+  }
+  .bg-cs-orange {
+    background: linear-gradient(135deg, #FF8A00 0%, #FFB347 100%);
+  }
+  .text-cs-mint { color: #C9F2E4; }
+  .text-cs-orange { color: #FFB347; }
+  .shadow-cs-orange {
+    box-shadow:
+      0 12px 32px -10px rgba(255, 138, 0, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+  .shadow-cs-deep {
+    box-shadow:
+      0 24px 60px -20px rgba(3, 20, 16, 0.9),
+      0 4px 12px -4px rgba(3, 20, 16, 0.7);
+  }
+  .shadow-cs-inset {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+      0 10px 24px -12px rgba(0, 0, 0, 0.55);
+  }
+  .ring-cs-glow {
+    box-shadow: 0 0 0 1px rgba(201, 242, 228, 0.08), 0 20px 50px -20px rgba(0, 200, 140, 0.35);
+  }
+
+  /* Boules loto flottantes */
+  .cs-ball {
+    position: absolute;
+    border-radius: 9999px;
+    background:
+      radial-gradient(circle at 30% 25%, rgba(255,255,255,0.55), transparent 45%),
+      linear-gradient(140deg, #FFB347 0%, #FF8A00 60%, #B85E00 100%);
+    box-shadow:
+      inset 0 -6px 12px rgba(0,0,0,0.35),
+      0 20px 40px -15px rgba(0,0,0,0.6);
+    color: #2A1400;
+    font-weight: 800;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+  }
+  .cs-ball--mint {
+    background:
+      radial-gradient(circle at 30% 25%, rgba(255,255,255,0.55), transparent 45%),
+      linear-gradient(140deg, #7EE8C6 0%, #10B981 60%, #065F46 100%);
+    color: #052E22;
+  }
+
+  @keyframes cs-float {
+    0%,100% { transform: translate3d(0,0,0) rotate(0deg); }
+    50%     { transform: translate3d(0,-14px,0) rotate(6deg); }
+  }
+  @keyframes cs-float-slow {
+    0%,100% { transform: translate3d(0,0,0) rotate(0deg); }
+    50%     { transform: translate3d(0,-22px,0) rotate(-8deg); }
+  }
+  @keyframes cs-tilt {
+    0%,100% { transform: perspective(1200px) rotateY(-14deg) rotateX(6deg) translateY(0); }
+    50%     { transform: perspective(1200px) rotateY(-10deg) rotateX(4deg) translateY(-10px); }
+  }
+  @keyframes cs-shine {
+    0%   { transform: translateX(-120%) skewX(-20deg); }
+    100% { transform: translateX(220%)  skewX(-20deg); }
+  }
+  .cs-anim-float      { animation: cs-float 7s ease-in-out infinite; }
+  .cs-anim-float-slow { animation: cs-float-slow 10s ease-in-out infinite; }
+  .cs-phone-float     { animation: cs-tilt 9s ease-in-out infinite; transform-style: preserve-3d; }
+  .cs-shine::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
+    animation: cs-shine 3.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cs-anim-float, .cs-anim-float-slow, .cs-phone-float, .cs-shine::after {
+      animation: none !important;
+    }
+  }
 }
