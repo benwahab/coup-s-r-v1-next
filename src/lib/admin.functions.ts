@@ -1,14 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database } from "@/integrations/supabase/types";
+
+type SB = SupabaseClient<Database>;
 
 const TicketStatus = z.enum(["pending", "losing", "winning", "paid"]);
 const PaymentStatus = z.enum(["pending", "confirmed", "failed"]);
 
-async function assertAdmin(
-  supabase: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }> },
-  userId: string,
-) {
+async function assertAdmin(supabase: SB, userId: string) {
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (error) throw new Error("role_check_failed");
   if (data !== true) throw new Error("Forbidden: admin role required");
@@ -30,7 +31,7 @@ export const checkIsAdmin = createServerFn({ method: "POST" })
 export const adminListAllTickets = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertAdmin(context.supabase as SB, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("tickets")
@@ -50,9 +51,9 @@ export const adminUpdateTicketStatus = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertAdmin(context.supabase as SB, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const patch: Record<string, unknown> = { status: data.status };
+    const patch: Database["public"]["Tables"]["tickets"]["Update"] = { status: data.status };
     if (data.prize !== undefined) patch.prize = data.prize;
     const { error } = await supabaseAdmin.from("tickets").update(patch).eq("code", data.code);
     if (error) throw new Error(error.message);
@@ -73,7 +74,7 @@ export const adminUpdateTicketLegStatus = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertAdmin(context.supabase as SB, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error: e1 } = await supabaseAdmin
       .from("tickets")
@@ -99,7 +100,7 @@ export const adminUpdateTicketLegStatus = createServerFn({ method: "POST" })
     );
     const { error: e2 } = await supabaseAdmin
       .from("tickets")
-      .update({ legs: nextLegs, status: global, prize: totalPrize || null })
+      .update({ legs: nextLegs as unknown as Database["public"]["Tables"]["tickets"]["Update"]["legs"], status: global, prize: totalPrize || null })
       .eq("id", row.id);
     if (e2) throw new Error(e2.message);
     return { ok: true as const, status: global, prize: totalPrize || null };
@@ -119,7 +120,7 @@ export const updateMyPaymentStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const patch: Record<string, unknown> = { status: data.status };
+    const patch: Database["public"]["Tables"]["payments"]["Update"] = { status: data.status };
     if (data.ticketId) patch.ticket_id = data.ticketId;
     const { error } = await supabaseAdmin
       .from("payments")
@@ -134,7 +135,7 @@ export const updateMyPaymentStatus = createServerFn({ method: "POST" })
 export const adminListAllPayments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertAdmin(context.supabase as SB, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("payments")
