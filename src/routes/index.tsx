@@ -96,7 +96,11 @@ function Index() {
       <section className="relative overflow-hidden bg-hero text-white">
         <div
           className="absolute inset-0 bg-cover bg-center opacity-30 sm:opacity-40"
-          style={{ backgroundImage: `url(${heroBg})`, backgroundPosition: "right center" }}
+          style={{
+            // image-set() : le navigateur choisit AVIF > WebP > JPG selon le support.
+            backgroundImage: `image-set(url(${heroAvif}) type("image/avif"), url(${heroWebp}) type("image/webp"), url(${heroJpg}) type("image/jpeg"))`,
+            backgroundPosition: "right center",
+          }}
           aria-hidden
         />
         <div
