@@ -41,7 +41,10 @@ function useCountdown(target: Date) {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+  // Client-only : rien tant que l'horloge n'est pas montée côté navigateur,
+  // et rien non plus pour une cible invalide (évite tout flash SSR/hydration).
   if (now === null) return null;
+  if (!target || Number.isNaN(target.getTime()) || target.getTime() <= 0) return null;
   return diffParts(target, new Date(now));
 }
 
