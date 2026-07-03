@@ -16,6 +16,7 @@ import { Route as PmuRouteImport } from './routes/pmu'
 import { Route as PariFootRouteImport } from './routes/pari-foot'
 import { Route as MesTicketsRouteImport } from './routes/mes-tickets'
 import { Route as LotoBalsaRouteImport } from './routes/loto-balsa'
+import { Route as ConditionsRouteImport } from './routes/conditions'
 import { Route as CompteRouteImport } from './routes/compte'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -58,6 +59,11 @@ const LotoBalsaRoute = LotoBalsaRouteImport.update({
   path: '/loto-balsa',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConditionsRoute = ConditionsRouteImport.update({
+  id: '/conditions',
+  path: '/conditions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CompteRoute = CompteRouteImport.update({
   id: '/compte',
   path: '/compte',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/compte': typeof CompteRoute
+  '/conditions': typeof ConditionsRoute
   '/loto-balsa': typeof LotoBalsaRoute
   '/mes-tickets': typeof MesTicketsRoute
   '/pari-foot': typeof PariFootRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/compte': typeof CompteRoute
+  '/conditions': typeof ConditionsRoute
   '/loto-balsa': typeof LotoBalsaRoute
   '/mes-tickets': typeof MesTicketsRoute
   '/pari-foot': typeof PariFootRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/compte': typeof CompteRoute
+  '/conditions': typeof ConditionsRoute
   '/loto-balsa': typeof LotoBalsaRoute
   '/mes-tickets': typeof MesTicketsRoute
   '/pari-foot': typeof PariFootRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/compte'
+    | '/conditions'
     | '/loto-balsa'
     | '/mes-tickets'
     | '/pari-foot'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/compte'
+    | '/conditions'
     | '/loto-balsa'
     | '/mes-tickets'
     | '/pari-foot'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/compte'
+    | '/conditions'
     | '/loto-balsa'
     | '/mes-tickets'
     | '/pari-foot'
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   CompteRoute: typeof CompteRoute
+  ConditionsRoute: typeof ConditionsRoute
   LotoBalsaRoute: typeof LotoBalsaRoute
   MesTicketsRoute: typeof MesTicketsRoute
   PariFootRoute: typeof PariFootRoute
@@ -250,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LotoBalsaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/conditions': {
+      id: '/conditions'
+      path: '/conditions'
+      fullPath: '/conditions'
+      preLoaderRoute: typeof ConditionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/compte': {
       id: '/compte'
       path: '/compte'
@@ -300,6 +320,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   CompteRoute: CompteRoute,
+  ConditionsRoute: ConditionsRoute,
   LotoBalsaRoute: LotoBalsaRoute,
   MesTicketsRoute: MesTicketsRoute,
   PariFootRoute: PariFootRoute,
