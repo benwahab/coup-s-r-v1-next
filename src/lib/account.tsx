@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { type ConsentRecord, makeUserId } from "./legal";
+import { sendAccountNotice } from "./sms";
 
 const RECOVERY_DAYS = 30;
 const RECOVERY_MS = RECOVERY_DAYS * 24 * 60 * 60 * 1000;
@@ -9,6 +10,7 @@ export interface Account {
   lastName: string;
   region: string;
   phone: string;
+  email?: string;
   userId?: string;
   createdAt?: number;
   consent?: ConsentRecord;
@@ -42,7 +44,6 @@ function loadRegistry(): Registry {
     const raw = localStorage.getItem(REG_KEY);
     if (!raw) return {};
     const reg = JSON.parse(raw) as Registry;
-    // Purge des suppressions expirées (> 30j) → numéro libre
     const now = Date.now();
     let dirty = false;
     for (const p of Object.keys(reg)) {
@@ -56,6 +57,22 @@ function loadRegistry(): Registry {
     return reg;
   } catch { return {}; }
 }
+
+// Détecte les demandes de suppression arrivées à expiration (>30j) sans les purger.
+// Utilisé pour envoyer la notification "compte supprimé" avant la purge.
+function findExpiredDeletions(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(REG_KEY);
+    if (!raw) return [];
+    const reg = JSON.parse(raw) as Registry;
+    const now = Date.now();
+    return Object.keys(reg).filter((p) => {
+      const e = reg[p];
+      return e.status === "pending_deletion" && !!e.deletionRequestedAt && now - e.deletionRequestedAt > RECOVERY_MS;
+    });
+  } catch { return []; }
+}
 function saveRegistry(reg: Registry) {
   if (typeof window !== "undefined") localStorage.setItem(REG_KEY, JSON.stringify(reg));
 }
@@ -64,9 +81,27 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<Account | null>(null);
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // Notifier avant purge les demandes de suppression arrivées à expiration.
+    const expired = findExpiredDeletions();
     const raw = localStorage.getItem(KEY);
+    let currentAccount: Account | null = null;
     if (raw) {
-      try { setAccount(JSON.parse(raw)); } catch { /* ignore */ }
+      try {
+        currentAccount = JSON.parse(raw) as Account;
+        setAccount(currentAccount);
+      } catch { /* ignore */ }
+    }
+    for (const phone of expired) {
+      const target =
+        currentAccount && currentAccount.phone === phone
+          ? { phone, email: currentAccount.email, firstName: currentAccount.firstName }
+          : { phone };
+      void sendAccountNotice("deletion-expired", target);
+      // Si c'est le compte local en cours, on nettoie localStorage aussi.
+      if (currentAccount && currentAccount.phone === phone) {
+        localStorage.removeItem(KEY);
+        setAccount(null);
+      }
     }
     // Purge le registre au boot
     loadRegistry();
@@ -128,6 +163,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const next = { ...account, deletionRequestedAt: now };
     setAccount(next);
     if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(next));
+    void sendAccountNotice("deletion-requested", {
+      phone: account.phone,
+      email: account.email,
+      firstName: account.firstName,
+    });
   };
 
   const cancelDeletion = () => {
@@ -141,6 +181,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const next = { ...account, deletionRequestedAt: null };
     setAccount(next);
     if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(next));
+    void sendAccountNotice("deletion-cancelled", {
+      phone: account.phone,
+      email: account.email,
+      firstName: account.firstName,
+    });
   };
 
   const deletionRemainingMs = () => {

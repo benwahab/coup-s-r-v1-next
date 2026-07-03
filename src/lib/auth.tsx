@@ -4,7 +4,8 @@ import { checkRate, logAuthEvent, pushAttempt, type RateCheck } from "./auth-log
 const KEY = "lonani.auth";
 const SESSION_KEY = "lonani.session";
 const LOCK_MS = 60 * 60 * 1000; // 1h
-const SESSION_IDLE_MS = 30 * 60 * 1000; // 30 min d'inactivité
+// Session persistante — pas d'expiration automatique par inactivité.
+// L'utilisateur reste connecté jusqu'à une déconnexion explicite.
 
 interface AuthState {
   failedAttempts: number;   // current cycle (0..3)
@@ -55,10 +56,6 @@ function loadSession(): Session | null {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw) as Session;
-    if (Date.now() - s.lastActivity > SESSION_IDLE_MS) {
-      localStorage.removeItem(SESSION_KEY);
-      return null;
-    }
     return s;
   } catch { return null; }
 }
@@ -82,41 +79,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(id);
   }, []);
 
-  // Auto-expire session après idle 30 min
-  useEffect(() => {
-    if (!session) return;
-    const id = setInterval(() => {
-      if (Date.now() - session.lastActivity > SESSION_IDLE_MS) {
-        logAuthEvent("session-expired", session.phone);
-        saveSession(null);
-        setSession(null);
-      }
-    }, 5000);
-    return () => clearInterval(id);
-  }, [session]);
-
-  // "Activité" globale qui rafraîchit la session glissante
-  useEffect(() => {
-    if (!session) return;
-    const refresh = () => {
-      const next = { ...session, lastActivity: Date.now() };
-      saveSession(next);
-      setSession(next);
-    };
-    // throttle 30s
-    let last = 0;
-    const onAct = () => {
-      const now = Date.now();
-      if (now - last > 30_000) { last = now; refresh(); }
-    };
-    window.addEventListener("click", onAct);
-    window.addEventListener("keydown", onAct);
-    return () => {
-      window.removeEventListener("click", onAct);
-      window.removeEventListener("keydown", onAct);
-    };
-  }, [session]);
-
   const isPermanent = useCallback(() => state.lockedUntil === -1, [state.lockedUntil]);
   const remainingLockMs = useCallback(() => {
     if (!state.lockedUntil) return 0;
@@ -124,10 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return Math.max(0, state.lockedUntil - Date.now());
   }, [state.lockedUntil]);
 
-  const sessionRemainingMs = useCallback(() => {
-    if (!session) return 0;
-    return Math.max(0, SESSION_IDLE_MS - (Date.now() - session.lastActivity));
-  }, [session]);
+  // Session illimitée — conservé pour compat API, retourne toujours Infinity si connecté.
+  const sessionRemainingMs = useCallback(() => (session ? Number.POSITIVE_INFINITY : 0), [session]);
 
   const touchSession = useCallback(() => {
     if (!session) return;

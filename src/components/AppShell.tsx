@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { Home, Trophy, Sparkles, Ticket as TicketIcon, ShieldCheck, Globe2, UserCircle2, LogIn, LogOut, Clock3 } from "lucide-react";
+import { Home, Trophy, Sparkles, Ticket as TicketIcon, ShieldCheck, Globe2, UserCircle2, LogIn, LogOut } from "lucide-react";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { useAuth } from "@/lib/auth";
@@ -10,12 +10,11 @@ import { cn } from "@/lib/utils";
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useI18n();
   const { account } = useAccount();
-  const { authed, remainingLockMs, isPermanent, logout, sessionRemainingMs, session } = useAuth();
+  const { authed, remainingLockMs, isPermanent, logout, session } = useAuth();
   const lockMs = remainingLockMs();
   const locked = isPermanent() || lockMs > 0;
-  const sessMs = authed ? sessionRemainingMs() : 0;
-  const sessMin = Math.ceil(sessMs / 60000);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const showGlobalBackdrop = !pathname.startsWith("/auth");
 
   const navItems: { to: string; label: string; icon: typeof Home; exact?: boolean }[] = [
     { to: "/", label: t("home"), icon: Home, exact: true },
@@ -25,7 +24,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="min-h-dvh flex flex-col bg-background">
+    <div className="relative min-h-dvh flex flex-col bg-background">
+      {showGlobalBackdrop && (
+        <div className="cs-app-bg" aria-hidden>
+          <span className="cs-app-orb o1" />
+          <span className="cs-app-orb o2" />
+          <span className="cs-app-orb o3" />
+        </div>
+      )}
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/" className="flex items-center gap-2 min-w-0">
@@ -60,13 +66,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             )}
             {authed && (
               <>
-                <span
-                  title={`Session expirée après 30 min d'inactivité — il reste ${sessMin} min`}
-                  className="hidden sm:inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300"
-                >
-                  <Clock3 className="h-3 w-3" />
-                  Session {sessMin}min
-                </span>
                 <button
                   type="button"
                   onClick={() => logout("user")}

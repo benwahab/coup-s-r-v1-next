@@ -46,3 +46,52 @@ export async function sendWinSms(ticket: Ticket, leg?: TicketLeg): Promise<SmsEn
   console.info("[LoNaNi SMS]", body);
   return entry;
 }
+
+// ============================================================================
+// Notifications de compte (suppression / annulation / expiration)
+// SMS mock + Email mock — journalisées dans le même log que les gains.
+// En prod, brancher /api/public/sms et /api/public/email.
+// ============================================================================
+
+export type AccountNoticeKind = "deletion-requested" | "deletion-cancelled" | "deletion-expired";
+
+const KIND_MESSAGES: Record<AccountNoticeKind, (firstName: string) => { subject: string; body: string }> = {
+  "deletion-requested": (fn) => ({
+    subject: "Coup Sûr — Suppression de compte demandée",
+    body: `Coup Sûr: ${fn || "Bonjour"}, votre demande de suppression a été enregistrée. Votre compte sera définitivement supprimé dans 30 jours. Vous pouvez annuler à tout moment depuis « Mon compte ».`,
+  }),
+  "deletion-cancelled": (fn) => ({
+    subject: "Coup Sûr — Suppression annulée",
+    body: `Coup Sûr: ${fn || "Bonjour"}, la suppression de votre compte a été annulée. Votre compte reste actif.`,
+  }),
+  "deletion-expired": (fn) => ({
+    subject: "Coup Sûr — Compte supprimé",
+    body: `Coup Sûr: ${fn || "Bonjour"}, votre compte a été définitivement supprimé après le délai de 30 jours. Merci de votre confiance.`,
+  }),
+};
+
+export async function sendAccountNotice(
+  kind: AccountNoticeKind,
+  target: { phone: string; email?: string; firstName?: string },
+): Promise<SmsEntry> {
+  const { subject, body } = KIND_MESSAGES[kind](target.firstName ?? "");
+  const entry: SmsEntry = {
+    id: `notice-${kind}-${Date.now()}`,
+    phone: target.phone,
+    prize: 0,
+    body,
+    at: Date.now(),
+  };
+  const prev = readSmsLog();
+  writeSmsLog([entry, ...prev]);
+  // Hooks prod (non-câblés tant que providers absents)
+  if (typeof window !== "undefined" && import.meta.env.VITE_SMS_PROVIDER) {
+    fetch("/api/public/sms", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ to: target.phone, text: body }) }).catch(() => undefined);
+  }
+  if (typeof window !== "undefined" && target.email && import.meta.env.VITE_EMAIL_PROVIDER) {
+    fetch("/api/public/email", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ to: target.email, subject, text: body }) }).catch(() => undefined);
+  }
+  // eslint-disable-next-line no-console
+  console.info(`[Coup Sûr NOTICE ${kind}]`, body, target.email ? `→ email: ${target.email}` : "");
+  return entry;
+}
