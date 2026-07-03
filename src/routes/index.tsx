@@ -45,14 +45,30 @@ function useCountdown(target: Date) {
   return diffParts(target, new Date(now));
 }
 
+/**
+ * Recompute the "stage" (openAt / closesIn / drawIn) client-side to avoid
+ * SSR hydration mismatch: the server may render one stage and the client
+ * another because minutes pass between renders.
+ */
+function useLiveStage(openHour: number, closeHour: number, drawHour: number) {
+  const [stage, setStage] = useState<ReturnType<typeof nextDailyEvent> | null>(null);
+  useEffect(() => {
+    const compute = () => setStage(nextDailyEvent(openHour, closeHour, drawHour));
+    compute();
+    const id = setInterval(compute, 1000);
+    return () => clearInterval(id);
+  }, [openHour, closeHour, drawHour]);
+  return stage;
+}
+
 function Index() {
   const { t } = useI18n();
   const lastLoto = recentResults.find((r) => r.gameId === "loto");
   const lastPmu = recentResults.find((r) => r.gameId === "pmu");
-  const pmuEvt = nextDailyEvent(drawSchedule.pmu.openHour, drawSchedule.pmu.closeHour, drawSchedule.pmu.drawHour);
-  const lotoEvt = nextDailyEvent(drawSchedule.loto.openHour, drawSchedule.loto.closeHour, drawSchedule.loto.drawHour);
-  const pmuCd = useCountdown(pmuEvt.target);
-  const lotoCd = useCountdown(lotoEvt.target);
+  const pmuEvt = useLiveStage(drawSchedule.pmu.openHour, drawSchedule.pmu.closeHour, drawSchedule.pmu.drawHour);
+  const lotoEvt = useLiveStage(drawSchedule.loto.openHour, drawSchedule.loto.closeHour, drawSchedule.loto.drawHour);
+  const pmuCd = useCountdown(pmuEvt?.target ?? new Date(0));
+  const lotoCd = useCountdown(lotoEvt?.target ?? new Date(0));
   const lotoDrawName = drawNameForDate();
 
   // Gagnants du jour (mock déterministe)
