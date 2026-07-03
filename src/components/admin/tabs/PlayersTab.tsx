@@ -1,6 +1,6 @@
 import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
-import type { RegionStat, computePlayerStats } from "@/lib/mock-stats";
+import { type RegionStat, type computePlayerStats } from "@/lib/mock-stats";
 
 type PlayerStat = ReturnType<typeof computePlayerStats>[number];
 
