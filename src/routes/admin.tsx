@@ -4,11 +4,7 @@ import {
   BellRing, Sparkles, MapPin, Circle, BarChart3, LogIn, LifeBuoy, Search, X, Activity,
   ListChecks, ArrowUpRight, ArrowDownRight, Clock, Zap,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
-  Tooltip as RTooltip, ResponsiveContainer, Legend,
-} from "recharts";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useTickets, type Ticket } from "@/lib/tickets";
 import { PageHeader } from "@/components/AppShell";
@@ -21,6 +17,10 @@ import { listMyIntents, type PaymentIntent } from "@/lib/payments";
 import { checkIsAdmin, adminListAllPayments } from "@/lib/admin.functions";
 import { useAuth } from "@/lib/auth";
 import { useThemeChartColors } from "@/hooks/use-theme-chart-colors";
+
+// Recharts pèse ~120 kB gzip et n'est utilisé que pour le dashboard admin.
+// On le charge en `lazy` pour ne pas alourdir les autres routes.
+const DashboardCharts = lazy(() => import("@/components/admin/DashboardCharts"));
 
 export const Route = createFileRoute("/admin")({
   // Panneau réservé aux comptes ayant le rôle `admin` — vérifié côté serveur.
@@ -401,81 +401,17 @@ function AdminPage() {
                   <Kpi icon={Trophy} label="Gagnants" value={String(winnersCount)} accent sub={`${formatFcfa(totalPayout)} FCFA versés`} />
                 </section>
 
-                {/* Revenue area + game pie */}
-                <section className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-                  <ChartCard title="Évolution des ventes (30 jours)" hint="Mises vs gains versés">
-                    <div className="h-72">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={revenueSeries} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
-                          <defs>
-                            <linearGradient id="mises" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={chart.teal} stopOpacity={0.5} />
-                              <stop offset="100%" stopColor={chart.teal} stopOpacity={0} />
-                            </linearGradient>
-                            <linearGradient id="gains" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={chart.gold} stopOpacity={0.5} />
-                              <stop offset="100%" stopColor={chart.gold} stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke={chart.border} vertical={false} />
-                          <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke={chart.mutedForeground} interval={3} />
-                          <YAxis tick={{ fontSize: 10 }} stroke={chart.mutedForeground} tickFormatter={(v) => `${(v / 1000) | 0}k`} width={40} />
-                          <RTooltip contentStyle={{ background: chart.card, border: `1px solid ${chart.border}`, borderRadius: 12, fontSize: 12 }} formatter={(v: number) => `${formatFcfa(v)} FCFA`} />
-                          <Legend wrapperStyle={{ fontSize: 11 }} />
-                          <Area type="monotone" name="Mises" dataKey="mises" stroke={chart.teal} fill="url(#mises)" strokeWidth={2} />
-                          <Area type="monotone" name="Gains" dataKey="gains" stroke={chart.gold} fill="url(#gains)" strokeWidth={2} />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </ChartCard>
-
-                  <ChartCard title="Répartition par jeu" hint="Volume misé">
-                    <div className="h-72">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie data={byGameData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={3}>
-                            {byGameData.map((entry) => <Cell key={entry.id} fill={entry.fill} />)}
-                          </Pie>
-                          <RTooltip contentStyle={{ background: chart.card, border: `1px solid ${chart.border}`, borderRadius: 12, fontSize: 12 }} formatter={(v: number) => `${formatFcfa(v)} FCFA`} />
-                          <Legend wrapperStyle={{ fontSize: 11 }} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </ChartCard>
-                </section>
-
-                {/* Hourly + monthly */}
-                <section className="grid gap-4 xl:grid-cols-2">
-                  <ChartCard title="Heures de forte activité" hint={`Pic à ${peakHour.hour} · ${peakHour.count} tickets`}>
-                    <div className="h-56">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={hourlyData} margin={{ left: 0, right: 10, top: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={chart.border} vertical={false} />
-                          <XAxis dataKey="hour" tick={{ fontSize: 9 }} stroke={chart.mutedForeground} interval={1} />
-                          <YAxis tick={{ fontSize: 10 }} stroke={chart.mutedForeground} width={30} />
-                          <RTooltip contentStyle={{ background: chart.card, border: `1px solid ${chart.border}`, borderRadius: 12, fontSize: 12 }} />
-                          <Bar dataKey="count" fill={chart.teal} radius={[6, 6, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </ChartCard>
-
-                  <ChartCard title="Comparaison mensuelle" hint="Mises vs gains — 6 derniers mois">
-                    <div className="h-56">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={monthlyData} margin={{ left: 0, right: 10, top: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={chart.border} vertical={false} />
-                          <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke={chart.mutedForeground} />
-                          <YAxis tick={{ fontSize: 10 }} stroke={chart.mutedForeground} tickFormatter={(v) => `${(v / 1000) | 0}k`} width={40} />
-                          <RTooltip contentStyle={{ background: chart.card, border: `1px solid ${chart.border}`, borderRadius: 12, fontSize: 12 }} formatter={(v: number) => `${formatFcfa(v)} FCFA`} />
-                          <Legend wrapperStyle={{ fontSize: 11 }} />
-                          <Bar dataKey="mises" name="Mises" fill={chart.teal} radius={[6, 6, 0, 0]} />
-                          <Bar dataKey="gains" name="Gains" fill={chart.gold} radius={[6, 6, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </ChartCard>
-                </section>
+                {/* Recharts est lazy-loadé : ne pénalise pas les autres routes */}
+                <Suspense fallback={<div className="grid gap-4 xl:grid-cols-[2fr_1fr]"><div className="h-72 rounded-3xl border border-border bg-card animate-pulse" /><div className="h-72 rounded-3xl border border-border bg-card animate-pulse" /></div>}>
+                  <DashboardCharts
+                    revenueSeries={revenueSeries}
+                    byGameData={byGameData}
+                    hourlyData={hourlyData}
+                    monthlyData={monthlyData}
+                    peakHour={peakHour}
+                    chart={chart}
+                  />
+                </Suspense>
 
                 {/* Activity feed + Quick actions */}
                 <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
@@ -887,7 +823,7 @@ function AdminPage() {
                       <input value={claimPhone} onChange={(e) => setClaimPhone(e.target.value)} placeholder="ex. +227 90 12 34 56" className="w-full rounded-2xl border border-border bg-background pl-10 pr-3 py-2.5 text-sm" />
                     </div>
                     {claimPhone && (
-                      <button onClick={() => setClaimPhone("")} className="rounded-full border border-border bg-background p-2 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
+                      <button onClick={() => setClaimPhone("")} aria-label="Effacer la recherche" className="rounded-full border border-border bg-background p-2 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
                     )}
                   </div>
                 </div>
@@ -997,18 +933,6 @@ function Kpi({ icon: Icon, label, value, accent, delta, sub }: { icon: typeof Tr
         )}
         {sub && <span className={cn(accent ? "text-[var(--gold-foreground)]/80" : "text-muted-foreground")}>{sub}</span>}
       </div>
-    </div>
-  );
-}
-
-function ChartCard({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-3xl border border-border bg-card p-5 shadow-soft">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-bold">{title}</h2>
-        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
-      </div>
-      <div className="mt-3">{children}</div>
     </div>
   );
 }
