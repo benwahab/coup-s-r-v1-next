@@ -787,7 +787,7 @@ function AdminPage() {
                               "rounded-full px-2 py-0.5 text-[10px] font-bold",
                               e.kind === "verify-ok" ? "bg-success/15 text-success" :
                               e.kind === "verify-fail" ? "bg-destructive/15 text-destructive" :
-                              e.kind === "locked" || e.kind === "rate-limited" ? "bg-amber-500/15 text-amber-400" :
+                              e.kind === "locked" || e.kind === "rate-limited" ? "bg-primary/15 text-primary" :
                               "bg-secondary text-muted-foreground",
                             )}>{e.kind}</span></td>
                             <td className="px-3 py-2 text-muted-foreground">{e.note ?? "—"}</td>

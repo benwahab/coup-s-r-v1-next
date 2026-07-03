@@ -189,7 +189,7 @@ export function BetFlow({
       <div className="mb-3 flex items-center justify-between text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         <span>{t("step")} {stepIndex} {t("of")} {totalSteps}</span>
         {!gameOpen && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+          <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
             <Clock className="h-3 w-3" /> Jeu fermé · paiement à {String(openHour).padStart(2, "0")}h
           </span>
         )}
@@ -384,7 +384,7 @@ export function BetFlow({
           </div>
 
           {!gameOpen && (
-            <div className="mt-4 flex items-start gap-2 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-3 text-amber-200">
+            <div className="mt-4 flex items-start gap-2 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-primary">
               <Clock className="mt-0.5 h-4 w-4 shrink-0" />
               <div className="min-w-0 text-sm">
                 <b className="font-bold">Jeu fermé pour cette session.</b><br />
@@ -430,7 +430,7 @@ export function BetFlow({
           )}
 
           {duplicateMsg && (
-            <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 py-2 text-sm text-primary">
               <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0" />
               <div className="min-w-0">
                 <div className="font-bold">Paiement bloqué (anti-doublon)</div>
@@ -466,7 +466,7 @@ export function BetFlow({
                 });
                 navigate({ to: "/mes-tickets" });
               }}
-              className="mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border-2 border-amber-400 bg-amber-500/15 px-6 py-4 text-lg font-extrabold text-amber-300 transition hover:bg-amber-500/25 disabled:opacity-70"
+              className="mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border-2 border-primary bg-primary/15 px-6 py-4 text-lg font-extrabold text-primary transition hover:bg-primary/25 disabled:opacity-70"
             >
               {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
               Enregistrer pour plus tard

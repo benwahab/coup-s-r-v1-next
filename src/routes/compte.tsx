@@ -84,7 +84,7 @@ function ComptePage() {
           </div>
 
         {account?.deletionRequestedAt && deletionMs > 0 && (
-          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-100">
+          <div className="rounded-2xl border border-primary/40 bg-primary/10 p-4 text-primary">
             <div className="flex items-center gap-2 font-bold">
               <Clock className="h-4 w-4" /> Suppression programmée
             </div>
@@ -96,7 +96,7 @@ function ComptePage() {
             <button
               type="button"
               onClick={cancelDeletion}
-              className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-500/20 px-4 py-2 text-sm font-bold text-amber-100 hover:bg-amber-500/30"
+              className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary/20 px-4 py-2 text-sm font-bold text-primary hover:bg-primary/30"
             >
               <RotateCcw className="h-4 w-4" /> Annuler la suppression
             </button>
@@ -269,7 +269,7 @@ function ConfirmDeleteModal({ onCancel, onConfirm, onPurge }: { onCancel: () => 
           </button>
         </div>
         <div className="p-5 space-y-4">
-          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+          <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary">
             <p className="font-bold">Suppression avec délai de 30 jours (recommandé)</p>
             <p className="mt-1 text-xs opacity-90">
               Votre compte sera désactivé immédiatement. Pendant 30 jours, vous pouvez le
@@ -286,7 +286,7 @@ function ConfirmDeleteModal({ onCancel, onConfirm, onPurge }: { onCancel: () => 
           <div className="flex flex-col gap-2 pt-2">
             <button
               onClick={onConfirm}
-              className="w-full rounded-2xl bg-amber-500 px-4 py-3 text-sm font-extrabold uppercase tracking-wide text-amber-950 hover:brightness-110"
+              className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-extrabold uppercase tracking-wide text-primary-foreground hover:brightness-110"
             >
               Programmer la suppression (30 jours)
             </button>
