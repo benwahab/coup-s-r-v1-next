@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { UserCircle2, Save, Trash2, ShieldCheck, X, AlertTriangle, RotateCcw, Clock } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { PageHeader } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
