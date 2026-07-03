@@ -1,6 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-export type Lang = "fr" | "en";
+export type Lang = "fr" | "en" | "ha";
+
+// NOTE (traduction Hausa) : les valeurs `ha` ci-dessous sont des approximations
+// faites côté agent, sans corpus fiable. À faire relire par un locuteur natif
+// avant d'exposer Hausa dans le sélecteur de langue en production. Aujourd'hui
+// le sélecteur n'expose que FR/EN — HA est chargé mais non affiché.
 
 const dict = {
   fr: {
