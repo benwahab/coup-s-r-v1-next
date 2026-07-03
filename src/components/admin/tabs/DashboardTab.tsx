@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Activity, BarChart3, BellRing, Clock, Download, LifeBuoy, ListChecks, LogIn, Send, Sparkles, TrendingUp, Trophy, Users, Zap } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { Kpi, QuickAction } from "../shared";
+import type { ChartColors } from "@/hooks/use-theme-chart-colors";
 
 const DashboardCharts = lazy(() => import("@/components/admin/DashboardCharts"));
 
@@ -21,7 +22,7 @@ interface Props {
   hourlyData: { hour: string; count: number }[];
   monthlyData: { month: string; mises: number; gains: number }[];
   peakHour: { hour: string; count: number };
-  chart: { primary: string; gold: string; teal: string; success: string; grid: string; text: string };
+  chart: ChartColors;
   activityFeed: ActivityItem[];
   allRowsCount: number;
   cashoutRequestsCount: number;
