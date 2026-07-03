@@ -14,6 +14,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const lockMs = remainingLockMs();
   const locked = isPermanent() || lockMs > 0;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const showGlobalBackdrop = !pathname.startsWith("/auth");
 
   const navItems: { to: string; label: string; icon: typeof Home; exact?: boolean }[] = [
     { to: "/", label: t("home"), icon: Home, exact: true },
@@ -23,7 +24,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="min-h-dvh flex flex-col bg-background">
+    <div className="relative min-h-dvh flex flex-col bg-background">
+      {showGlobalBackdrop && (
+        <div className="cs-app-bg" aria-hidden>
+          <span className="cs-app-orb o1" />
+          <span className="cs-app-orb o2" />
+          <span className="cs-app-orb o3" />
+        </div>
+      )}
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/" className="flex items-center gap-2 min-w-0">
