@@ -164,6 +164,10 @@ export function SiteFooter() {
           <Link to="/mes-tickets" className="hover:text-gold">Mes tickets</Link>
           <span>·</span>
           <Link to="/auth" className="hover:text-gold">Connexion</Link>
+          <span>·</span>
+          <Link to="/conditions" className="hover:text-gold">Conditions d'utilisation</Link>
+          <span>·</span>
+          <Link to="/confidentialite" className="hover:text-gold">Politique de confidentialité</Link>
         </div>
       </div>
     </footer>
