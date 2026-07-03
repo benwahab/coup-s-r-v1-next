@@ -4,7 +4,6 @@ import QRCode from "qrcode";
 import { Download, Home, Printer, ShieldCheck, Trophy } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTickets } from "@/lib/tickets";
-import { downloadTicketPdf } from "@/lib/receipt-pdf";
 import { signTicketToken } from "@/lib/ticket-token.functions";
 import { cn } from "@/lib/utils";
 
@@ -118,7 +117,7 @@ function TicketPage() {
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2 print:hidden">
-        <button onClick={() => downloadTicketPdf(ticket)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-bold text-primary-foreground shadow-soft hover:brightness-105">
+        <button onClick={async () => { const { downloadTicketPdf } = await import("@/lib/receipt-pdf"); await downloadTicketPdf(ticket); }} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-bold text-primary-foreground shadow-soft hover:brightness-105">
           <Download className="h-4 w-4" /> {t("download")}
         </button>
         <button onClick={() => window.print()} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 font-semibold hover:border-primary">
