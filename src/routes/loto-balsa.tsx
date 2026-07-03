@@ -272,7 +272,7 @@ function LotoPage() {
                     <li key={l.legId} className="flex items-center justify-between gap-2 rounded-lg bg-background/50 px-2.5 py-1.5 text-xs">
                       <span className="min-w-0 truncate"><b className="text-primary mr-1">G{i + 1}</b>{l.picksLabel}</span>
                       <span className="shrink-0 tabular-nums font-bold">{l.stake.toLocaleString()}</span>
-                      <button onClick={() => removeFromCart(l.legId)} className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => removeFromCart(l.legId)} aria-label="Retirer cette grille" className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
                     </li>
                   ))}
                 </ul>
