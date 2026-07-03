@@ -529,12 +529,12 @@ function AdminPage() {
 
             {tab === "transactions" && (
               <section className="rounded-3xl border border-border bg-card shadow-soft">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
-                  <div>
-                    <h2 className="font-display text-lg font-bold">Transactions</h2>
-                    <p className="text-xs text-muted-foreground">{filteredRows.length} résultats · live + simulation</p>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3 sm:flex sm:flex-wrap sm:justify-between sm:px-5">
+                  <div className="min-w-0">
+                    <h2 className="font-display text-lg font-bold truncate">Transactions</h2>
+                    <p className="text-xs text-muted-foreground truncate">{filteredRows.length} résultats · live + simulation</p>
                   </div>
-                  <button onClick={exportTransactionsCsv} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/40">
+                  <button onClick={exportTransactionsCsv} className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/40">
                     <Download className="h-3.5 w-3.5" /> Export CSV
                   </button>
                 </div>
@@ -610,9 +610,9 @@ function AdminPage() {
 
             {tab === "players" && (
               <section className="rounded-3xl border border-border bg-card shadow-soft">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
-                  <h2 className="font-display text-lg font-bold">{t("players")}</h2>
-                  <div className="flex flex-wrap items-center gap-2">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-5 py-3 sm:flex sm:flex-wrap sm:justify-between">
+                  <h2 className="font-display text-lg font-bold min-w-0 truncate">{t("players")}</h2>
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <input value={searchPlayer} onChange={(e) => setSearchPlayer(e.target.value)} placeholder="Rechercher…" className="rounded-full border border-border bg-background px-3 py-1.5 text-xs" />
                     <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs">
                       <option value="all">Toutes régions</option>
