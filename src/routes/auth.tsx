@@ -1,9 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Phone, ShieldAlert, Loader2, ArrowRight, KeyRound, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
+import { z } from "zod";
+import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { useAccount } from "@/lib/account";
 import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
+
+// Validation client — miroir de la validation serveur dans otp.functions.ts.
+const PhoneSchema = z.string().regex(/^\d{8}$/, "Saisissez un numéro à 8 chiffres.");
+const OtpSchema = z.string().regex(/^\d{6}$/, "Le code OTP fait 6 chiffres.");
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -35,6 +41,7 @@ function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [autoRead, setAutoRead] = useState<"idle" | "listening" | "ok" | "unavailable">("idle");
   const [demoCode, setDemoCode] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
@@ -70,48 +77,64 @@ function AuthPage() {
 
   const sendCode = async () => {
     setError(null);
-    if (!/^\d{8}$/.test(phone)) { setError("Saisissez un numéro à 8 chiffres."); return; }
+    const parsed = PhoneSchema.safeParse(phone);
+    if (!parsed.success) { setError(parsed.error.issues[0].message); return; }
     setSending(true);
     try {
       const res = await requestOtp(phone);
       if (!res.ok) {
         const mins = Math.ceil((res.rate.retryInMs ?? 60_000) / 60_000);
-        setError(
-          res.rate.reason === "phone"
-            ? `Trop de tentatives depuis ce numéro. Réessayez dans ~${mins} min.`
-            : `Trop de tentatives depuis cet appareil. Réessayez dans ~${mins} min.`
-        );
+        const msg = res.rate.reason === "phone"
+          ? `Trop de tentatives depuis ce numéro. Réessayez dans ~${mins} min.`
+          : `Trop de tentatives depuis cet appareil. Réessayez dans ~${mins} min.`;
+        setError(msg);
+        toast.error(msg);
         return;
       }
       setDemoCode(res.code);
       setStep("otp");
       setInfo("Code envoyé par SMS au " + phone);
       setResendIn(60);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erreur réseau. Réessayez.";
+      setError("Impossible d'envoyer le code. Réessayez dans un instant.");
+      toast.error(msg);
     } finally { setSending(false); }
   };
 
   const submitOtp = async () => {
     setError(null); setInfo(null);
-    if (otp.length !== 6) { setError("Le code OTP fait 6 chiffres."); return; }
-    const res = await verifyOtp(phone, otp, account?.phone ?? null);
-    if (res.ok) {
-      setInfo("Connexion réussie. Redirection...");
-      setTimeout(() => navigate({ to: "/" }), 600);
-      return;
+    const parsed = OtpSchema.safeParse(otp);
+    if (!parsed.success) { setError(parsed.error.issues[0].message); return; }
+    setVerifying(true);
+    try {
+      const res = await verifyOtp(phone, otp, account?.phone ?? null);
+      if (res.ok) {
+        setInfo("Connexion réussie. Redirection...");
+        toast.success("Bienvenue !");
+        setTimeout(() => navigate({ to: "/" }), 600);
+        return;
+      }
+      if (res.reason === "rate-limited") {
+        const mins = Math.ceil(((res.rate?.retryInMs) ?? 60_000) / 60_000);
+        setError(`Trop de tentatives. Réessayez dans ~${mins} min.`);
+      } else if (res.reason === "permanent") {
+        setError("Compte bloqué. Veuillez contacter le service clientèle.");
+      } else if (res.reason === "locked") {
+        setError("Trop de tentatives. Compte bloqué pendant 1 heure.");
+      } else if (res.reason === "wrong-phone") {
+        setError(`Ce numéro ne correspond pas au compte enregistré. Il vous reste ${res.remaining} tentative(s).`);
+      } else {
+        setError(`Code OTP incorrect. Il vous reste ${res.remaining} tentative(s).`);
+      }
+      setOtp("");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erreur réseau. Réessayez.";
+      setError("Vérification impossible. Réessayez.");
+      toast.error(msg);
+    } finally {
+      setVerifying(false);
     }
-    if (res.reason === "rate-limited") {
-      const mins = Math.ceil(((res.rate?.retryInMs) ?? 60_000) / 60_000);
-      setError(`Trop de tentatives. Réessayez dans ~${mins} min.`);
-    } else if (res.reason === "permanent") {
-      setError("Compte bloqué. Veuillez contacter le service clientèle.");
-    } else if (res.reason === "locked") {
-      setError("Trop de tentatives. Compte bloqué pendant 1 heure.");
-    } else if (res.reason === "wrong-phone") {
-      setError(`Ce numéro ne correspond pas au compte enregistré. Il vous reste ${res.remaining} tentative(s).`);
-    } else {
-      setError(`Code OTP incorrect. Il vous reste ${res.remaining} tentative(s).`);
-    }
-    setOtp("");
   };
 
   const setDigit = (idx: number, val: string) => {
@@ -277,10 +300,11 @@ function AuthPage() {
 
                     <button
                       onClick={submitOtp}
-                      disabled={locked || otp.length !== 6}
+                      disabled={locked || otp.length !== 6 || verifying}
                       className="cs-cta"
                     >
-                      Se connecter <ArrowRight className="h-4 w-4" />
+                      {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                      {verifying ? "Vérification…" : "Se connecter"}
                     </button>
                     <button
                       onClick={sendCode}

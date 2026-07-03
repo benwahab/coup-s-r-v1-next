@@ -4,15 +4,27 @@ import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/AppShell";
 import { coldNumbers, footMatches, hotNumbers, recentResults } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
+import ogAsset from "@/assets/og-resultats.jpg.asset.json";
+import { absoluteOgUrl } from "@/lib/og";
+
+const OG = absoluteOgUrl(ogAsset.url);
 
 export const Route = createFileRoute("/resultats")({
   head: () => ({
     meta: [
-      { title: "Résultats — LoNaNi" },
+      { title: "Résultats — Coup Sûr" },
       { name: "description", content: "Résultats officiels du PMU, Loto Balsa et Pari Foot de la Loterie Nationale du Niger." },
-      { property: "og:title", content: "Résultats officiels — LoNaNi" },
+      { property: "og:title", content: "Résultats officiels — Coup Sûr" },
       { property: "og:description", content: "Numéros gagnants, arrivées PMU et résultats foot." },
+      { property: "og:image", content: OG },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Coup Sûr résultats — tableau lumineux" },
+      { property: "og:url", content: "/resultats" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: OG },
     ],
+    links: [{ rel: "canonical", href: "/resultats" }],
   }),
   component: ResultsPage,
 });

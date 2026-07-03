@@ -1,12 +1,23 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { UserCircle2, Save, Trash2, X, AlertTriangle, RotateCcw, Clock } from "lucide-react";
 import { useState } from "react";
+import { z } from "zod";
+import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { regions } from "@/lib/mock-data";
 import { TERMS_VERSION, PRIVACY_VERSION, mockIp, makeUserId } from "@/lib/legal";
 import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+
+const AccountSchema = z.object({
+  firstName: z.string().trim().min(2, "Prénom trop court (2 caractères min).").max(80, "Prénom trop long."),
+  lastName: z.string().trim().min(2, "Nom trop court (2 caractères min).").max(80, "Nom trop long."),
+  region: z.string().min(1, "Sélectionnez une région."),
+  phone: z.string().regex(/^\d{8}$/, "Numéro à 8 chiffres requis."),
+  consented: z.literal(true, { errorMap: () => ({ message: "Vous devez accepter les CGU." }) }),
+});
+type FieldErrors = Partial<Record<"firstName" | "lastName" | "region" | "phone" | "consented", string>>;
 
 export const Route = createFileRoute("/compte")({
   head: () => ({ meta: [{ title: "Mon compte — Coup Sûr" }] }),
@@ -26,6 +37,7 @@ function ComptePage() {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [legalOpen, setLegalOpen] = useState<null | "terms" | "privacy">(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const ok = firstName.trim() && lastName.trim() && /^\d{8}$/.test(phone) && consented;
 
@@ -54,20 +66,34 @@ function ComptePage() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setPhoneError(null);
-    if (!ok) return;
+    setFieldErrors({});
+    const parsed = AccountSchema.safeParse({ firstName, lastName, region, phone, consented });
+    if (!parsed.success) {
+      const errs: FieldErrors = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0] as keyof FieldErrors;
+        if (key && !errs[key]) errs[key] = issue.message;
+      }
+      setFieldErrors(errs);
+      toast.error(parsed.error.issues[0]?.message ?? "Formulaire invalide");
+      return;
+    }
     // Anti-double compte : le numéro doit être libre (ou déjà à ce compte)
     const avail = isPhoneAvailable(phone, account?.userId);
     if (!avail.ok) {
       if (avail.reason === "active") {
-        setPhoneError("Ce numéro est déjà associé à un compte actif. Un seul compte est autorisé par numéro.");
+        const msg = "Ce numéro est déjà associé à un compte actif. Un seul compte est autorisé par numéro.";
+        setPhoneError(msg); toast.error(msg);
       } else if (avail.reason === "pending_deletion") {
         const daysLeft = Math.ceil(((avail.recoverableUntil ?? 0) - Date.now()) / (24 * 60 * 60 * 1000));
-        setPhoneError(`Ce numéro appartient à un compte en cours de suppression. Réutilisable dans ${daysLeft} jour(s).`);
+        const msg = `Ce numéro appartient à un compte en cours de suppression. Réutilisable dans ${daysLeft} jour(s).`;
+        setPhoneError(msg); toast.error(msg);
       }
       return;
     }
     // Consentement déjà donné via la case à cocher inline (enregistrement horodaté).
     persist();
+    toast.success("Compte enregistré. Vous pouvez maintenant vous connecter.");
   };
 
   return (
@@ -105,8 +131,8 @@ function ComptePage() {
         )}
 
         <form onSubmit={submit} className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm space-y-4">
-          <Field label={t("lastName")} value={lastName} onChange={setLastName} placeholder="ex. Issa" />
-          <Field label={t("firstName")} value={firstName} onChange={setFirstName} placeholder="ex. Aïssa" />
+          <Field label={t("lastName")} value={lastName} onChange={(v) => { setLastName(v); if (fieldErrors.lastName) setFieldErrors((s) => ({ ...s, lastName: undefined })); }} placeholder="ex. Issa" error={fieldErrors.lastName} />
+          <Field label={t("firstName")} value={firstName} onChange={(v) => { setFirstName(v); if (fieldErrors.firstName) setFieldErrors((s) => ({ ...s, firstName: undefined })); }} placeholder="ex. Aïssa" error={fieldErrors.firstName} />
           <label className="block">
             <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">{t("region")}</span>
             <select
@@ -120,9 +146,10 @@ function ComptePage() {
           <Field
             label={`${t("phone")} (8 chiffres)`}
             value={phone}
-            onChange={(v) => { setPhoneError(null); setPhone(v.replace(/\D/g, "").slice(0, 8)); }}
+            onChange={(v) => { setPhoneError(null); setFieldErrors((s) => ({ ...s, phone: undefined })); setPhone(v.replace(/\D/g, "").slice(0, 8)); }}
             placeholder="99294949"
             type="tel"
+            error={fieldErrors.phone}
           />
           {phoneError && (
             <div className="flex items-start gap-2 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-100">
@@ -135,7 +162,7 @@ function ComptePage() {
             <input
               type="checkbox"
               checked={consented}
-              onChange={(e) => setConsented(e.target.checked)}
+              onChange={(e) => { setConsented(e.target.checked); if (fieldErrors.consented) setFieldErrors((s) => ({ ...s, consented: undefined })); }}
               className="mt-0.5 h-5 w-5 shrink-0 accent-[#00C896] cursor-pointer"
               aria-label="J'accepte les conditions d'utilisation et la politique de confidentialité"
             />
@@ -155,6 +182,9 @@ function ComptePage() {
               de Coup Sûr. Un enregistrement horodaté sera conservé pour prouver ce consentement.
             </span>
           </label>
+          {fieldErrors.consented && (
+            <p className="text-xs font-semibold text-red-300 -mt-2">{fieldErrors.consented}</p>
+          )}
 
           <button
             type="submit"
@@ -218,7 +248,7 @@ function ComptePage() {
   );
 }
 
-function Field({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
+function Field({ label, value, onChange, placeholder, type = "text", error }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; error?: string }) {
   return (
     <label className="block">
       <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">{label}</span>
@@ -227,8 +257,10 @@ function Field({ label, value, onChange, placeholder, type = "text" }: { label: 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mt-1 w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-base text-white placeholder-white/30 focus:border-[#00C896] focus:bg-white/15 outline-none"
+        aria-invalid={!!error}
+        className={`mt-1 w-full rounded-2xl border bg-white/10 px-4 py-3 text-base text-white placeholder-white/30 focus:bg-white/15 outline-none ${error ? "border-red-400/70 focus:border-red-400" : "border-white/15 focus:border-[#00C896]"}`}
       />
+      {error && <p className="mt-1 text-xs font-semibold text-red-300">{error}</p>}
     </label>
   );
 }

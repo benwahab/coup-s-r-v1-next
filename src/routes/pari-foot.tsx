@@ -8,15 +8,27 @@ import { PageHeader } from "@/components/AppShell";
 import { footMatches, leagues } from "@/lib/mock-data";
 import { marketsForMatch, oddForPick, labelForPick } from "@/lib/foot-markets";
 import { cn } from "@/lib/utils";
+import ogAsset from "@/assets/og-foot.jpg.asset.json";
+import { absoluteOgUrl } from "@/lib/og";
+
+const OG = absoluteOgUrl(ogAsset.url);
 
 export const Route = createFileRoute("/pari-foot")({
   head: () => ({
     meta: [
-      { title: "Pari Foot — Pronostics matchs | LoNaNi" },
+      { title: "Pari Foot — Pronostics matchs | Coup Sûr" },
       { name: "description", content: "Pronostiquez les matchs de foot et pariez en ligne au Niger avec paiement mobile." },
-      { property: "og:title", content: "Pari Foot — LoNaNi" },
+      { property: "og:title", content: "Pari Foot — Coup Sûr" },
       { property: "og:description", content: "1, X ou 2 — choisissez vos pronostics." },
+      { property: "og:image", content: OG },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Coup Sûr Pari Foot — ballon et stade" },
+      { property: "og:url", content: "/pari-foot" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: OG },
     ],
+    links: [{ rel: "canonical", href: "/pari-foot" }],
   }),
   component: FootPage,
 });

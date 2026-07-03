@@ -48,6 +48,9 @@ export interface Ticket {
 
 interface Ctx {
   tickets: Ticket[];
+  loading: boolean;
+  error: string | null;
+  refresh: () => void;
   addTicket: (t: Omit<Ticket, "id" | "createdAt" | "status">) => Promise<Ticket>;
   getTicket: (id: string) => Ticket | undefined;
   updateStatus: (id: string, status: TicketStatus, prize?: number) => Promise<void>;
@@ -105,27 +108,41 @@ export function TicketsProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const refresh = () => setRefreshTick((n) => n + 1);
 
   useEffect(() => {
-    if (!session) { setTickets([]); setProfile(null); return; }
+    if (!session) { setTickets([]); setProfile(null); setLoading(false); setError(null); return; }
     const userId = session.userId;
     let cancelled = false;
+    setLoading(true);
+    setError(null);
     (async () => {
-      const [tRes, pRes] = await Promise.all([
-        supabase
-          .from("tickets")
-          .select("*")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false }),
-        supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
-      ]);
-      if (cancelled) return;
-      const prof = pRes.data ?? null;
-      setProfile(prof);
-      setTickets((tRes.data ?? []).map((r) => rowToTicket(r, prof)));
+      try {
+        const [tRes, pRes] = await Promise.all([
+          supabase
+            .from("tickets")
+            .select("*")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false }),
+          supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+        ]);
+        if (cancelled) return;
+        if (tRes.error) throw new Error(tRes.error.message);
+        const prof = pRes.data ?? null;
+        setProfile(prof);
+        setTickets((tRes.data ?? []).map((r) => rowToTicket(r, prof)));
+      } catch (e) {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : "Erreur réseau");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => { cancelled = true; };
-  }, [session]);
+  }, [session, refreshTick]);
 
   const addTicket: Ctx["addTicket"] = async (t) => {
     if (!session) throw new Error("not_authenticated");
@@ -178,7 +195,7 @@ export function TicketsProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <TicketsCtx.Provider value={{ tickets, addTicket, getTicket, updateStatus, updateLegStatus }}>
+    <TicketsCtx.Provider value={{ tickets, loading, error, refresh, addTicket, getTicket, updateStatus, updateLegStatus }}>
       {children}
     </TicketsCtx.Provider>
   );

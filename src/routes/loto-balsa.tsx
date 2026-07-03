@@ -8,15 +8,27 @@ import { cn, formatFcfa, formatHour } from "@/lib/utils";
 import { lotoMultipliers, drawSchedule } from "@/lib/mock-data";
 import { drawNameForDate, nigerDateLabel, isGameOpen } from "@/lib/schedule";
 import type { TicketLeg } from "@/lib/tickets";
+import ogAsset from "@/assets/og-loto.jpg.asset.json";
+import { absoluteOgUrl } from "@/lib/og";
+
+const OG = absoluteOgUrl(ogAsset.url);
 
 export const Route = createFileRoute("/loto-balsa")({
   head: () => ({
     meta: [
-      { title: "Loto Balsa — LoNaNi" },
+      { title: "Loto Balsa — Coup Sûr" },
       { name: "description", content: "Choisissez vos numéros du Loto Balsa et jouez en ligne avec paiement mobile." },
-      { property: "og:title", content: "Loto Balsa — Jouez en ligne" },
+      { property: "og:title", content: "Loto Balsa — Coup Sûr" },
       { property: "og:description", content: "Sélectionnez 1 à 5 boules sur 90 et tentez votre chance." },
+      { property: "og:image", content: OG },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Coup Sûr Loto Balsa — boules numérotées" },
+      { property: "og:url", content: "/loto-balsa" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: OG },
     ],
+    links: [{ rel: "canonical", href: "/loto-balsa" }],
   }),
   component: LotoPage,
 });
