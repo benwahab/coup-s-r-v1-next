@@ -81,9 +81,27 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState<Account | null>(null);
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // Notifier avant purge les demandes de suppression arrivées à expiration.
+    const expired = findExpiredDeletions();
     const raw = localStorage.getItem(KEY);
+    let currentAccount: Account | null = null;
     if (raw) {
-      try { setAccount(JSON.parse(raw)); } catch { /* ignore */ }
+      try {
+        currentAccount = JSON.parse(raw) as Account;
+        setAccount(currentAccount);
+      } catch { /* ignore */ }
+    }
+    for (const phone of expired) {
+      const target =
+        currentAccount && currentAccount.phone === phone
+          ? { phone, email: currentAccount.email, firstName: currentAccount.firstName }
+          : { phone };
+      void sendAccountNotice("deletion-expired", target);
+      // Si c'est le compte local en cours, on nettoie localStorage aussi.
+      if (currentAccount && currentAccount.phone === phone) {
+        localStorage.removeItem(KEY);
+        setAccount(null);
+      }
     }
     // Purge le registre au boot
     loadRegistry();
@@ -145,6 +163,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const next = { ...account, deletionRequestedAt: now };
     setAccount(next);
     if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(next));
+    void sendAccountNotice("deletion-requested", {
+      phone: account.phone,
+      email: account.email,
+      firstName: account.firstName,
+    });
   };
 
   const cancelDeletion = () => {
@@ -158,6 +181,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const next = { ...account, deletionRequestedAt: null };
     setAccount(next);
     if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(next));
+    void sendAccountNotice("deletion-cancelled", {
+      phone: account.phone,
+      email: account.email,
+      firstName: account.firstName,
+    });
   };
 
   const deletionRemainingMs = () => {
