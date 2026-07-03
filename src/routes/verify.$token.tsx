@@ -2,7 +2,7 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Check, Home, ShieldCheck, ShieldX, Trophy } from "lucide-react";
 import { useTickets } from "@/lib/tickets";
-import { verifyTicketToken } from "@/lib/ticket-token";
+import { verifyTicketToken } from "@/lib/ticket-token.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/verify/$token")({
@@ -20,7 +20,7 @@ function VerifyPage() {
   const [ts, setTs] = useState<number | undefined>();
 
   useEffect(() => {
-    verifyTicketToken(token).then((r) => {
+    verifyTicketToken({ data: { token } }).then((r) => {
       if (!r.valid) { setState("invalid"); setReason(r.reason || "Token invalide"); return; }
       setTicketId(r.ticketId!); setLegId(r.legId); setTs(r.ts);
       setState("valid");
