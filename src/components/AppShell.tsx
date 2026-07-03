@@ -14,14 +14,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const lockMs = remainingLockMs();
   const locked = isPermanent() || lockMs > 0;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isLanding = pathname === "/";
-  const showGlobalBackdrop = !pathname.startsWith("/auth") && !isLanding;
-
-  // Landing page (/) — purement visuelle : pas de header, pas de footer, pas de nav mobile.
-  // La carte image gère son propre fond.
-  if (isLanding) {
-    return <>{children}</>;
-  }
+  const showGlobalBackdrop = !pathname.startsWith("/auth");
 
   const navItems: { to: string; label: string; icon: typeof Home; exact?: boolean }[] = [
     { to: "/", label: t("home"), icon: Home, exact: true },
