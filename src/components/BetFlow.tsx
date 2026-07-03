@@ -142,7 +142,7 @@ export function BetFlow({
     }
     // Représentation legacy (1er leg) pour compat
     const first = allLegs[0];
-    const ticket = addTicket({
+    const ticket = await addTicket({
       gameId: first.gameId, gameName: first.gameName,
       firstName: account?.firstName, lastName: account?.lastName, phone, region,
       picks: first.picks, picksLabel: allLegs.map(l => l.picksLabel).join(" | "),
@@ -152,7 +152,7 @@ export function BetFlow({
       drawName,
       legs: allLegs,
     });
-    confirmPayment(intent.txRef);
+    await confirmPayment(intent.txRef, ticket);
     navigate({ to: "/ticket/$id", params: { id: ticket.id } });
   };
 
