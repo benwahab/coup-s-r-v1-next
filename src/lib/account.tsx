@@ -38,27 +38,40 @@ const KEY = "lonani.account";
 const REG_KEY = "lonani.accounts.registry";
 const AccountCtx = createContext<Ctx | null>(null);
 
-function loadRegistry(): { reg: Registry; expired: Array<{ phone: string }> } {
+function loadRegistry(): Registry {
   if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem(REG_KEY);
-    if (!raw) return { reg: {}, expired: [] };
+    if (!raw) return {};
     const reg = JSON.parse(raw) as Registry;
-    // Purge des suppressions expirées (> 30j) → numéro libre
     const now = Date.now();
     let dirty = false;
-    const expired: Array<{ phone: string }> = [];
     for (const p of Object.keys(reg)) {
       const e = reg[p];
       if (e.status === "pending_deletion" && e.deletionRequestedAt && now - e.deletionRequestedAt > RECOVERY_MS) {
-        expired.push({ phone: p });
         delete reg[p];
         dirty = true;
       }
     }
     if (dirty) localStorage.setItem(REG_KEY, JSON.stringify(reg));
-    return { reg, expired };
-  } catch { return { reg: {}, expired: [] }; }
+    return reg;
+  } catch { return {}; }
+}
+
+// Détecte les demandes de suppression arrivées à expiration (>30j) sans les purger.
+// Utilisé pour envoyer la notification "compte supprimé" avant la purge.
+function findExpiredDeletions(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(REG_KEY);
+    if (!raw) return [];
+    const reg = JSON.parse(raw) as Registry;
+    const now = Date.now();
+    return Object.keys(reg).filter((p) => {
+      const e = reg[p];
+      return e.status === "pending_deletion" && !!e.deletionRequestedAt && now - e.deletionRequestedAt > RECOVERY_MS;
+    });
+  } catch { return []; }
 }
 function saveRegistry(reg: Registry) {
   if (typeof window !== "undefined") localStorage.setItem(REG_KEY, JSON.stringify(reg));
