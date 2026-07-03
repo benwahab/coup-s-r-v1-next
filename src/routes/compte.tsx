@@ -6,6 +6,7 @@ import { useAccount } from "@/lib/account";
 import { regions } from "@/lib/mock-data";
 import { TERMS_VERSION, PRIVACY_VERSION, mockIp, makeUserId } from "@/lib/legal";
 import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
 export const Route = createFileRoute("/compte")({
   head: () => ({ meta: [{ title: "Mon compte — Coup Sûr" }] }),
@@ -24,6 +25,7 @@ function ComptePage() {
   const [consented, setConsented] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [legalOpen, setLegalOpen] = useState<null | "terms" | "privacy">(null);
 
   const ok = firstName.trim() && lastName.trim() && /^\d{8}$/.test(phone) && consented;
 
@@ -139,9 +141,17 @@ function ComptePage() {
             />
             <span className="text-[12px] leading-relaxed text-white/80">
               J'accepte les{" "}
-              <a href="/conditions" target="_blank" rel="noreferrer" className="font-semibold text-[#00C896] hover:underline">Conditions d'utilisation</a>{" "}
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); setLegalOpen("terms"); }}
+                className="font-semibold text-[#00C896] hover:underline"
+              >Conditions d'utilisation</button>{" "}
               et la{" "}
-              <a href="/confidentialite" target="_blank" rel="noreferrer" className="font-semibold text-[#00C896] hover:underline">Politique de confidentialité</a>{" "}
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); setLegalOpen("privacy"); }}
+                className="font-semibold text-[#00C896] hover:underline"
+              >Politique de confidentialité</button>{" "}
               de Coup Sûr. Un enregistrement horodaté sera conservé pour prouver ce consentement.
             </span>
           </label>
@@ -185,6 +195,25 @@ function ComptePage() {
           }}
         />
       )}
+
+      <Drawer open={legalOpen !== null} onOpenChange={(o) => !o && setLegalOpen(null)}>
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerHeader>
+            <DrawerTitle>
+              {legalOpen === "privacy" ? "Politique de confidentialité" : "Conditions d'utilisation"}
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="flex-1 overflow-hidden px-2 pb-4">
+            {legalOpen && (
+              <iframe
+                src={legalOpen === "privacy" ? "/confidentialite" : "/conditions"}
+                title={legalOpen === "privacy" ? "Politique de confidentialité" : "Conditions d'utilisation"}
+                className="h-[70vh] w-full rounded-2xl border border-border bg-background"
+              />
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }

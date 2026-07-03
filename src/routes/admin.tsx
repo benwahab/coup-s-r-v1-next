@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, redirect } from "@tanstack/react-router";
 import {
   ShieldCheck, TrendingUp, Users, Trophy, Send, Download, MessageCircle, Check,
   BellRing, Sparkles, MapPin, Circle, BarChart3, LogIn, LifeBuoy, Search, X, Activity,
@@ -21,16 +21,48 @@ import { listIntents } from "@/lib/payments";
 import { useAuth } from "@/lib/auth";
 
 // Liste blanche interim : téléphones autorisés à accéder au panneau d'admin.
-// À remplacer par une vraie vérification de rôle serveur en Phase 1.
-const ADMIN_PHONE_WHITELIST: readonly string[] = [];
+// Alimentée par VITE_ADMIN_PHONES (numéros séparés par virgule) en attendant
+// la vraie vérification de rôle serveur `has_role('admin')` de la Phase 1.
+const ADMIN_PHONE_WHITELIST: readonly string[] = (
+  (import.meta.env.VITE_ADMIN_PHONES as string | undefined) ?? ""
+)
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 export const Route = createFileRoute("/admin")({
+  // Panneau strictement client (auth localStorage) — pas de prérendu.
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Admin — LoNaNi" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
+  // Garde côté client : redirection immédiate vers /auth avant tout rendu
+  // si aucune session admin valide n'est présente dans le stockage local.
+  beforeLoad: () => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem("lonani.session");
+      const session = raw ? (JSON.parse(raw) as { phone?: string } | null) : null;
+      if (!session?.phone) {
+        throw redirect({ to: "/auth" });
+      }
+      if (
+        ADMIN_PHONE_WHITELIST.length > 0 &&
+        !ADMIN_PHONE_WHITELIST.includes(session.phone)
+      ) {
+        throw redirect({ to: "/" });
+      }
+    } catch (err) {
+      // Rethrow router redirects; ignore JSON parsing errors.
+      if (err && typeof err === "object" && "to" in (err as Record<string, unknown>)) {
+        throw err;
+      }
+      throw redirect({ to: "/auth" });
+    }
+  },
   component: AdminPage,
 });
 

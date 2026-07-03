@@ -14,8 +14,9 @@ export function Splash() {
       sessionStorage.setItem(SEEN_KEY, "1");
     } catch { /* ignore */ }
     setShow(true);
-    const t1 = setTimeout(() => setLeaving(true), 1200);
-    const t2 = setTimeout(() => setShow(false), 1600);
+    // Bloque au maximum 1,5s au tout premier chargement de la session.
+    const t1 = setTimeout(() => setLeaving(true), 1100);
+    const t2 = setTimeout(() => setShow(false), 1500);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
