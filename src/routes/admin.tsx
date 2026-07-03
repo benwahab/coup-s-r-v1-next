@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import {
   ShieldCheck, TrendingUp, Users, Trophy, Send, Download, MessageCircle, Check,
   BellRing, Sparkles, MapPin, Circle, BarChart3, LogIn, LifeBuoy, Search, X, Activity,
@@ -18,9 +18,19 @@ import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
 import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
 import { useDrafts } from "@/lib/drafts";
 import { listIntents } from "@/lib/payments";
+import { useAuth } from "@/lib/auth";
+
+// Liste blanche interim : téléphones autorisés à accéder au panneau d'admin.
+// À remplacer par une vraie vérification de rôle serveur en Phase 1.
+const ADMIN_PHONE_WHITELIST: readonly string[] = [];
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ title: "Admin — LoNaNi" }] }),
+  head: () => ({
+    meta: [
+      { title: "Admin — LoNaNi" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: AdminPage,
 });
 
@@ -38,6 +48,36 @@ type Tab = "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops
 
 function AdminPage() {
   const { t } = useI18n();
+  const { authed, session } = useAuth();
+  const [checked, setChecked] = useState(false);
+  useEffect(() => { setChecked(true); }, []);
+
+  // Gate client-side : uniquement les téléphones whitelistés peuvent voir /admin.
+  // Redirection vers /auth pour tous les autres. Vraie vérif serveur en Phase 1.
+  if (checked) {
+    if (!authed || !session) {
+      return <Navigate to="/auth" replace />;
+    }
+    if (!ADMIN_PHONE_WHITELIST.includes(session.phone)) {
+      return (
+        <div className="min-h-[60vh] grid place-items-center px-4">
+          <div className="max-w-md rounded-3xl border border-destructive/30 bg-destructive/5 p-8 text-center">
+            <ShieldCheck className="mx-auto h-10 w-10 text-destructive" />
+            <h1 className="mt-3 font-display text-xl font-extrabold">Accès refusé</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Cette zone est réservée aux administrateurs. Contactez le service technique si vous devez y accéder.
+            </p>
+            <Link to="/" className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground">
+              Retour à l'accueil
+            </Link>
+          </div>
+        </div>
+      );
+    }
+  }
+  if (!checked) {
+    return <div className="min-h-[60vh]" aria-hidden />;
+  }
   const { tickets, updateStatus, updateLegStatus } = useTickets();
   const { drafts, removeDraft } = useDrafts();
   const sims = useMemo(() => generateSimTickets(260), []);

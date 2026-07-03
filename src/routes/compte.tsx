@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { UserCircle2, Save, Trash2, ShieldCheck, X, AlertTriangle, RotateCcw, Clock } from "lucide-react";
+import { UserCircle2, Save, Trash2, X, AlertTriangle, RotateCcw, Clock } from "lucide-react";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
@@ -21,11 +21,11 @@ function ComptePage() {
   const [region, setRegion] = useState<string>(account?.region ?? regions[0]);
   const [phone, setPhone] = useState(account?.phone ?? "");
   const [saved, setSaved] = useState(false);
-  const [consentOpen, setConsentOpen] = useState(false);
+  const [consented, setConsented] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
 
-  const ok = firstName.trim() && lastName.trim() && /^\d{8}$/.test(phone);
+  const ok = firstName.trim() && lastName.trim() && /^\d{8}$/.test(phone) && consented;
 
   const deletionMs = deletionRemainingMs();
   const deletionDaysLeft = Math.ceil(deletionMs / (24 * 60 * 60 * 1000));
@@ -46,7 +46,6 @@ function ComptePage() {
       },
     });
     setSaved(true);
-    setConsentOpen(false);
     setTimeout(() => navigate({ to: "/" }), 700);
   };
 
@@ -65,8 +64,8 @@ function ComptePage() {
       }
       return;
     }
-    // Ouvre la modale de consentement au lieu de créer directement
-    setConsentOpen(true);
+    // Consentement déjà donné via la case à cocher inline (enregistrement horodaté).
+    persist();
   };
 
   return (
@@ -130,12 +129,22 @@ function ComptePage() {
             </div>
           )}
 
-          <p className="text-[11px] text-white/60">
-            En créant votre compte, vous acceptez les{" "}
-            <a href="/conditions" target="_blank" rel="noreferrer" className="font-semibold text-[#00C896] hover:underline">Conditions d'utilisation</a>{" "}
-            et la{" "}
-            <a href="/confidentialite" target="_blank" rel="noreferrer" className="font-semibold text-[#00C896] hover:underline">Politique de confidentialité</a>.
-          </p>
+          <label className="flex items-start gap-3 rounded-2xl border border-white/15 bg-white/5 p-3 cursor-pointer hover:bg-white/10 transition">
+            <input
+              type="checkbox"
+              checked={consented}
+              onChange={(e) => setConsented(e.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-[#00C896] cursor-pointer"
+              aria-label="J'accepte les conditions d'utilisation et la politique de confidentialité"
+            />
+            <span className="text-[12px] leading-relaxed text-white/80">
+              J'accepte les{" "}
+              <a href="/conditions" target="_blank" rel="noreferrer" className="font-semibold text-[#00C896] hover:underline">Conditions d'utilisation</a>{" "}
+              et la{" "}
+              <a href="/confidentialite" target="_blank" rel="noreferrer" className="font-semibold text-[#00C896] hover:underline">Politique de confidentialité</a>{" "}
+              de Coup Sûr. Un enregistrement horodaté sera conservé pour prouver ce consentement.
+            </span>
+          </label>
 
           <button
             type="submit"
@@ -161,13 +170,6 @@ function ComptePage() {
         </form>
         </div>
       </PremiumPhoneCard>
-
-      {consentOpen && (
-        <ConsentModal
-          onCancel={() => setConsentOpen(false)}
-          onAccept={persist}
-        />
-      )}
 
       {confirmDeleteOpen && (
         <ConfirmDeleteModal
@@ -199,54 +201,6 @@ function Field({ label, value, onChange, placeholder, type = "text" }: { label: 
         className="mt-1 w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-base text-white placeholder-white/30 focus:border-[#00C896] focus:bg-white/15 outline-none"
       />
     </label>
-  );
-}
-
-function ConsentModal({ onCancel, onAccept }: { onCancel: () => void; onAccept: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-0 sm:p-4" role="dialog" aria-modal="true">
-      <div className="w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border border-border bg-card shadow-elevated overflow-hidden">
-        <div className="flex items-start justify-between gap-3 border-b border-border/60 bg-gradient-to-br from-primary/15 to-transparent p-5">
-          <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/20 text-primary shadow-inner">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-extrabold">Confirmation requise</h3>
-              <p className="text-xs text-muted-foreground">Avant la création de votre compte</p>
-            </div>
-          </div>
-          <button onClick={onCancel} aria-label="Fermer" className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="p-5 space-y-4">
-          <p className="text-sm leading-relaxed text-foreground/90">
-            En poursuivant votre inscription, vous acceptez les{" "}
-            <a href="/conditions" target="_blank" rel="noreferrer" className="font-bold text-primary hover:underline decoration-2 underline-offset-2">Conditions d'utilisation</a>{" "}
-            de Coup Sûr et reconnaissez avoir pris connaissance de notre{" "}
-            <a href="/confidentialite" target="_blank" rel="noreferrer" className="font-bold text-primary hover:underline decoration-2 underline-offset-2">Politique de confidentialité</a>.
-          </p>
-          <div className="rounded-2xl border border-border bg-secondary/40 p-3 text-[11px] text-muted-foreground">
-            Un enregistrement (date, heure, versions des documents, adresse IP) sera conservé pour prouver votre consentement.
-          </div>
-          <div className="flex flex-col-reverse sm:flex-row gap-2 pt-2">
-            <button
-              onClick={onCancel}
-              className="flex-1 rounded-2xl border-2 border-border bg-background px-4 py-3 text-sm font-bold text-foreground hover:border-primary/50"
-            >
-              Annuler
-            </button>
-            <button
-              onClick={onAccept}
-              className="flex-1 rounded-2xl bg-gold-gradient px-4 py-3 text-sm font-extrabold uppercase tracking-wide text-[var(--gold-foreground)] shadow-gold hover:brightness-110"
-            >
-              J'accepte et je continue
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 

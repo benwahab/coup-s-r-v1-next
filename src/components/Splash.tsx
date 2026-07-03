@@ -1,12 +1,21 @@
 import { useEffect, useState } from "react";
 
+const SEEN_KEY = "lonani.splash.seen";
+
 export function Splash() {
-  const [show, setShow] = useState(true);
+  // Ne montre le splash qu'au 1er chargement de la session navigateur.
+  const [show, setShow] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setLeaving(true), 4500);
-    const t2 = setTimeout(() => setShow(false), 5000);
+    if (typeof window === "undefined") return;
+    try {
+      if (sessionStorage.getItem(SEEN_KEY) === "1") return;
+      sessionStorage.setItem(SEEN_KEY, "1");
+    } catch { /* ignore */ }
+    setShow(true);
+    const t1 = setTimeout(() => setLeaving(true), 1200);
+    const t2 = setTimeout(() => setShow(false), 1600);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
@@ -15,11 +24,13 @@ export function Splash() {
   return (
     <div
       className={[
-        "fixed inset-0 z-[100] grid place-items-center bg-hero overflow-hidden",
+        "fixed inset-0 z-[100] grid place-items-center bg-hero overflow-hidden cursor-pointer",
         "transition-opacity duration-500",
         leaving ? "opacity-0" : "opacity-100",
       ].join(" ")}
-      aria-hidden
+      onClick={() => { setLeaving(true); setTimeout(() => setShow(false), 300); }}
+      role="button"
+      aria-label="Passer l'écran d'accueil"
     >
       <div className="absolute inset-0 grid-bg opacity-30" />
       <div
