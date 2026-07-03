@@ -96,7 +96,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "LoNaNi — Jouez en ligne au Niger" },
       { property: "og:description", content: "PMU, Loto Balsa, Pari Foot. Paiement mobile, reçu QR Code, notifications de gain par SMS." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       {

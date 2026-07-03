@@ -8,6 +8,10 @@ import { generateSimTickets } from "@/lib/mock-stats";
 import { formatDate, formatFcfa, formatHour } from "@/lib/utils";
 import { nextDailyEvent, diffParts, drawNameForDate, nigerDateLabel } from "@/lib/schedule";
 import heroBg from "@/assets/hero-winners.jpg";
+import ogImage from "@/assets/og-coup-sur.png.asset.json";
+
+const SITE_ORIGIN = "https://project--d012cc30-70a9-4deb-91e9-b223040ce8ed.lovable.app";
+const OG_IMAGE_URL = `${SITE_ORIGIN}${ogImage.url}`;
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -16,6 +20,13 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Jouez au PMU, Loto Balsa et Pari Foot depuis votre téléphone. Paiement mobile, reçu QR Code, notification de gain par SMS." },
       { property: "og:title", content: "LoNaNi — Loterie Nationale du Niger" },
       { property: "og:description", content: "PMU, Loto Balsa, Pari Foot. Jouez en 3 clics depuis Niamey ou partout au Niger." },
+      { property: "og:image", content: OG_IMAGE_URL },
+      { property: "og:image:width", content: "1254" },
+      { property: "og:image:height", content: "1254" },
+      { property: "og:image:alt", content: "Coup Sûr — Loterie Nationale du Niger" },
+      { property: "og:url", content: SITE_ORIGIN },
+      { name: "twitter:image", content: OG_IMAGE_URL },
+      { name: "twitter:image:alt", content: "Coup Sûr — Loterie Nationale du Niger" },
     ],
   }),
   component: Index,
