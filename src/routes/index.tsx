@@ -141,10 +141,14 @@ function Index() {
               </div>
 
               <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-white/60">
-                  {pmuEvt.stage === "openAt" ? `${t("openAt")} ${formatHour(drawSchedule.pmu.openHour)}` : t(pmuEvt.stage)}
+                <div className="text-[10px] font-bold uppercase tracking-widest text-white/60 min-h-4">
+                  {pmuEvt
+                    ? pmuEvt.stage === "openAt"
+                      ? `${t("openAt")} ${formatHour(drawSchedule.pmu.openHour)}`
+                      : t(pmuEvt.stage)
+                    : "\u00A0"}
                 </div>
-                {pmuCd ? (
+                {pmuEvt && pmuCd ? (
                   <div className="mt-1.5 grid grid-cols-4 gap-1.5 tabular-nums">
                     {[
                       { v: pmuCd.d, l: t("days") },
@@ -209,10 +213,14 @@ function Index() {
                 ))}
               </div>
 
-              <div className="mt-3 text-[10px] font-bold uppercase tracking-widest text-white/60">
-                {lotoEvt.stage === "openAt" ? `${t("openAt")} ${formatHour(drawSchedule.loto.openHour)}` : t(lotoEvt.stage)}
+              <div className="mt-3 text-[10px] font-bold uppercase tracking-widest text-white/60 min-h-4">
+                {lotoEvt
+                  ? lotoEvt.stage === "openAt"
+                    ? `${t("openAt")} ${formatHour(drawSchedule.loto.openHour)}`
+                    : t(lotoEvt.stage)
+                  : "\u00A0"}
               </div>
-              {lotoCd ? (
+              {lotoEvt && lotoCd ? (
                 <div className="mt-1 grid grid-cols-4 gap-1.5 tabular-nums">
                   {[
                     { v: lotoCd.d, l: t("days") },
