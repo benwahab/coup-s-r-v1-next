@@ -20,6 +20,7 @@ import { useDrafts } from "@/lib/drafts";
 import { listMyIntents, type PaymentIntent } from "@/lib/payments";
 import { checkIsAdmin, adminListAllPayments } from "@/lib/admin.functions";
 import { useAuth } from "@/lib/auth";
+import { useThemeChartColors } from "@/hooks/use-theme-chart-colors";
 
 export const Route = createFileRoute("/admin")({
   // Panneau réservé aux comptes ayant le rôle `admin` — vérifié côté serveur.
@@ -42,13 +43,14 @@ const statusColor: Record<string, string> = {
 };
 
 const gameLabel: Record<string, string> = { pmu: "PMU", loto: "Loto Balsa", foot: "Pari Foot" };
-const gameColor: Record<string, string> = { pmu: "hsl(30 90% 55%)", loto: "hsl(160 70% 42%)", foot: "hsl(200 85% 50%)" };
 
 type Tab = "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "logs" | "claims";
 
 function AdminPage() {
   const { t } = useI18n();
   const { authed, session } = useAuth();
+  const chart = useThemeChartColors();
+  const gameColor: Record<string, string> = { pmu: chart.gold, loto: chart.teal, foot: chart.primary };
   const [gate, setGate] = useState<"checking" | "ok" | "denied" | "anon">("checking");
   useEffect(() => {
     if (!authed || !session) { setGate("anon"); return; }
@@ -407,21 +409,21 @@ function AdminPage() {
                         <AreaChart data={revenueSeries} margin={{ left: 0, right: 10, top: 10, bottom: 0 }}>
                           <defs>
                             <linearGradient id="mises" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="hsl(160 70% 45%)" stopOpacity={0.5} />
-                              <stop offset="100%" stopColor="hsl(160 70% 45%)" stopOpacity={0} />
+                              <stop offset="0%" stopColor={chart.teal} stopOpacity={0.5} />
+                              <stop offset="100%" stopColor={chart.teal} stopOpacity={0} />
                             </linearGradient>
                             <linearGradient id="gains" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="hsl(38 92% 55%)" stopOpacity={0.5} />
-                              <stop offset="100%" stopColor="hsl(38 92% 55%)" stopOpacity={0} />
+                              <stop offset="0%" stopColor={chart.gold} stopOpacity={0.5} />
+                              <stop offset="100%" stopColor={chart.gold} stopOpacity={0} />
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                          <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" interval={3} />
-                          <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v / 1000) | 0}k`} width={40} />
-                          <RTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }} formatter={(v: number) => `${formatFcfa(v)} FCFA`} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={chart.border} vertical={false} />
+                          <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke={chart.mutedForeground} interval={3} />
+                          <YAxis tick={{ fontSize: 10 }} stroke={chart.mutedForeground} tickFormatter={(v) => `${(v / 1000) | 0}k`} width={40} />
+                          <RTooltip contentStyle={{ background: chart.card, border: `1px solid ${chart.border}`, borderRadius: 12, fontSize: 12 }} formatter={(v: number) => `${formatFcfa(v)} FCFA`} />
                           <Legend wrapperStyle={{ fontSize: 11 }} />
-                          <Area type="monotone" name="Mises" dataKey="mises" stroke="hsl(160 70% 45%)" fill="url(#mises)" strokeWidth={2} />
-                          <Area type="monotone" name="Gains" dataKey="gains" stroke="hsl(38 92% 55%)" fill="url(#gains)" strokeWidth={2} />
+                          <Area type="monotone" name="Mises" dataKey="mises" stroke={chart.teal} fill="url(#mises)" strokeWidth={2} />
+                          <Area type="monotone" name="Gains" dataKey="gains" stroke={chart.gold} fill="url(#gains)" strokeWidth={2} />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
@@ -434,7 +436,7 @@ function AdminPage() {
                           <Pie data={byGameData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={3}>
                             {byGameData.map((entry) => <Cell key={entry.id} fill={entry.fill} />)}
                           </Pie>
-                          <RTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }} formatter={(v: number) => `${formatFcfa(v)} FCFA`} />
+                          <RTooltip contentStyle={{ background: chart.card, border: `1px solid ${chart.border}`, borderRadius: 12, fontSize: 12 }} formatter={(v: number) => `${formatFcfa(v)} FCFA`} />
                           <Legend wrapperStyle={{ fontSize: 11 }} />
                         </PieChart>
                       </ResponsiveContainer>
@@ -448,11 +450,11 @@ function AdminPage() {
                     <div className="h-56">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={hourlyData} margin={{ left: 0, right: 10, top: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                          <XAxis dataKey="hour" tick={{ fontSize: 9 }} stroke="hsl(var(--muted-foreground))" interval={1} />
-                          <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" width={30} />
-                          <RTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }} />
-                          <Bar dataKey="count" fill="hsl(160 70% 45%)" radius={[6, 6, 0, 0]} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={chart.border} vertical={false} />
+                          <XAxis dataKey="hour" tick={{ fontSize: 9 }} stroke={chart.mutedForeground} interval={1} />
+                          <YAxis tick={{ fontSize: 10 }} stroke={chart.mutedForeground} width={30} />
+                          <RTooltip contentStyle={{ background: chart.card, border: `1px solid ${chart.border}`, borderRadius: 12, fontSize: 12 }} />
+                          <Bar dataKey="count" fill={chart.teal} radius={[6, 6, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -462,13 +464,13 @@ function AdminPage() {
                     <div className="h-56">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={monthlyData} margin={{ left: 0, right: 10, top: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                          <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                          <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${(v / 1000) | 0}k`} width={40} />
-                          <RTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }} formatter={(v: number) => `${formatFcfa(v)} FCFA`} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={chart.border} vertical={false} />
+                          <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke={chart.mutedForeground} />
+                          <YAxis tick={{ fontSize: 10 }} stroke={chart.mutedForeground} tickFormatter={(v) => `${(v / 1000) | 0}k`} width={40} />
+                          <RTooltip contentStyle={{ background: chart.card, border: `1px solid ${chart.border}`, borderRadius: 12, fontSize: 12 }} formatter={(v: number) => `${formatFcfa(v)} FCFA`} />
                           <Legend wrapperStyle={{ fontSize: 11 }} />
-                          <Bar dataKey="mises" name="Mises" fill="hsl(160 70% 45%)" radius={[6, 6, 0, 0]} />
-                          <Bar dataKey="gains" name="Gains" fill="hsl(38 92% 55%)" radius={[6, 6, 0, 0]} />
+                          <Bar dataKey="mises" name="Mises" fill={chart.teal} radius={[6, 6, 0, 0]} />
+                          <Bar dataKey="gains" name="Gains" fill={chart.gold} radius={[6, 6, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -527,12 +529,12 @@ function AdminPage() {
 
             {tab === "transactions" && (
               <section className="rounded-3xl border border-border bg-card shadow-soft">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
-                  <div>
-                    <h2 className="font-display text-lg font-bold">Transactions</h2>
-                    <p className="text-xs text-muted-foreground">{filteredRows.length} résultats · live + simulation</p>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3 sm:flex sm:flex-wrap sm:justify-between sm:px-5">
+                  <div className="min-w-0">
+                    <h2 className="font-display text-lg font-bold truncate">Transactions</h2>
+                    <p className="text-xs text-muted-foreground truncate">{filteredRows.length} résultats · live + simulation</p>
                   </div>
-                  <button onClick={exportTransactionsCsv} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/40">
+                  <button onClick={exportTransactionsCsv} className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/40">
                     <Download className="h-3.5 w-3.5" /> Export CSV
                   </button>
                 </div>
@@ -608,9 +610,9 @@ function AdminPage() {
 
             {tab === "players" && (
               <section className="rounded-3xl border border-border bg-card shadow-soft">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
-                  <h2 className="font-display text-lg font-bold">{t("players")}</h2>
-                  <div className="flex flex-wrap items-center gap-2">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-5 py-3 sm:flex sm:flex-wrap sm:justify-between">
+                  <h2 className="font-display text-lg font-bold min-w-0 truncate">{t("players")}</h2>
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <input value={searchPlayer} onChange={(e) => setSearchPlayer(e.target.value)} placeholder="Rechercher…" className="rounded-full border border-border bg-background px-3 py-1.5 text-xs" />
                     <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs">
                       <option value="all">Toutes régions</option>

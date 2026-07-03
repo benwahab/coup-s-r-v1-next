@@ -7,15 +7,27 @@ import { PageHeader } from "@/components/AppShell";
 import { coldNumbers, expertTips, footMatches, hotNumbers, horses, lotoSuggestions, recentResults } from "@/lib/mock-data";
 import { analyzePmu, analyzeLoto } from "@/lib/ai-pronos.functions";
 import { cn } from "@/lib/utils";
+import ogAsset from "@/assets/og-pronostics.jpg.asset.json";
+import { absoluteOgUrl } from "@/lib/og";
+
+const OG = absoluteOgUrl(ogAsset.url);
 
 export const Route = createFileRoute("/pronostics")({
   head: () => ({
     meta: [
-      { title: "Pronostics — LoNaNi" },
+      { title: "Pronostics — Coup Sûr" },
       { name: "description", content: "Pronostics PMU, Loto Balsa et Pari Foot par les experts de la Loterie Nationale du Niger." },
-      { property: "og:title", content: "Pronostics — LoNaNi" },
+      { property: "og:title", content: "Pronostics — Coup Sûr" },
       { property: "og:description", content: "Conseils, tendances et suggestions pour mieux jouer." },
+      { property: "og:image", content: OG },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Coup Sûr pronostics — analyse et étoiles" },
+      { property: "og:url", content: "/pronostics" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: OG },
     ],
+    links: [{ rel: "canonical", href: "/pronostics" }],
   }),
   component: Pronos,
 });

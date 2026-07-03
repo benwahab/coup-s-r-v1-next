@@ -9,15 +9,27 @@ import { horses } from "@/lib/mock-data";
 import { pmuBets, findBet, type PmuBetId } from "@/lib/pmu-bets";
 import type { TicketLeg } from "@/lib/tickets";
 import { cn } from "@/lib/utils";
+import ogAsset from "@/assets/og-pmu.jpg.asset.json";
+import { absoluteOgUrl } from "@/lib/og";
+
+const OG = absoluteOgUrl(ogAsset.url);
 
 export const Route = createFileRoute("/pmu")({
   head: () => ({
     meta: [
-      { title: "PMU — Pariez sur les chevaux | LoNaNi" },
+      { title: "PMU — Pariez sur les chevaux | Coup Sûr" },
       { name: "description", content: "Pariez en ligne sur le PMU au Niger : choisissez votre tiercé et payez par mobile money." },
-      { property: "og:title", content: "PMU — LoNaNi" },
+      { property: "og:title", content: "PMU — Coup Sûr" },
       { property: "og:description", content: "Choisissez vos chevaux et jouez en quelques clics." },
+      { property: "og:image", content: OG },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Coup Sûr PMU — chevaux au galop" },
+      { property: "og:url", content: "/pmu" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: OG },
     ],
+    links: [{ rel: "canonical", href: "/pmu" }],
   }),
   component: PmuPage,
 });

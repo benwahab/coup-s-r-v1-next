@@ -8,15 +8,35 @@ import { PageHeader } from "@/components/AppShell";
 import { footMatches, leagues } from "@/lib/mock-data";
 import { marketsForMatch, oddForPick, labelForPick } from "@/lib/foot-markets";
 import { cn } from "@/lib/utils";
+import { z } from "zod";
+import ogAsset from "@/assets/og-foot.jpg.asset.json";
+import { absoluteOgUrl } from "@/lib/og";
+
+const OG = absoluteOgUrl(ogAsset.url);
+
+/** Validation client des paris foot : au moins 1 sélection, format `matchId:market:option`. */
+const PickKeySchema = z.string().regex(/^[^:]+:[^:]+:[^:]+$/, "Format de sélection invalide.");
+const FootBetSchema = z.object({
+  picks: z.array(PickKeySchema).min(1, "Sélectionnez au moins 1 pronostic pour continuer."),
+  mode: z.enum(["combi", "simple"]),
+});
 
 export const Route = createFileRoute("/pari-foot")({
   head: () => ({
     meta: [
-      { title: "Pari Foot — Pronostics matchs | LoNaNi" },
+      { title: "Pari Foot — Pronostics matchs | Coup Sûr" },
       { name: "description", content: "Pronostiquez les matchs de foot et pariez en ligne au Niger avec paiement mobile." },
-      { property: "og:title", content: "Pari Foot — LoNaNi" },
+      { property: "og:title", content: "Pari Foot — Coup Sûr" },
       { property: "og:description", content: "1, X ou 2 — choisissez vos pronostics." },
+      { property: "og:image", content: OG },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Coup Sûr Pari Foot — ballon et stade" },
+      { property: "og:url", content: "/pari-foot" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: OG },
     ],
+    links: [{ rel: "canonical", href: "/pari-foot" }],
   }),
   component: FootPage,
 });
@@ -36,6 +56,8 @@ function FootPage() {
   const removePick = (key: string) => setPicks((p) => { const { [key]: _, ...rest } = p; return rest; });
 
   const list = Object.keys(picks);
+  const validation = FootBetSchema.safeParse({ picks: list, mode });
+  const validationError = validation.success ? null : validation.error.issues[0]?.message ?? null;
   const picksLabel = list.length
     ? list.map((k) => {
         const [mid] = k.split(":");
@@ -92,12 +114,17 @@ function FootPage() {
         drawDate={new Date(Date.now() + 1000 * 60 * 60 * 36).toISOString()}
         selection={list}
         picksLabel={`[${mode === "combi" ? "Combiné" : "Simple"}] ${picksLabel} | Cote ×${totalOdds.toFixed(2)}`}
-        canContinue={list.length >= 1}
+        canContinue={validation.success}
         gameOpen={isGameOpen(8, 22)}
         openHour={8}
         odds={totalOdds}
         renderSelection={
           <div>
+            {validationError && list.length === 0 && (
+              <div className="mb-3 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary">
+                {validationError}
+              </div>
+            )}
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-display text-xl font-bold">{t("selectMatches")}</h2>
               <div className="flex items-center gap-1.5">
