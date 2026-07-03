@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Navigate, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import {
   ShieldCheck, TrendingUp, Users, Trophy, Send, Download, MessageCircle, Check,
   BellRing, Sparkles, MapPin, Circle, BarChart3, LogIn, LifeBuoy, Search, X, Activity,
@@ -17,21 +17,13 @@ import { computeBallStats, computePlayerStats, computeRegionStats, generateSimTi
 import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
 import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
 import { useDrafts } from "@/lib/drafts";
-import { listIntents } from "@/lib/payments";
+import { listMyIntents, type PaymentIntent } from "@/lib/payments";
+import { checkIsAdmin, adminListAllPayments } from "@/lib/admin.functions";
 import { useAuth } from "@/lib/auth";
 
-// Liste blanche interim : téléphones autorisés à accéder au panneau d'admin.
-// Alimentée par VITE_ADMIN_PHONES (numéros séparés par virgule) en attendant
-// la vraie vérification de rôle serveur `has_role('admin')` de la Phase 1.
-const ADMIN_PHONE_WHITELIST: readonly string[] = (
-  (import.meta.env.VITE_ADMIN_PHONES as string | undefined) ?? ""
-)
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-
 export const Route = createFileRoute("/admin")({
-  // Panneau strictement client (auth localStorage) — pas de prérendu.
+  // Panneau réservé aux comptes ayant le rôle `admin` — vérifié côté serveur.
+  // Pas de prérendu SSR : la vérification a besoin de la session Supabase (localStorage).
   ssr: false,
   head: () => ({
     meta: [
@@ -39,30 +31,6 @@ export const Route = createFileRoute("/admin")({
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  // Garde côté client : redirection immédiate vers /auth avant tout rendu
-  // si aucune session admin valide n'est présente dans le stockage local.
-  beforeLoad: () => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem("lonani.session");
-      const session = raw ? (JSON.parse(raw) as { phone?: string } | null) : null;
-      if (!session?.phone) {
-        throw redirect({ to: "/auth" });
-      }
-      if (
-        ADMIN_PHONE_WHITELIST.length > 0 &&
-        !ADMIN_PHONE_WHITELIST.includes(session.phone)
-      ) {
-        throw redirect({ to: "/" });
-      }
-    } catch (err) {
-      // Rethrow router redirects; ignore JSON parsing errors.
-      if (err && typeof err === "object" && "to" in (err as Record<string, unknown>)) {
-        throw err;
-      }
-      throw redirect({ to: "/auth" });
-    }
-  },
   component: AdminPage,
 });
 
@@ -81,16 +49,30 @@ type Tab = "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops
 function AdminPage() {
   const { t } = useI18n();
   const { authed, session } = useAuth();
-  const [checked, setChecked] = useState(false);
-  useEffect(() => { setChecked(true); }, []);
+  const [gate, setGate] = useState<"checking" | "ok" | "denied" | "anon">("checking");
+  useEffect(() => {
+    if (!authed || !session) { setGate("anon"); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { isAdmin } = await checkIsAdmin();
+        if (cancelled) return;
+        setGate(isAdmin ? "ok" : "denied");
+      } catch {
+        if (!cancelled) setGate("denied");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [authed, session]);
 
-  // Gate client-side : uniquement les téléphones whitelistés peuvent voir /admin.
-  // Redirection vers /auth pour tous les autres. Vraie vérif serveur en Phase 1.
-  if (checked) {
-    if (!authed || !session) {
-      return <Navigate to="/auth" replace />;
-    }
-    if (!ADMIN_PHONE_WHITELIST.includes(session.phone)) {
+  // Redirections/gates avant tout rendu du panneau.
+  if (gate === "checking") {
+    return <div className="min-h-[60vh]" aria-hidden />;
+  }
+  if (gate === "anon") {
+    return <Navigate to="/auth" replace />;
+  }
+  if (gate === "denied") {
       return (
         <div className="min-h-[60vh] grid place-items-center px-4">
           <div className="max-w-md rounded-3xl border border-destructive/30 bg-destructive/5 p-8 text-center">
@@ -105,10 +87,6 @@ function AdminPage() {
           </div>
         </div>
       );
-    }
-  }
-  if (!checked) {
-    return <div className="min-h-[60vh]" aria-hidden />;
   }
   const { tickets, updateStatus, updateLegStatus } = useTickets();
   const { drafts, removeDraft } = useDrafts();
@@ -126,6 +104,30 @@ function AdminPage() {
   const [cashoutRequests, setCashoutRequests] = useState<string[]>([]);
 
   useEffect(() => { setSentLog(readSmsLog()); }, []);
+
+  // Toutes les intentions de paiement — chargées via server fn admin.
+  const [allIntents, setAllIntents] = useState<PaymentIntent[]>([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const { payments } = await adminListAllPayments();
+        setAllIntents(
+          payments.map((r) => ({
+            key: r.payment_key ?? "",
+            txRef: r.reference,
+            gameId: "",
+            phone: r.user_id, // pas de phone directement — on filtre par user_id
+            amount: r.amount,
+            createdAt: new Date(r.created_at).getTime(),
+            status: r.status,
+          })),
+        );
+      } catch {
+        setAllIntents([]);
+      }
+    })();
+    void listMyIntents;
+  }, []);
 
   useEffect(() => {
     if (!autoSms) return;
@@ -353,9 +355,9 @@ function AdminPage() {
       tickets: tickets.filter((t) => t.phone.replace(/\s/g, "").includes(norm)),
       drafts: drafts.filter((d) => (d.phone ?? "").replace(/\s/g, "").includes(norm)),
       authEvents: authLog.filter((e) => e.phone.replace(/\s/g, "").includes(norm)).slice(0, 20),
-      intents: listIntents().filter((i) => i.phone.replace(/\s/g, "").includes(norm)).slice(0, 20),
+      intents: allIntents.slice(0, 20),
     };
-  }, [claimPhone, tickets, drafts, authLog]);
+  }, [claimPhone, tickets, drafts, authLog, allIntents]);
 
   return (
     <>

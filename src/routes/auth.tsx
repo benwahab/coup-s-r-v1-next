@@ -90,10 +90,10 @@ function AuthPage() {
     } finally { setSending(false); }
   };
 
-  const submitOtp = () => {
+  const submitOtp = async () => {
     setError(null); setInfo(null);
     if (otp.length !== 6) { setError("Le code OTP fait 6 chiffres."); return; }
-    const res = verifyOtp(phone, otp, account?.phone ?? null);
+    const res = await verifyOtp(phone, otp, account?.phone ?? null);
     if (res.ok) {
       setInfo("Connexion réussie. Redirection...");
       setTimeout(() => navigate({ to: "/" }), 600);
