@@ -121,7 +121,7 @@ export function BetFlow({
     // 1) Anti-doublon : même joueur, même mise, même sélection → refus
     const selectionKey = allLegs.map((l) => `${l.gameId}#${l.picksLabel}`).join("||");
     const pk = paymentKey({ phone, amount: totalStake, gameId, selection: selectionKey });
-    const dup = checkDuplicate(pk);
+    const dup = await checkDuplicate(pk);
     if (dup.duplicate) {
       setDuplicateMsg(
         dup.intent?.status === "confirmed"
@@ -131,11 +131,17 @@ export function BetFlow({
       return;
     }
     // 2) On ouvre l'intention (verrou fenêtre 30s)
-    const intent = beginPayment({ key: pk, gameId, phone, amount: totalStake });
+    const intent = await beginPayment({
+      key: pk,
+      gameId,
+      phone,
+      amount: totalStake,
+      method: selectedPayment.name,
+    });
     setPaying(true);
     await new Promise((r) => setTimeout(r, 1400));
     if (!simulatedFundsOk) {
-      failPayment(intent.txRef);
+      await failPayment(intent.txRef);
       setPaying(false);
       setMmError(t("insufficientFunds"));
       return;
