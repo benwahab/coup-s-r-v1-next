@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { UserCircle2, Save, Trash2, ShieldCheck, X, AlertTriangle, RotateCcw, Clock } from "lucide-react";
+import { UserCircle2, Save, Trash2, X, AlertTriangle, RotateCcw, Clock } from "lucide-react";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
@@ -21,11 +21,11 @@ function ComptePage() {
   const [region, setRegion] = useState<string>(account?.region ?? regions[0]);
   const [phone, setPhone] = useState(account?.phone ?? "");
   const [saved, setSaved] = useState(false);
-  const [consentOpen, setConsentOpen] = useState(false);
+  const [consented, setConsented] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
 
-  const ok = firstName.trim() && lastName.trim() && /^\d{8}$/.test(phone);
+  const ok = firstName.trim() && lastName.trim() && /^\d{8}$/.test(phone) && consented;
 
   const deletionMs = deletionRemainingMs();
   const deletionDaysLeft = Math.ceil(deletionMs / (24 * 60 * 60 * 1000));
@@ -46,7 +46,6 @@ function ComptePage() {
       },
     });
     setSaved(true);
-    setConsentOpen(false);
     setTimeout(() => navigate({ to: "/" }), 700);
   };
 
@@ -65,8 +64,8 @@ function ComptePage() {
       }
       return;
     }
-    // Ouvre la modale de consentement au lieu de créer directement
-    setConsentOpen(true);
+    // Consentement déjà donné via la case à cocher inline (enregistrement horodaté).
+    persist();
   };
 
   return (
@@ -130,12 +129,22 @@ function ComptePage() {
             </div>
           )}
 
-          <p className="text-[11px] text-white/60">
-            En créant votre compte, vous acceptez les{" "}
-            <a href="/conditions" target="_blank" rel="noreferrer" className="font-semibold text-[#00C896] hover:underline">Conditions d'utilisation</a>{" "}
-            et la{" "}
-            <a href="/confidentialite" target="_blank" rel="noreferrer" className="font-semibold text-[#00C896] hover:underline">Politique de confidentialité</a>.
-          </p>
+          <label className="flex items-start gap-3 rounded-2xl border border-white/15 bg-white/5 p-3 cursor-pointer hover:bg-white/10 transition">
+            <input
+              type="checkbox"
+              checked={consented}
+              onChange={(e) => setConsented(e.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-[#00C896] cursor-pointer"
+              aria-label="J'accepte les conditions d'utilisation et la politique de confidentialité"
+            />
+            <span className="text-[12px] leading-relaxed text-white/80">
+              J'accepte les{" "}
+              <a href="/conditions" target="_blank" rel="noreferrer" className="font-semibold text-[#00C896] hover:underline">Conditions d'utilisation</a>{" "}
+              et la{" "}
+              <a href="/confidentialite" target="_blank" rel="noreferrer" className="font-semibold text-[#00C896] hover:underline">Politique de confidentialité</a>{" "}
+              de Coup Sûr. Un enregistrement horodaté sera conservé pour prouver ce consentement.
+            </span>
+          </label>
 
           <button
             type="submit"
@@ -161,13 +170,6 @@ function ComptePage() {
         </form>
         </div>
       </PremiumPhoneCard>
-
-      {consentOpen && (
-        <ConsentModal
-          onCancel={() => setConsentOpen(false)}
-          onAccept={persist}
-        />
-      )}
 
       {confirmDeleteOpen && (
         <ConfirmDeleteModal
