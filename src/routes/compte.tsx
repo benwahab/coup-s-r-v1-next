@@ -204,54 +204,6 @@ function Field({ label, value, onChange, placeholder, type = "text" }: { label: 
   );
 }
 
-function ConsentModal({ onCancel, onAccept }: { onCancel: () => void; onAccept: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-0 sm:p-4" role="dialog" aria-modal="true">
-      <div className="w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border border-border bg-card shadow-elevated overflow-hidden">
-        <div className="flex items-start justify-between gap-3 border-b border-border/60 bg-gradient-to-br from-primary/15 to-transparent p-5">
-          <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/20 text-primary shadow-inner">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-extrabold">Confirmation requise</h3>
-              <p className="text-xs text-muted-foreground">Avant la création de votre compte</p>
-            </div>
-          </div>
-          <button onClick={onCancel} aria-label="Fermer" className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="p-5 space-y-4">
-          <p className="text-sm leading-relaxed text-foreground/90">
-            En poursuivant votre inscription, vous acceptez les{" "}
-            <a href="/conditions" target="_blank" rel="noreferrer" className="font-bold text-primary hover:underline decoration-2 underline-offset-2">Conditions d'utilisation</a>{" "}
-            de Coup Sûr et reconnaissez avoir pris connaissance de notre{" "}
-            <a href="/confidentialite" target="_blank" rel="noreferrer" className="font-bold text-primary hover:underline decoration-2 underline-offset-2">Politique de confidentialité</a>.
-          </p>
-          <div className="rounded-2xl border border-border bg-secondary/40 p-3 text-[11px] text-muted-foreground">
-            Un enregistrement (date, heure, versions des documents, adresse IP) sera conservé pour prouver votre consentement.
-          </div>
-          <div className="flex flex-col-reverse sm:flex-row gap-2 pt-2">
-            <button
-              onClick={onCancel}
-              className="flex-1 rounded-2xl border-2 border-border bg-background px-4 py-3 text-sm font-bold text-foreground hover:border-primary/50"
-            >
-              Annuler
-            </button>
-            <button
-              onClick={onAccept}
-              className="flex-1 rounded-2xl bg-gold-gradient px-4 py-3 text-sm font-extrabold uppercase tracking-wide text-[var(--gold-foreground)] shadow-gold hover:brightness-110"
-            >
-              J'accepte et je continue
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ConfirmDeleteModal({ onCancel, onConfirm, onPurge }: { onCancel: () => void; onConfirm: () => void; onPurge: () => void }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-0 sm:p-4" role="dialog" aria-modal="true">
