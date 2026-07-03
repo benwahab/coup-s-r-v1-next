@@ -7,7 +7,12 @@ import { games, recentResults, pmuJackpot, hotNumbers, drawSchedule } from "@/li
 import { generateSimTickets } from "@/lib/mock-stats";
 import { formatDate, formatFcfa, formatHour } from "@/lib/utils";
 import { nextDailyEvent, diffParts, drawNameForDate, nigerDateLabel } from "@/lib/schedule";
-import heroBg from "@/assets/hero-winners.jpg";
+import heroJpg from "@/assets/hero-winners.jpg";
+// Variantes optimisées (vite-imagetools) — WebP couvre ~97 % du parc, AVIF ~90 %.
+// image-set() ci-dessous laisse le navigateur choisir le format le plus léger,
+// le JPG restant en fallback.
+import heroWebp from "@/assets/hero-winners.jpg?format=webp&w=1600&quality=72&url";
+import heroAvif from "@/assets/hero-winners.jpg?format=avif&w=1600&quality=55&url";
 import ogImage from "@/assets/og-coup-sur.png.asset.json";
 
 const SITE_ORIGIN = "https://project--d012cc30-70a9-4deb-91e9-b223040ce8ed.lovable.app";
@@ -27,6 +32,10 @@ export const Route = createFileRoute("/")({
       { property: "og:url", content: SITE_ORIGIN },
       { name: "twitter:image", content: OG_IMAGE_URL },
       { name: "twitter:image:alt", content: "Coup Sûr — Loterie Nationale du Niger" },
+    ],
+    links: [
+      // Précharge le hero (LCP de la home) au format WebP — variante réellement utilisée par la majorité des navigateurs.
+      { rel: "preload", as: "image", href: heroWebp, type: "image/webp", fetchpriority: "high" },
     ],
   }),
   component: Index,
