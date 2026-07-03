@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -23,7 +24,6 @@ import { AccountProvider } from "@/lib/account";
 import { AuthProvider } from "@/lib/auth";
 import { DraftsProvider } from "@/lib/drafts";
 import { AppShell } from "@/components/AppShell";
-import { Splash } from "@/components/Splash";
 
 function NotFoundComponent() {
   return (
@@ -132,6 +132,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isLanding = pathname === "/";
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -140,7 +142,8 @@ function RootComponent() {
           <AuthProvider>
             <TicketsProvider>
               <DraftsProvider>
-                <Splash />
+                {/* Splash désactivé sur la landing (/) — la carte image joue ce rôle */}
+                {!isLanding && null}
                 <AppShell>
                   {/* Required: nested routes render here. */}
                   <Outlet />

@@ -140,7 +140,7 @@ Note : pas de bottom-nav mobile sur `/` (cf. § 2).
 
 ## Vérification après implémentation
 
-1. Ouvrir `https://id-preview--d012cc30-70a9-4deb-91e9-b223040ce8ed.lovable.app/` :
+1. Ouvrir la racine `/` :
    - Fond émeraude profond visible immédiatement.
    - Skeleton shimmer apparaît (200-500 ms) puis image `/og-image.png` remplace en fondu.
    - Aucun header, aucun footer, aucune nav, aucun texte.
