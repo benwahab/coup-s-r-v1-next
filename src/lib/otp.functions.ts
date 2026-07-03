@@ -8,6 +8,13 @@ const PhoneInput = z.object({ phone: z.string().regex(/^\d{8}$/) });
 const VerifyInput = z.object({
   phone: z.string().regex(/^\d{8}$/),
   code: z.string().regex(/^\d{6}$/),
+  profile: z
+    .object({
+      firstName: z.string().trim().max(80).optional(),
+      lastName: z.string().trim().max(80).optional(),
+      region: z.string().trim().max(80).optional(),
+    })
+    .optional(),
 });
 
 /** Envoi d'un OTP simulé.
@@ -130,6 +137,19 @@ export const verifyOtp = createServerFn({ method: "POST" })
     });
     if (signErr || !sess.session) {
       throw new Error(`sign_in_failed: ${signErr?.message ?? "no session"}`);
+    }
+
+    // Upsert du profil : le trigger `handle_new_user` a inséré la ligne de base
+    // (id + phone). On complète avec les champs facultatifs saisis avant l'OTP.
+    const p = data.profile;
+    if (p && (p.firstName || p.lastName || p.region)) {
+      const patch: Record<string, string | null> = { phone: phoneE164 };
+      if (p.firstName !== undefined) patch.first_name = p.firstName || null;
+      if (p.lastName !== undefined) patch.last_name = p.lastName || null;
+      if (p.region !== undefined) patch.region = p.region || null;
+      await supabaseAdmin
+        .from("profiles")
+        .upsert({ id: sess.session.user.id, ...patch }, { onConflict: "id" });
     }
 
     return {
