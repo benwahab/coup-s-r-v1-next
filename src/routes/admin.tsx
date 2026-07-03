@@ -4,11 +4,7 @@ import {
   BellRing, Sparkles, MapPin, Circle, BarChart3, LogIn, LifeBuoy, Search, X, Activity,
   ListChecks, ArrowUpRight, ArrowDownRight, Clock, Zap,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
-  Tooltip as RTooltip, ResponsiveContainer, Legend,
-} from "recharts";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useTickets, type Ticket } from "@/lib/tickets";
 import { PageHeader } from "@/components/AppShell";
@@ -21,6 +17,10 @@ import { listMyIntents, type PaymentIntent } from "@/lib/payments";
 import { checkIsAdmin, adminListAllPayments } from "@/lib/admin.functions";
 import { useAuth } from "@/lib/auth";
 import { useThemeChartColors } from "@/hooks/use-theme-chart-colors";
+
+// Recharts pèse ~120 kB gzip et n'est utilisé que pour le dashboard admin.
+// On le charge en `lazy` pour ne pas alourdir les autres routes.
+const DashboardCharts = lazy(() => import("@/components/admin/DashboardCharts"));
 
 export const Route = createFileRoute("/admin")({
   // Panneau réservé aux comptes ayant le rôle `admin` — vérifié côté serveur.
