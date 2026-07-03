@@ -1,5 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { GameId } from "./mock-data";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./auth";
+import {
+  adminUpdateTicketStatus,
+  adminUpdateTicketLegStatus,
+} from "./admin.functions";
+import type { Database } from "@/integrations/supabase/types";
 
 export type TicketStatus = "pending" | "losing" | "winning" | "paid";
 
@@ -41,65 +48,132 @@ export interface Ticket {
 
 interface Ctx {
   tickets: Ticket[];
-  addTicket: (t: Omit<Ticket, "id" | "createdAt" | "status">) => Ticket;
+  addTicket: (t: Omit<Ticket, "id" | "createdAt" | "status">) => Promise<Ticket>;
   getTicket: (id: string) => Ticket | undefined;
-  updateStatus: (id: string, status: TicketStatus, prize?: number) => void;
-  updateLegStatus: (ticketId: string, legId: string, status: TicketStatus, prize?: number) => void;
+  updateStatus: (id: string, status: TicketStatus, prize?: number) => Promise<void>;
+  updateLegStatus: (ticketId: string, legId: string, status: TicketStatus, prize?: number) => Promise<void>;
 }
 
 const TicketsCtx = createContext<Ctx | null>(null);
-const KEY = "lonani.tickets";
 
 function newId() {
   const n = Math.floor(Math.random() * 9_000_000) + 1_000_000;
   return `LNN-${n}`;
 }
 
-export function TicketsProvider({ children }: { children: ReactNode }) {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const raw = localStorage.getItem(KEY);
-    if (raw) {
-      try {
-        const parsed: Ticket[] = JSON.parse(raw);
-        // Purge automatique après 7 jours (on conserve les gagnants non payés pour permettre l'encaissement).
-        const now = Date.now();
-        const kept = parsed.filter((t) => {
-          const age = now - new Date(t.createdAt).getTime();
-          if (age < 7 * 86_400_000) return true;
-          return t.status === "winning"; // gagnants non-encaissés conservés
-        });
-        setTickets(kept);
-      } catch { /* ignore */ }
-    }
-  }, []);
-  useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(tickets));
-  }, [tickets]);
+type TicketRow = Database["public"]["Tables"]["tickets"]["Row"];
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
-  const addTicket: Ctx["addTicket"] = (t) => {
-    const legs = t.legs?.map((l, i) => ({ ...l, legId: l.legId || `${newId()}-${i}` }));
-    const ticket: Ticket = { ...t, legs, id: newId(), createdAt: new Date().toISOString(), status: "pending" };
-    setTickets((prev) => [ticket, ...prev]);
-    return ticket;
+function toE164(local: string | undefined): string | null {
+  if (!local) return null;
+  const s = local.replace(/\D/g, "");
+  if (s.length === 8) return `+227${s}`;
+  if (s.startsWith("227")) return `+${s}`;
+  return s.startsWith("+") ? s : `+${s}`;
+}
+function stripPrefix(e164: string | null | undefined): string {
+  const s = (e164 ?? "").replace(/\D/g, "");
+  if (s.startsWith("227") && s.length === 11) return s.slice(3);
+  return s.slice(-8);
+}
+
+function rowToTicket(r: TicketRow, profile: ProfileRow | null): Ticket {
+  const legs = (Array.isArray(r.legs) ? r.legs : []) as unknown as TicketLeg[];
+  return {
+    id: r.code,
+    gameId: r.game_id as GameId,
+    gameName: r.game_name,
+    firstName: profile?.first_name ?? undefined,
+    lastName: profile?.last_name ?? undefined,
+    phone: stripPrefix(r.phone),
+    email: undefined,
+    region: r.region ?? profile?.region ?? undefined,
+    picks: (Array.isArray(r.picks) ? r.picks : []) as (string | number)[],
+    picksLabel: r.picks_label,
+    stake: r.stake,
+    payment: r.payment_method ?? "",
+    createdAt: r.created_at,
+    drawDate: r.draw_date ?? r.created_at,
+    drawName: r.draw_name ?? undefined,
+    status: r.status,
+    prize: r.prize ?? undefined,
+    legs: legs.length > 0 ? legs : undefined,
   };
+}
+
+export function TicketsProvider({ children }: { children: ReactNode }) {
+  const { session } = useAuth();
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
+
+  useEffect(() => {
+    if (!session) { setTickets([]); setProfile(null); return; }
+    const userId = session.userId;
+    let cancelled = false;
+    (async () => {
+      const [tRes, pRes] = await Promise.all([
+        supabase
+          .from("tickets")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false }),
+        supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+      ]);
+      if (cancelled) return;
+      const prof = pRes.data ?? null;
+      setProfile(prof);
+      setTickets((tRes.data ?? []).map((r) => rowToTicket(r, prof)));
+    })();
+    return () => { cancelled = true; };
+  }, [session]);
+
+  const addTicket: Ctx["addTicket"] = async (t) => {
+    if (!session) throw new Error("not_authenticated");
+    const code = newId();
+    const legs = t.legs?.map((l, i) => ({ ...l, legId: l.legId || `${code}-${i}` }));
+    const { data, error } = await supabase
+      .from("tickets")
+      .insert({
+        user_id: session.userId,
+        code,
+        game_id: t.gameId,
+        game_name: t.gameName,
+        picks: t.picks as unknown as Database["public"]["Tables"]["tickets"]["Insert"]["picks"],
+        picks_label: t.picksLabel,
+        stake: t.stake,
+        payment_method: t.payment,
+        draw_date: t.drawDate ? t.drawDate.slice(0, 10) : null,
+        draw_name: t.drawName ?? null,
+        status: "pending",
+        legs: (legs ?? []) as unknown as Database["public"]["Tables"]["tickets"]["Insert"]["legs"],
+        phone: toE164(t.phone),
+        region: t.region ?? null,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    const tk = rowToTicket(data, profile);
+    setTickets((prev) => [tk, ...prev]);
+    return tk;
+  };
+
   const getTicket = (id: string) => tickets.find((t) => t.id === id);
-  const updateStatus: Ctx["updateStatus"] = (id, status, prize) => {
+
+  const updateStatus: Ctx["updateStatus"] = async (id, status, prize) => {
+    await adminUpdateTicketStatus({
+      data: { code: id, status, prize: prize ?? null },
+    });
     setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, status, prize } : t)));
   };
-  const updateLegStatus: Ctx["updateLegStatus"] = (ticketId, legId, status, prize) => {
+
+  const updateLegStatus: Ctx["updateLegStatus"] = async (ticketId, legId, status, prize) => {
+    const res = await adminUpdateTicketLegStatus({
+      data: { code: ticketId, legId, status, prize: prize ?? null },
+    });
     setTickets((prev) => prev.map((t) => {
       if (t.id !== ticketId || !t.legs) return t;
-      const legs = t.legs.map((l) => l.legId === legId ? { ...l, status, prize } : l);
-      // Statut global : si au moins une gagnante non payée → winning ; tout payé → paid ; tout perdant → losing ; sinon pending
-      const all = legs.map(l => l.status);
-      let global: TicketStatus = "pending";
-      if (all.every(s => s === "paid")) global = "paid";
-      else if (all.some(s => s === "winning" || s === "paid")) global = "winning";
-      else if (all.every(s => s === "losing")) global = "losing";
-      const totalPrize = legs.reduce((s, l) => s + (l.prize ?? 0), 0);
-      return { ...t, legs, status: global, prize: totalPrize || undefined };
+      const legs = t.legs.map((l) => (l.legId === legId ? { ...l, status, prize } : l));
+      return { ...t, legs, status: res.status, prize: res.prize ?? undefined };
     }));
   };
 
