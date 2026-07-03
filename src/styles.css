@@ -61,9 +61,9 @@
   /* Coup Sûr — Emerald premium (aligné sur /auth) */
   --background: oklch(0.24 0.055 175);       /* #003a31 émeraude profond */
   --foreground: oklch(0.98 0.012 180);
-  --card: oklch(0.30 0.055 172);             /* verre émeraude */
+  --card: oklch(0.30 0.055 172 / 0.55);      /* verre émeraude translucide */
   --card-foreground: oklch(0.98 0.012 180);
-  --popover: oklch(0.28 0.055 172);
+  --popover: oklch(0.22 0.05 175 / 0.92);
   --popover-foreground: oklch(0.98 0.012 180);
   --primary: oklch(0.75 0.18 55);            /* orange premium CTA #FF8A00 */
   --primary-foreground: oklch(0.16 0.02 60);
@@ -82,8 +82,8 @@
   --success: oklch(0.76 0.16 165);
   --success-foreground: oklch(0.16 0.02 175);
   --warning: oklch(0.82 0.17 75);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 12%);
+  --border: oklch(1 0 0 / 14%);
+  --input: oklch(1 0 0 / 10%);
   --ring: oklch(0.75 0.16 172);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
