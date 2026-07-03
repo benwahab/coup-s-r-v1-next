@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  ShieldCheck, TrendingUp, TrendingDown, Users, Wallet, Trophy, Send, Download, MessageCircle, Check,
+  ShieldCheck, TrendingUp, Users, Trophy, Send, Download, MessageCircle, Check,
   BellRing, Sparkles, MapPin, Circle, BarChart3, LogIn, LifeBuoy, Search, X, Activity,
   ListChecks, ArrowUpRight, ArrowDownRight, Clock, Zap,
 } from "lucide-react";
@@ -14,6 +14,7 @@ import { useTickets, type Ticket } from "@/lib/tickets";
 import { PageHeader } from "@/components/AppShell";
 import { cn, formatFcfa } from "@/lib/utils";
 import { computeBallStats, computePlayerStats, computeRegionStats, generateSimTickets, type SimTicket } from "@/lib/mock-stats";
+void ((null as unknown) as SimTicket);
 import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
 import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
 import { useDrafts } from "@/lib/drafts";
@@ -955,6 +956,3 @@ function QuickAction({ icon: Icon, label, hint, onClick, tone }: { icon: typeof 
   );
 }
 
-/* consommer types inutilisés pour tsgo strict */
-void ((null as unknown) as SimTicket);
-void ((null as unknown) as TrendingDown);
