@@ -1,10 +1,12 @@
 import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
-import type { PlayerStats, RegionStats } from "@/lib/mock-stats";
+import type { RegionStat, computePlayerStats } from "@/lib/mock-stats";
+
+type PlayerStat = ReturnType<typeof computePlayerStats>[number];
 
 interface Props {
-  filteredPlayers: PlayerStats[];
-  regionStats: RegionStats[];
+  filteredPlayers: PlayerStat[];
+  regionStats: RegionStat[];
   searchPlayer: string; setSearchPlayer: (v: string) => void;
   filterRegion: string; setFilterRegion: (v: string) => void;
 }
