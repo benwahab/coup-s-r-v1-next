@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { type ConsentRecord, makeUserId } from "./legal";
+import { sendAccountNotice } from "./sms";
 
 const RECOVERY_DAYS = 30;
 const RECOVERY_MS = RECOVERY_DAYS * 24 * 60 * 60 * 1000;
@@ -9,6 +10,7 @@ export interface Account {
   lastName: string;
   region: string;
   phone: string;
+  email?: string;
   userId?: string;
   createdAt?: number;
   consent?: ConsentRecord;
@@ -36,25 +38,27 @@ const KEY = "lonani.account";
 const REG_KEY = "lonani.accounts.registry";
 const AccountCtx = createContext<Ctx | null>(null);
 
-function loadRegistry(): Registry {
+function loadRegistry(): { reg: Registry; expired: Array<{ phone: string }> } {
   if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem(REG_KEY);
-    if (!raw) return {};
+    if (!raw) return { reg: {}, expired: [] };
     const reg = JSON.parse(raw) as Registry;
     // Purge des suppressions expirées (> 30j) → numéro libre
     const now = Date.now();
     let dirty = false;
+    const expired: Array<{ phone: string }> = [];
     for (const p of Object.keys(reg)) {
       const e = reg[p];
       if (e.status === "pending_deletion" && e.deletionRequestedAt && now - e.deletionRequestedAt > RECOVERY_MS) {
+        expired.push({ phone: p });
         delete reg[p];
         dirty = true;
       }
     }
     if (dirty) localStorage.setItem(REG_KEY, JSON.stringify(reg));
-    return reg;
-  } catch { return {}; }
+    return { reg, expired };
+  } catch { return { reg: {}, expired: [] }; }
 }
 function saveRegistry(reg: Registry) {
   if (typeof window !== "undefined") localStorage.setItem(REG_KEY, JSON.stringify(reg));
