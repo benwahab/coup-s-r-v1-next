@@ -61,9 +61,9 @@
   /* Coup Sûr — Emerald premium (aligné sur /auth) */
   --background: oklch(0.24 0.055 175);       /* #003a31 émeraude profond */
   --foreground: oklch(0.98 0.012 180);
-  --card: oklch(0.30 0.055 172);             /* verre émeraude */
+  --card: oklch(0.30 0.055 172 / 0.55);      /* verre émeraude translucide */
   --card-foreground: oklch(0.98 0.012 180);
-  --popover: oklch(0.28 0.055 172);
+  --popover: oklch(0.22 0.05 175 / 0.92);
   --popover-foreground: oklch(0.98 0.012 180);
   --primary: oklch(0.75 0.18 55);            /* orange premium CTA #FF8A00 */
   --primary-foreground: oklch(0.16 0.02 60);
@@ -82,8 +82,8 @@
   --success: oklch(0.76 0.16 165);
   --success-foreground: oklch(0.16 0.02 175);
   --warning: oklch(0.82 0.17 75);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 12%);
+  --border: oklch(1 0 0 / 14%);
+  --input: oklch(1 0 0 / 10%);
   --ring: oklch(0.75 0.16 172);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -170,6 +170,59 @@
     font-family: var(--font-display);
     letter-spacing: -0.02em;
   }
+
+  /* Harmonisation /auth : toute surface `bg-card` devient verre émeraude premium */
+  .bg-card {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)),
+      color-mix(in oklab, oklch(0.30 0.055 172) 55%, transparent);
+    backdrop-filter: blur(14px) saturate(115%);
+    border-color: rgba(255,255,255,0.10);
+  }
+  .bg-card-gradient {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
+      linear-gradient(180deg,
+        color-mix(in oklab, oklch(0.32 0.055 172) 70%, transparent) 0%,
+        color-mix(in oklab, oklch(0.24 0.05 175) 70%, transparent) 100%);
+    backdrop-filter: blur(14px) saturate(115%);
+    border-color: rgba(255,255,255,0.10);
+  }
+
+  /* Boutons primaires (bg-primary sur <button>/<a>) → CTA orange /auth */
+  :where(button, a).bg-primary {
+    background: linear-gradient(180deg, #FFA23A 0%, #FF8A00 55%, #E67A00 100%) !important;
+    box-shadow:
+      0 12px 28px -12px rgba(255,138,0,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.30),
+      inset 0 -2px 0 rgba(0,0,0,0.15);
+    transition: transform 120ms ease, filter 150ms ease;
+  }
+  :where(button, a).bg-primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
+  :where(button, a).bg-primary:active { transform: translateY(1px) scale(0.99); }
+
+  /* Champs de formulaire (input / textarea / select) alignés /auth */
+  input:where(:not([type="checkbox"]):not([type="radio"]):not([type="range"])),
+  textarea,
+  select {
+    background-color: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.14);
+    color: var(--color-foreground);
+    transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+  }
+  input:where(:not([type="checkbox"]):not([type="radio"]):not([type="range"])):focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: rgba(0,200,150,0.55);
+    box-shadow: 0 0 0 3px rgba(0,200,150,0.18);
+    background-color: rgba(255,255,255,0.07);
+  }
+  input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.35); }
+
+  /* Ombres partagées renforcées */
+  .shadow-soft { box-shadow: 0 10px 30px -12px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05) !important; }
+  .shadow-elevated { box-shadow: 0 28px 70px -22px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06) !important; }
 }
 
 @layer utilities {
