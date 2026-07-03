@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Activity, BarChart3, BellRing, Clock, Download, LifeBuoy, ListChecks, LogIn, Send, Sparkles, TrendingUp, Trophy, Users, Zap } from "lucide-react";
+import { Activity, Clock, Download, LifeBuoy, ListChecks, LogIn, Send, TrendingUp, Trophy, Users, Zap } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { Kpi, QuickAction } from "../shared";
 import type { ChartColors } from "@/hooks/use-theme-chart-colors";
@@ -100,8 +100,6 @@ export function DashboardTab(p: Props) {
           </div>
         </div>
       </section>
-      {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}
-      {false && <BarChart3 />}{false && <Sparkles />}{false && <BellRing />}
     </div>
   );
 }
