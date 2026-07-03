@@ -1,14 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { UserCircle2, Save, Trash2, ShieldCheck, X, AlertTriangle, RotateCcw, Clock } from "lucide-react";
 import { useState } from "react";
-import { PageHeader } from "@/components/AppShell";
 import { useI18n } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { regions } from "@/lib/mock-data";
 import { TERMS_VERSION, PRIVACY_VERSION, mockIp, makeUserId } from "@/lib/legal";
+import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
 
 export const Route = createFileRoute("/compte")({
-  head: () => ({ meta: [{ title: "Mon compte — LoNaNi" }] }),
+  head: () => ({ meta: [{ title: "Mon compte — Coup Sûr" }] }),
   component: ComptePage,
 });
 
@@ -71,10 +71,20 @@ function ComptePage() {
 
   return (
     <>
-      <PageHeader title={t("myAccount")} icon={<UserCircle2 className="h-5 w-5" />} subtitle="Créez votre compte joueur en quelques secondes." />
-      <div className="mx-auto max-w-xl px-4 py-4">
+      <PremiumPhoneCard>
+        <div className="pt-4 space-y-4">
+          <div className="text-center pb-1">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-white/15 bg-white/10 backdrop-blur-md shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)]">
+              <UserCircle2 className="h-6 w-6 text-white" />
+            </div>
+            <h1 className="mt-3 font-display text-2xl font-extrabold tracking-tight text-white">
+              {t("myAccount")}
+            </h1>
+            <p className="mt-0.5 text-[12px] text-white/60">Créez votre compte joueur en quelques secondes.</p>
+          </div>
+
         {account?.deletionRequestedAt && deletionMs > 0 && (
-          <div className="mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-100">
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-100">
             <div className="flex items-center gap-2 font-bold">
               <Clock className="h-4 w-4" /> Suppression programmée
             </div>
@@ -93,15 +103,15 @@ function ComptePage() {
           </div>
         )}
 
-        <form onSubmit={submit} className="rounded-3xl border border-border bg-card p-5 shadow-soft space-y-4">
+        <form onSubmit={submit} className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm space-y-4">
           <Field label={t("lastName")} value={lastName} onChange={setLastName} placeholder="ex. Issa" />
           <Field label={t("firstName")} value={firstName} onChange={setFirstName} placeholder="ex. Aïssa" />
           <label className="block">
-            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("region")}</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">{t("region")}</span>
             <select
               value={region}
               onChange={(e) => setRegion(e.target.value)}
-              className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:border-primary outline-none"
+              className="mt-1 w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-base text-white focus:border-[#00C896] outline-none"
             >
               {regions.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
@@ -114,42 +124,43 @@ function ComptePage() {
             type="tel"
           />
           {phoneError && (
-            <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="flex items-start gap-2 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-100">
               <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
               <span>{phoneError}</span>
             </div>
           )}
 
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-[11px] text-white/60">
             En créant votre compte, vous acceptez les{" "}
-            <a href="/conditions" target="_blank" rel="noreferrer" className="font-semibold text-primary hover:underline">Conditions d'utilisation</a>{" "}
+            <a href="/conditions" target="_blank" rel="noreferrer" className="font-semibold text-[#00C896] hover:underline">Conditions d'utilisation</a>{" "}
             et la{" "}
-            <a href="/confidentialite" target="_blank" rel="noreferrer" className="font-semibold text-primary hover:underline">Politique de confidentialité</a>.
+            <a href="/confidentialite" target="_blank" rel="noreferrer" className="font-semibold text-[#00C896] hover:underline">Politique de confidentialité</a>.
           </p>
 
           <button
             type="submit"
             disabled={!ok}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gold-gradient px-5 py-3.5 font-bold text-[var(--gold-foreground)] shadow-gold disabled:opacity-50"
+            className="cs-cta"
           >
             <Save className="h-4 w-4" /> {t("saveAccount")}
           </button>
 
           {saved && (
-            <p className="text-center text-sm font-semibold text-success">{t("accountSaved")} ✓</p>
+            <p className="text-center text-sm font-semibold text-emerald-300">{t("accountSaved")} ✓</p>
           )}
 
           {account && (
             <button
               type="button"
               onClick={() => setConfirmDeleteOpen(true)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 px-5 py-2.5 text-sm font-semibold text-destructive"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-500/40 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-200 hover:bg-red-500/20"
             >
               <Trash2 className="h-4 w-4" /> {t("deleteAccount")}
             </button>
           )}
         </form>
-      </div>
+        </div>
+      </PremiumPhoneCard>
 
       {consentOpen && (
         <ConsentModal
@@ -179,13 +190,13 @@ function ComptePage() {
 function Field({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
   return (
     <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</span>
+      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">{label}</span>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:border-primary outline-none"
+        className="mt-1 w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-base text-white placeholder-white/30 focus:border-[#00C896] focus:bg-white/15 outline-none"
       />
     </label>
   );
