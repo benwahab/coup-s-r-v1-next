@@ -118,48 +118,57 @@ export function BetFlow({
     setMmError(null);
     setDuplicateMsg(null);
     if (!/^\d{4,6}$/.test(mmPwd)) { setMmError(t("mmPasswordHint")); return; }
-    // 1) Anti-doublon : même joueur, même mise, même sélection → refus
-    const selectionKey = allLegs.map((l) => `${l.gameId}#${l.picksLabel}`).join("||");
-    const pk = paymentKey({ phone, amount: totalStake, gameId, selection: selectionKey });
-    const dup = await checkDuplicate(pk);
-    if (dup.duplicate) {
-      setDuplicateMsg(
-        dup.intent?.status === "confirmed"
+    try {
+      // 1) Anti-doublon : même joueur, même mise, même sélection → refus
+      const selectionKey = allLegs.map((l) => `${l.gameId}#${l.picksLabel}`).join("||");
+      const pk = paymentKey({ phone, amount: totalStake, gameId, selection: selectionKey });
+      const dup = await checkDuplicate(pk);
+      if (dup.duplicate) {
+        const msg = dup.intent?.status === "confirmed"
           ? `Paiement déjà encaissé (${dup.intent.txRef}). Consultez « Mes tickets ».`
-          : `Un paiement identique est déjà en cours. Patientez quelques secondes.`,
-      );
-      return;
-    }
-    // 2) On ouvre l'intention (verrou fenêtre 30s)
-    const intent = await beginPayment({
-      key: pk,
-      gameId,
-      phone,
-      amount: totalStake,
-      method: selectedPayment.name,
-    });
-    setPaying(true);
-    await new Promise((r) => setTimeout(r, 1400));
-    if (!simulatedFundsOk) {
-      await failPayment(intent.txRef);
+          : `Un paiement identique est déjà en cours. Patientez quelques secondes.`;
+        setDuplicateMsg(msg);
+        toast.error(msg);
+        return;
+      }
+      // 2) On ouvre l'intention (verrou fenêtre 30s)
+      const intent = await beginPayment({
+        key: pk,
+        gameId,
+        phone,
+        amount: totalStake,
+        method: selectedPayment.name,
+      });
+      setPaying(true);
+      await new Promise((r) => setTimeout(r, 1400));
+      if (!simulatedFundsOk) {
+        await failPayment(intent.txRef);
+        setPaying(false);
+        setMmError(t("insufficientFunds"));
+        toast.error(t("insufficientFunds"));
+        return;
+      }
+      // Représentation legacy (1er leg) pour compat
+      const first = allLegs[0];
+      const ticket = await addTicket({
+        gameId: first.gameId, gameName: first.gameName,
+        firstName: account?.firstName, lastName: account?.lastName, phone, region,
+        picks: first.picks, picksLabel: allLegs.map(l => l.picksLabel).join(" | "),
+        stake: totalStake,
+        payment: `${selectedPayment.name} · ${intent.txRef}`,
+        drawDate: first.drawDate,
+        drawName,
+        legs: allLegs,
+      });
+      await confirmPayment(intent.txRef, ticket);
+      toast.success("Paiement confirmé, ticket enregistré ✓");
+      navigate({ to: "/ticket/$id", params: { id: ticket.id } });
+    } catch (e) {
       setPaying(false);
-      setMmError(t("insufficientFunds"));
-      return;
+      const msg = e instanceof Error ? e.message : "Erreur réseau — réessayez.";
+      setMmError("Le paiement n'a pas pu être finalisé. Réessayez.");
+      toast.error(msg);
     }
-    // Représentation legacy (1er leg) pour compat
-    const first = allLegs[0];
-    const ticket = await addTicket({
-      gameId: first.gameId, gameName: first.gameName,
-      firstName: account?.firstName, lastName: account?.lastName, phone, region,
-      picks: first.picks, picksLabel: allLegs.map(l => l.picksLabel).join(" | "),
-      stake: totalStake,
-      payment: `${selectedPayment.name} · ${intent.txRef}`,
-      drawDate: first.drawDate,
-      drawName,
-      legs: allLegs,
-    });
-    await confirmPayment(intent.txRef, ticket);
-    navigate({ to: "/ticket/$id", params: { id: ticket.id } });
   };
 
   return (
