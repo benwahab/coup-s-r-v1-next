@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import type { Ticket } from "./tickets";
-import { signTicketToken } from "./ticket-token";
+import { signTicketToken } from "./ticket-token.functions";
 
 export async function downloadTicketPdf(t: Ticket) {
   const doc = new jsPDF({ unit: "pt", format: "a5" });
@@ -43,7 +43,7 @@ export async function downloadTicketPdf(t: Ticket) {
 
   // QR signé → page de vérification publique
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const token = await signTicketToken(t.id);
+  const { token } = await signTicketToken({ data: { ticketId: t.id } });
   const qr = await QRCode.toDataURL(`${origin}/verify/${token}`, { margin: 1, width: 220 });
   doc.addImage(qr, "PNG", w - 150, 90, 120, 120);
   doc.setFontSize(8);
