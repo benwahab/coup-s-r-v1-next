@@ -39,7 +39,6 @@ function AuthPage() {
   const [demoCode, setDemoCode] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
-  const [parallax, setParallax] = useState({ x: 0, y: 0 });
 
   const lockMs = remainingLockMs();
   const permanent = isPermanent();
@@ -68,21 +67,6 @@ function AuthPage() {
     const id = setInterval(() => setResendIn((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);
   }, [resendIn]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    let raf = 0;
-    const onMove = (e: MouseEvent) => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const nx = (e.clientX / window.innerWidth - 0.5) * 2;
-        const ny = (e.clientY / window.innerHeight - 0.5) * 2;
-        setParallax({ x: nx, y: ny });
-      });
-    };
-    window.addEventListener("mousemove", onMove);
-    return () => { window.removeEventListener("mousemove", onMove); cancelAnimationFrame(raf); };
-  }, []);
 
   const sendCode = async () => {
     setError(null);
