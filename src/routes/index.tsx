@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -15,6 +15,16 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   const [imgLoaded, setImgLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // Cas où l'image est déjà dans le cache du navigateur :
+  // onLoad peut avoir été tiré avant que React n'attache le handler.
+  useEffect(() => {
+    const el = imgRef.current;
+    if (el && el.complete && el.naturalWidth > 0) {
+      setImgLoaded(true);
+    }
+  }, []);
 
   return (
     <div className="cs-landing-scope relative flex min-h-dvh w-full items-center justify-center overflow-hidden px-4 py-8">
@@ -30,12 +40,14 @@ function Landing() {
             <div className="absolute inset-0 cs-shimmer" aria-hidden />
           )}
           <img
+            ref={imgRef}
             src="/og-image.png"
             alt="Coup Sûr"
             loading="eager"
             decoding="async"
             draggable={false}
             onLoad={() => setImgLoaded(true)}
+            onError={() => setImgLoaded(true)}
             className={[
               "absolute inset-0 h-full w-full select-none object-cover transition-opacity duration-700",
               imgLoaded ? "opacity-100" : "opacity-0",
