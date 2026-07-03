@@ -23,7 +23,6 @@ import { AccountProvider } from "@/lib/account";
 import { AuthProvider } from "@/lib/auth";
 import { DraftsProvider } from "@/lib/drafts";
 import { AppShell } from "@/components/AppShell";
-import { Splash } from "@/components/Splash";
 
 function NotFoundComponent() {
   return (
@@ -140,7 +139,6 @@ function RootComponent() {
           <AuthProvider>
             <TicketsProvider>
               <DraftsProvider>
-                <Splash />
                 <AppShell>
                   {/* Required: nested routes render here. */}
                   <Outlet />
