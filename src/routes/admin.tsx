@@ -823,7 +823,7 @@ function AdminPage() {
                       <input value={claimPhone} onChange={(e) => setClaimPhone(e.target.value)} placeholder="ex. +227 90 12 34 56" className="w-full rounded-2xl border border-border bg-background pl-10 pr-3 py-2.5 text-sm" />
                     </div>
                     {claimPhone && (
-                      <button onClick={() => setClaimPhone("")} className="rounded-full border border-border bg-background p-2 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
+                      <button onClick={() => setClaimPhone("")} aria-label="Effacer la recherche" className="rounded-full border border-border bg-background p-2 text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
                     )}
                   </div>
                 </div>
@@ -933,18 +933,6 @@ function Kpi({ icon: Icon, label, value, accent, delta, sub }: { icon: typeof Tr
         )}
         {sub && <span className={cn(accent ? "text-[var(--gold-foreground)]/80" : "text-muted-foreground")}>{sub}</span>}
       </div>
-    </div>
-  );
-}
-
-function ChartCard({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-3xl border border-border bg-card p-5 shadow-soft">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-bold">{title}</h2>
-        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
-      </div>
-      <div className="mt-3">{children}</div>
     </div>
   );
 }
