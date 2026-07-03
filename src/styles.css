@@ -58,33 +58,33 @@
 
 :root {
   --radius: 1rem;
-  /* Sportsbook night — deep midnight + vivid neon green + or */
-  --background: oklch(0.16 0.025 225);
-  --foreground: oklch(0.97 0.012 190);
-  --card: oklch(0.22 0.03 225);
-  --card-foreground: oklch(0.97 0.012 190);
-  --popover: oklch(0.22 0.03 225);
-  --popover-foreground: oklch(0.97 0.012 190);
-  --primary: oklch(0.78 0.20 150);          /* neon green */
-  --primary-foreground: oklch(0.16 0.025 225);
-  --teal: oklch(0.72 0.13 190);
-  --teal-deep: oklch(0.30 0.05 210);
-  --secondary: oklch(0.28 0.035 222);
-  --secondary-foreground: oklch(0.97 0.012 190);
-  --muted: oklch(0.26 0.03 222);
-  --muted-foreground: oklch(0.72 0.02 200);
-  --accent: oklch(0.82 0.16 82);            /* or */
-  --accent-foreground: oklch(0.18 0.05 80);
-  --gold: oklch(0.82 0.17 82);
-  --gold-foreground: oklch(0.18 0.05 80);
+  /* Coup Sûr — Emerald premium (aligné sur /auth) */
+  --background: oklch(0.24 0.055 175);       /* #003a31 émeraude profond */
+  --foreground: oklch(0.98 0.012 180);
+  --card: oklch(0.30 0.055 172);             /* verre émeraude */
+  --card-foreground: oklch(0.98 0.012 180);
+  --popover: oklch(0.28 0.055 172);
+  --popover-foreground: oklch(0.98 0.012 180);
+  --primary: oklch(0.75 0.18 55);            /* orange premium CTA #FF8A00 */
+  --primary-foreground: oklch(0.16 0.02 60);
+  --teal: oklch(0.72 0.14 172);
+  --teal-deep: oklch(0.32 0.06 175);
+  --secondary: oklch(0.34 0.06 172);
+  --secondary-foreground: oklch(0.98 0.012 180);
+  --muted: oklch(0.32 0.05 172);
+  --muted-foreground: oklch(0.78 0.02 180);
+  --accent: oklch(0.72 0.14 172);            /* émeraude clair */
+  --accent-foreground: oklch(0.16 0.02 175);
+  --gold: oklch(0.78 0.16 60);               /* rappel orange */
+  --gold-foreground: oklch(0.18 0.03 55);
   --destructive: oklch(0.66 0.22 27);
   --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.78 0.20 150);
-  --success-foreground: oklch(0.16 0.025 225);
+  --success: oklch(0.76 0.16 165);
+  --success-foreground: oklch(0.16 0.02 175);
   --warning: oklch(0.82 0.17 75);
-  --border: oklch(1 0 0 / 9%);
+  --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.78 0.20 150);
+  --ring: oklch(0.75 0.16 172);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -99,16 +99,16 @@
   --sidebar-border: oklch(1 0 0 / 9%);
   --sidebar-ring: oklch(0.82 0.17 82);
 
-  --gradient-hero: radial-gradient(1200px 600px at 80% -10%, oklch(0.78 0.20 150 / 0.35), transparent 60%),
-                    radial-gradient(900px 500px at 0% 110%, oklch(0.82 0.17 82 / 0.25), transparent 60%),
-                    linear-gradient(135deg, oklch(0.18 0.04 235) 0%, oklch(0.13 0.025 225) 60%, oklch(0.10 0.02 225) 100%);
-  --gradient-card: linear-gradient(180deg, oklch(0.24 0.035 225) 0%, oklch(0.20 0.03 225) 100%);
-  --gradient-gold: linear-gradient(135deg, oklch(0.86 0.16 88) 0%, oklch(0.72 0.18 70) 100%);
-  --gradient-green: linear-gradient(135deg, oklch(0.82 0.20 150) 0%, oklch(0.62 0.18 155) 100%);
-  --shadow-soft: 0 4px 16px -4px oklch(0 0 0 / 0.45);
-  --shadow-elevated: 0 18px 48px -16px oklch(0 0 0 / 0.6);
-  --shadow-gold: 0 10px 30px -10px color-mix(in oklab, oklch(0.82 0.17 82) 60%, transparent);
-  --shadow-green: 0 10px 30px -10px color-mix(in oklab, oklch(0.78 0.20 150) 65%, transparent);
+  --gradient-hero: radial-gradient(1200px 600px at 80% -10%, oklch(0.72 0.14 172 / 0.45), transparent 60%),
+                    radial-gradient(900px 500px at 0% 110%, oklch(0.75 0.18 55 / 0.22), transparent 60%),
+                    linear-gradient(135deg, oklch(0.32 0.06 172) 0%, oklch(0.24 0.055 175) 55%, oklch(0.18 0.04 175) 100%);
+  --gradient-card: linear-gradient(180deg, oklch(0.32 0.05 172 / 0.85) 0%, oklch(0.26 0.05 172 / 0.85) 100%);
+  --gradient-gold: linear-gradient(180deg, oklch(0.82 0.17 60) 0%, oklch(0.68 0.19 55) 100%);
+  --gradient-green: linear-gradient(135deg, oklch(0.75 0.15 170) 0%, oklch(0.55 0.14 172) 100%);
+  --shadow-soft: 0 8px 24px -8px oklch(0 0 0 / 0.5);
+  --shadow-elevated: 0 26px 60px -20px oklch(0 0 0 / 0.65);
+  --shadow-gold: 0 12px 30px -10px color-mix(in oklab, oklch(0.75 0.18 55) 60%, transparent);
+  --shadow-green: 0 12px 30px -10px color-mix(in oklab, oklch(0.72 0.14 172) 55%, transparent);
 }
 
 .dark {
