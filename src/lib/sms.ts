@@ -1,7 +1,7 @@
 // Mock SMS sender for LoNaNi — logs to console + localStorage so the Admin Ops tab can render history.
 // In production, wire to Twilio/GatewayAPI via /api/public/sms.
 import type { Ticket, TicketLeg } from "./tickets";
-import { signTicketToken } from "./ticket-token";
+import { signTicketToken } from "./ticket-token.functions";
 
 export interface SmsEntry {
   id: string;          // ticket id (+ leg suffix)
@@ -25,7 +25,7 @@ function writeSmsLog(entries: SmsEntry[]) {
 
 export async function sendWinSms(ticket: Ticket, leg?: TicketLeg): Promise<SmsEntry> {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const token = await signTicketToken(ticket.id, leg?.legId);
+  const { token } = await signTicketToken({ data: { ticketId: ticket.id, legId: leg?.legId } });
   const drawLabel = leg?.drawName ?? ticket.drawName ?? ticket.gameName;
   const prize = leg?.prize ?? ticket.prize ?? 0;
   const body = `LoNaNi: BRAVO! Ticket #${ticket.id}${leg ? ` (${leg.gameName})` : ""} — Tirage ${drawLabel} — Gain ${prize.toLocaleString()} FCFA. Reçu: ${origin}/verify/${token}`;
