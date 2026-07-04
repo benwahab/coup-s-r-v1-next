@@ -125,9 +125,9 @@ function AuthPage() {
       } else if (res.reason === "locked") {
         setError(t("account.blockedHour"));
       } else if (res.reason === "wrong-phone") {
-        setError(t("account.wrongPhone", { remaining: res.remaining }));
+        setError(t("account.wrongPhone", { remaining: res.remaining ?? 0 }));
       } else {
-        setError(t("account.wrongOtp", { remaining: res.remaining }));
+        setError(t("account.wrongOtp", { remaining: res.remaining ?? 0 }));
       }
       setOtp("");
     } catch (e) {
