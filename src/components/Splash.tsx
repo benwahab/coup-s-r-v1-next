@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useI18n } from "@/lib/i18n";
 
 const SEEN_KEY = "lonani.splash.seen";
 
 export function Splash() {
+  const { t } = useI18n();
   // Ne montre le splash qu'au 1er chargement de la session navigateur.
   const [show, setShow] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -31,7 +33,7 @@ export function Splash() {
       ].join(" ")}
       onClick={() => { setLeaving(true); setTimeout(() => setShow(false), 300); }}
       role="button"
-      aria-label="Passer l'écran d'accueil"
+      aria-label={t("shell.splash.skip")}
     >
       <div className="absolute inset-0 grid-bg opacity-30" />
       <div
