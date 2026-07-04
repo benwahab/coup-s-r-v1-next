@@ -85,7 +85,7 @@ function LotoPage() {
       gameId: "loto",
       gameName: "Loto Balsa",
       picks: sorted,
-      picksLabel: `${drawName} · ${mode} ${mode === 1 ? "boule" : "boules"} : ${picksLabel}`,
+      picksLabel: `${drawName} · ${mode} ${mode === 1 ? t("game.ball") : t("balls")} : ${picksLabel}`,
       stake,
       drawName,
       drawDate: drawDateIso,
@@ -148,7 +148,7 @@ function LotoPage() {
         maxStake={MAX_STAKE}
         legs={effectiveLegs.length ? effectiveLegs : undefined}
         selection={sorted}
-        picksLabel={`${drawName} · ${mode} ${mode === 1 ? "boule" : "boules"} : ${picksLabel}`}
+        picksLabel={`${drawName} · ${mode} ${mode === 1 ? t("game.ball") : t("balls")} : ${picksLabel}`}
         canContinue={effectiveLegs.length > 0 || picks.length === mode}
         defaultStake={stake}
         skipStake
@@ -259,7 +259,7 @@ function LotoPage() {
             <div className="mt-4 rounded-2xl border border-gold/30 bg-gold/5 p-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs font-bold uppercase tracking-widest text-gold">
-                  Panier · {cart.length} {cart.length > 1 ? t("grids") : t("grid").toLowerCase()}
+                  {t("game.basket")} · {cart.length} {cart.length > 1 ? t("grids") : t("grid").toLowerCase()}
                 </div>
                 <button type="button" onClick={addGridToCart} disabled={!liveLeg}
                   className="inline-flex items-center gap-1 rounded-full bg-gold-gradient px-3 py-1.5 text-[11px] font-bold text-[var(--gold-foreground)] shadow-gold disabled:opacity-40">
@@ -272,7 +272,7 @@ function LotoPage() {
                     <li key={l.legId} className="flex items-center justify-between gap-2 rounded-lg bg-background/50 px-2.5 py-1.5 text-xs">
                       <span className="min-w-0 truncate"><b className="text-primary mr-1">G{i + 1}</b>{l.picksLabel}</span>
                       <span className="shrink-0 tabular-nums font-bold">{l.stake.toLocaleString()}</span>
-                      <button onClick={() => removeFromCart(l.legId)} aria-label="Retirer cette grille" className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => removeFromCart(l.legId)} aria-label={t("game.removeThisGrid")} className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
                     </li>
                   ))}
                 </ul>
@@ -287,7 +287,7 @@ function LotoPage() {
 
             {picks.length < mode && (
               <p className="mt-3 text-sm text-muted-foreground">
-                {t("needMin")} {mode} {mode === 1 ? "boule" : "boules"} — {picks.length} {t("selected")}.
+                {t("needMin")} {mode} {mode === 1 ? t("game.ball") : t("balls")} — {picks.length} {t("selected")}.
               </p>
             )}
           </div>

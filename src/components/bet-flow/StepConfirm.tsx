@@ -41,7 +41,7 @@ export function StepConfirm() {
           </div>
         )}
         {odds > 1 && (
-          <div className="mt-1 text-[11px] text-muted-foreground text-right">Cote globale · ×{odds.toFixed(2)}</div>
+          <div className="mt-1 text-[11px] text-muted-foreground text-right">{t("bet.globalOdds", { odds: odds.toFixed(2) })}</div>
         )}
       </div>
       <label className="mt-4 flex items-start gap-2.5 cursor-pointer">

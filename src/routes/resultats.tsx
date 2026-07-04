@@ -93,13 +93,13 @@ function ResultsPage() {
           </History>
           <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5 text-gold" /> Chevaux les plus performants
+              <Sparkles className="h-3.5 w-3.5 text-gold" /> {t("browse.bestHorses")}
             </div>
             <ul className="mt-3 space-y-1.5 text-sm">
               {[3, 7, 1, 10].map((n, i) => (
                 <li key={n} className="flex items-center justify-between rounded-xl bg-secondary/60 px-3 py-2">
-                  <span>Cheval n° <strong>{n}</strong></span>
-                  <span className="font-mono text-xs text-primary">{(4 - i)} podiums</span>
+                  <span>{t("browse.horseNo", { n })}</span>
+                  <span className="font-mono text-xs text-primary">{t("browse.podiums", { count: 4 - i })}</span>
                 </li>
               ))}
             </ul>
@@ -107,7 +107,7 @@ function ResultsPage() {
         </GameBlock>
 
         {/* Foot */}
-        <GameBlock title="Pari Foot" subtitle="Week-end">
+        <GameBlock title="Pari Foot" subtitle={t("browse.weekend")}>
           <Latest date={lastFoot?.date}>
             {lastFoot?.matches && (
               <ul className="space-y-1.5 text-sm">
@@ -137,11 +137,11 @@ function ResultsPage() {
             ))}
           </History>
           <div className="rounded-2xl border border-border bg-card p-4 shadow-soft text-sm">
-            <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Tendances</div>
+            <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("trends")}</div>
             <ul className="mt-2 space-y-1.5 text-muted-foreground">
-              <li>• 70% des matchs avec +2,5 buts ce mois</li>
-              <li>• Sahel SC : 8 victoires de suite à domicile</li>
-              <li>• Match nul rare dans le championnat (12%)</li>
+              <li>• {t("browse.trendGoals")}</li>
+              <li>• {t("browse.trendSahel")}</li>
+              <li>• {t("browse.trendDraw")}</li>
             </ul>
           </div>
         </GameBlock>
@@ -165,10 +165,11 @@ function GameBlock({ title, subtitle, children }: { title: string; subtitle: str
 }
 
 function Latest({ date, children }: { date?: string; children: React.ReactNode }) {
+  const { t } = useI18n();
   return (
     <div className="rounded-3xl border border-gold/40 bg-gradient-to-br from-gold/10 via-card to-card p-5 shadow-gold">
       <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-gold">
-        <Crown className="h-3.5 w-3.5" /> Dernier tirage
+        <Crown className="h-3.5 w-3.5" /> {t("browse.lastDraw")}
         {date && <span className="ml-auto tabular-nums text-muted-foreground">{formatDate(date)}</span>}
       </div>
       <div className="mt-4">{children}</div>

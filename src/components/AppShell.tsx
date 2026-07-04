@@ -45,7 +45,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
           <div className="flex items-center gap-1.5">
             <span
-              title="Interdit aux mineurs"
+              title={t("shell.forbiddenMinors")}
               className="hidden xs:inline-flex h-7 items-center justify-center rounded-full border border-red-500/60 bg-red-500/10 px-2 font-display text-[10px] font-black uppercase tracking-wider text-red-400 sm:inline-flex"
             >
               -18
@@ -61,7 +61,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
               >
                 <LogIn className="h-3.5 w-3.5" />
-                <span>{locked ? "Bloqué" : "Connexion"}</span>
+                <span>{locked ? t("shell.locked") : t("shell.login")}</span>
               </Link>
             )}
             {authed && (
@@ -69,11 +69,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <button
                   type="button"
                   onClick={() => logout("user")}
-                  title={session ? `Connecté : +227 ${session.phone}` : ""}
+                  title={session ? t("shell.connectedAs", { phone: session.phone }) : ""}
                   className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-300 transition hover:bg-red-500/20"
                 >
                   <LogOut className="h-3.5 w-3.5" />
-                  <span className="hidden xs:inline sm:inline">Déconnexion</span>
+                  <span className="hidden xs:inline sm:inline">{t("shell.logout")}</span>
                 </button>
               </>
             )}

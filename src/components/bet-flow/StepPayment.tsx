@@ -15,8 +15,8 @@ export function StepPayment() {
   return (
     <Card title={t("payment")}>
       <div className="-mt-2 mb-3 flex flex-wrap items-center gap-3 text-[11px]">
-        <button type="button" onClick={() => setStep(4)} className="font-bold text-primary underline">Modifier numéro / opérateur</button>
-        <button type="button" onClick={() => setStep(3)} className="font-bold text-primary underline">Modifier ma sélection</button>
+        <button type="button" onClick={() => setStep(4)} className="font-bold text-primary underline">{t("bet.editPhoneOperator")}</button>
+        <button type="button" onClick={() => setStep(3)} className="font-bold text-primary underline">{t("bet.editSelection")}</button>
       </div>
       <div className="rounded-2xl border border-border bg-secondary/40 p-4">
         <div className="flex items-center gap-3">
@@ -34,7 +34,7 @@ export function StepPayment() {
         <label className="mt-3 flex items-start gap-2.5 cursor-pointer rounded-xl bg-card/70 px-3 py-2">
           <input type="checkbox" checked={validated} onChange={(e) => setValidated(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
           <span className="text-sm">
-            Je valide que <b>{holder}</b> est bien le titulaire du compte <b>{selectedPayment.name}</b> au <b>+227 {phone}</b>.
+            {t("bet.confirmHolder", { holder, operator: selectedPayment.name, phone })}
           </span>
         </label>
       </div>
@@ -43,8 +43,8 @@ export function StepPayment() {
         <div className="mt-4 flex items-start gap-2 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-primary">
           <Clock className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="min-w-0 text-sm">
-            <b className="font-bold">Jeu fermé pour cette session.</b><br />
-            Les paiements rouvrent à <b>{String(openHour).padStart(2, "0")}h00</b>. Vous pouvez enregistrer votre pari en brouillon et le payer dès la réouverture.
+            <b className="font-bold">{t("bet.gameClosed")}</b><br />
+            {t("bet.reopenAt", { hour: String(openHour).padStart(2, "0") })}
           </div>
         </div>
       )}
@@ -89,7 +89,7 @@ export function StepPayment() {
         <div className="mt-3 flex items-start gap-2 rounded-xl border border-primary/40 bg-primary/10 px-3 py-2 text-sm text-primary">
           <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0" />
           <div className="min-w-0">
-            <div className="font-bold">Paiement bloqué (anti-doublon)</div>
+            <div className="font-bold">{t("bet.duplicateBlocked")}</div>
             <div className="text-xs">{duplicateMsg}</div>
           </div>
         </div>
@@ -112,13 +112,13 @@ export function StepPayment() {
           className="mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border-2 border-primary bg-primary/15 px-6 py-4 text-lg font-extrabold text-primary transition hover:bg-primary/25 disabled:opacity-70"
         >
           {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-          Enregistrer pour plus tard
+          {t("bet.saveDraft")}
         </button>
       )}
 
       {validated && (
         <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-emerald-400">
-          <CheckCircle2 className="h-3.5 w-3.5" /> Compte validé
+          <CheckCircle2 className="h-3.5 w-3.5" /> {t("bet.accountValidated")}
         </p>
       )}
 
