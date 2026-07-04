@@ -5,6 +5,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { useAccount } from "@/lib/account";
+import { useI18n } from "@/lib/i18n";
 import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
 
 // Validation client — miroir de la validation serveur dans otp.functions.ts.
@@ -31,6 +32,7 @@ function fmtMs(ms: number) {
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { account } = useAccount();
   const { requestOtp, verifyOtp, remainingLockMs, isPermanent, failedAttempts } = useAuth();
 
@@ -85,19 +87,19 @@ function AuthPage() {
       if (!res.ok) {
         const mins = Math.ceil((res.rate.retryInMs ?? 60_000) / 60_000);
         const msg = res.rate.reason === "phone"
-          ? `Trop de tentatives depuis ce numéro. Réessayez dans ~${mins} min.`
-          : `Trop de tentatives depuis cet appareil. Réessayez dans ~${mins} min.`;
+          ? t("account.rateLimitPhone", { mins })
+          : t("account.rateLimitDevice", { mins });
         setError(msg);
         toast.error(msg);
         return;
       }
       setDemoCode(res.code);
       setStep("otp");
-      setInfo("Code envoyé par SMS au " + phone);
+      setInfo(t("account.codeSentTo") + " " + phone);
       setResendIn(60);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Erreur réseau. Réessayez.";
-      setError("Impossible d'envoyer le code. Réessayez dans un instant.");
+      const msg = e instanceof Error ? e.message : t("account.sendFailed");
+      setError(t("account.sendFailed"));
       toast.error(msg);
     } finally { setSending(false); }
   };
@@ -110,27 +112,27 @@ function AuthPage() {
     try {
       const res = await verifyOtp(phone, otp, account?.phone ?? null);
       if (res.ok) {
-        setInfo("Connexion réussie. Redirection...");
-        toast.success("Bienvenue !");
+        setInfo(t("account.loginSuccess"));
+        toast.success(t("account.welcomeToast"));
         setTimeout(() => navigate({ to: "/" }), 600);
         return;
       }
       if (res.reason === "rate-limited") {
         const mins = Math.ceil(((res.rate?.retryInMs) ?? 60_000) / 60_000);
-        setError(`Trop de tentatives. Réessayez dans ~${mins} min.`);
+        setError(t("account.rateLimitOtp", { mins }));
       } else if (res.reason === "permanent") {
-        setError("Compte bloqué. Veuillez contacter le service clientèle.");
+        setError(t("account.blockedContact"));
       } else if (res.reason === "locked") {
-        setError("Trop de tentatives. Compte bloqué pendant 1 heure.");
+        setError(t("account.blockedHour"));
       } else if (res.reason === "wrong-phone") {
-        setError(`Ce numéro ne correspond pas au compte enregistré. Il vous reste ${res.remaining} tentative(s).`);
+        setError(t("account.wrongPhone", { remaining: res.remaining }));
       } else {
-        setError(`Code OTP incorrect. Il vous reste ${res.remaining} tentative(s).`);
+        setError(t("account.wrongOtp", { remaining: res.remaining }));
       }
       setOtp("");
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Erreur réseau. Réessayez.";
-      setError("Vérification impossible. Réessayez.");
+      const msg = e instanceof Error ? e.message : t("account.verifyFailed");
+      setError(t("account.verifyFailed"));
       toast.error(msg);
     } finally {
       setVerifying(false);
@@ -163,22 +165,22 @@ function AuthPage() {
             COUP <span className="text-[#00C896]">SÛR</span>
           </h1>
           <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#00C896]/90">Pariez. Analysez. Gagnez.</p>
-          <p className="mt-3 font-display text-xl font-extrabold text-white">Bienvenue</p>
-          <p className="mt-0.5 text-[12px] text-white/60">Connectez-vous à votre compte pour continuer.</p>
+          <p className="mt-3 font-display text-xl font-extrabold text-white">{t("account.welcome")}</p>
+          <p className="mt-0.5 text-[12px] text-white/60">{t("account.loginSubtitle")}</p>
         </div>
                 {locked && (
                   <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-red-100 backdrop-blur-sm">
                     <div className="flex items-center gap-2 font-bold">
                       <ShieldAlert className="h-5 w-5" />
-                      {permanent ? "Compte bloqué définitivement" : "Compte bloqué temporairement"}
+                      {permanent ? t("account.blockedPermanent") : t("account.blockedTemp")}
                     </div>
                     {permanent ? (
                       <p className="mt-2 text-sm">
-                        Contactez le service clientèle au <span className="font-bold">7000</span> pour débloquer votre compte.
+                        {t("account.contactSupport")}
                       </p>
                     ) : (
                       <p className="mt-2 text-sm tabular-nums">
-                        Réessayez dans <span className="font-display font-extrabold text-lg">{fmtMs(lockMs)}</span>
+                        {t("account.retryIn", { time: fmtMs(lockMs) })}
                       </p>
                     )}
                   </div>
@@ -187,12 +189,12 @@ function AuthPage() {
                 {step === "phone" && (
                   <>
                     <div>
-                      <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">Étape 1 · Identification</div>
-                      <h2 className="font-display text-xl font-extrabold text-white">Votre numéro</h2>
-                      <p className="mt-0.5 text-[12px] text-white/60">Un code SMS vous sera envoyé instantanément.</p>
+                      <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">{t("account.step1")}</div>
+                      <h2 className="font-display text-xl font-extrabold text-white">{t("account.yourNumber")}</h2>
+                      <p className="mt-0.5 text-[12px] text-white/60">{t("account.smsWillBeSent")}</p>
                     </div>
                     <label className="cs-field group block">
-                      <span className="cs-field-label">Numéro de téléphone</span>
+                      <span className="cs-field-label">{t("account.phoneLabel")}</span>
                       <div className="cs-field-wrap">
                         <Phone className="h-5 w-5 text-white/60 group-focus-within:text-[#00C896] transition-colors" />
                         <span className="text-sm font-semibold text-white/70">+227</span>
@@ -217,14 +219,14 @@ function AuthPage() {
                       className={["cs-cta", locked ? "cs-cta-locked" : ""].join(" ")}
                     >
                       {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
-                      {locked ? "Connexion bloquée" : "Recevoir le code SMS"}
+                      {locked ? t("account.loginBlocked") : t("account.receiveSms")}
                       {!locked && !sending && <ArrowRight className="h-4 w-4" />}
                     </button>
                     <p className="text-[11px] text-white/60 text-center">
-                      Pas encore de compte ? <a href="/compte" className="font-bold text-[#00C896] underline-offset-2 hover:underline">Créer un compte</a>
+                      {t("account.noAccount")} <a href="/compte" className="font-bold text-[#00C896] underline-offset-2 hover:underline">{t("createAccount")}</a>
                     </p>
                     <p className="text-[11px] text-white/50 text-center">
-                      Tentatives restantes : <span className="font-bold text-white/80">{Math.max(0, 3 - failedAttempts)} / 3</span>
+                      {t("account.attemptsLeft", { remaining: Math.max(0, 3 - failedAttempts) })}
                     </p>
                   </>
                 )}
@@ -232,34 +234,34 @@ function AuthPage() {
                 {step === "otp" && (
                   <>
                     <div>
-                      <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">Étape 2 · Vérification</div>
-                      <h2 className="font-display text-xl font-extrabold text-white">Entrez votre code</h2>
+                      <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">{t("account.step2")}</div>
+                      <h2 className="font-display text-xl font-extrabold text-white">{t("account.enterCode")}</h2>
                     </div>
                     <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/70 backdrop-blur">
-                      Code envoyé au <span className="font-bold text-white">+227 {phone}</span>.{" "}
-                      <button onClick={() => { setStep("phone"); setOtp(""); }} className="font-bold text-[#00C896] hover:underline">Modifier</button>
+                      {t("account.codeSentTo")} <span className="font-bold text-white">+227 {phone}</span>.{" "}
+                      <button onClick={() => { setStep("phone"); setOtp(""); }} className="font-bold text-[#00C896] hover:underline">{t("account.modify")}</button>
                     </div>
 
                     {autoRead === "listening" && (
                       <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/80">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Lecture automatique du SMS en cours…
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("account.autoReadListening")}
                       </div>
                     )}
                     {autoRead === "ok" && (
                       <div className="flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs font-semibold text-emerald-200">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Code lu automatiquement.
+                        <CheckCircle2 className="h-3.5 w-3.5" /> {t("account.autoReadOk")}
                       </div>
                     )}
                     {autoRead === "unavailable" && (
                       <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/70">
-                        <AlertTriangle className="h-3.5 w-3.5" /> Lecture automatique indisponible. Saisissez le code manuellement.
+                        <AlertTriangle className="h-3.5 w-3.5" /> {t("account.autoReadUnavailable")}
                       </div>
                     )}
 
                     <div className="block">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-widest text-white/80">Code SMS</span>
-                        <span className="text-[11px] text-white/50">6 chiffres</span>
+                        <span className="text-xs font-bold uppercase tracking-widest text-white/80">{t("account.smsCode")}</span>
+                        <span className="text-[11px] text-white/50">{t("account.sixDigits")}</span>
                       </div>
                       <div className="mt-3 grid grid-cols-6 gap-1.5">
                         {Array.from({ length: 6 }).map((_, i) => (
@@ -270,7 +272,7 @@ function AuthPage() {
                             inputMode="numeric"
                             autoComplete={i === 0 ? "one-time-code" : "off"}
                             maxLength={1}
-                            aria-label={`Chiffre ${i + 1} sur 6`}
+                            aria-label={t("account.digitAriaLabel", { n: i + 1 })}
                             value={otp[i] ?? ""}
                             disabled={locked}
                             onChange={(e) => setDigit(i, e.target.value)}
@@ -291,7 +293,7 @@ function AuthPage() {
 
                     {demoCode && (
                       <div className="rounded-xl border border-dashed border-white/15 bg-white/5 px-3 py-2 text-center text-[11px] text-white/60">
-                        Mode démo · code SMS simulé : <span className="font-bold tabular-nums text-white">{demoCode}</span>
+                        {t("account.demoMode")} <span className="font-bold tabular-nums text-white">{demoCode}</span>
                       </div>
                     )}
 
@@ -304,7 +306,7 @@ function AuthPage() {
                       className="cs-cta"
                     >
                       {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-                      {verifying ? "Vérification…" : "Se connecter"}
+                      {verifying ? t("account.verifying") : t("account.signIn")}
                     </button>
                     <button
                       onClick={sendCode}
@@ -312,15 +314,15 @@ function AuthPage() {
                       className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm font-bold text-white/90 backdrop-blur transition hover:bg-white/10 disabled:opacity-60"
                     >
                       <RefreshCw className={`h-4 w-4 ${sending ? "animate-spin" : ""}`} />
-                      {resendIn > 0 ? `Renvoyer le code dans ${resendIn}s` : "Renvoyer le code SMS"}
+                      {resendIn > 0 ? t("account.resendIn", { seconds: resendIn }) : t("account.resendSms")}
                     </button>
                   </>
                 )}
         <p className="pt-2 text-center text-[11px] text-white/60 leading-relaxed">
-          En vous connectant, vous acceptez nos{" "}
-          <a href="/conditions" className="font-semibold text-[#00C896] hover:underline">Conditions d'utilisation</a>{" "}
-          et notre{" "}
-          <a href="/confidentialite" className="font-semibold text-[#00C896] hover:underline">Politique de confidentialité</a>.
+          {t("account.termsIntro")}{" "}
+          <a href="/conditions" className="font-semibold text-[#00C896] hover:underline">{t("account.termsLink")}</a>{" "}
+          {t("account.termsAnd")}{" "}
+          <a href="/confidentialite" className="font-semibold text-[#00C896] hover:underline">{t("account.privacyLink")}</a>.
         </p>
       </div>
     </PremiumPhoneCard>
