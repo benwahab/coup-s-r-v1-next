@@ -1,0 +1,132 @@
+{
+  "browse.lastDraw": {
+    "fr": "Dernier tirage",
+    "en": "Latest draw",
+    "ha": "Ja'o na ƙarshe"
+  },
+  "browse.bestHorses": {
+    "fr": "Chevaux les plus performants",
+    "en": "Best performing horses",
+    "ha": "Dawakan da suka fi ƙarfi"
+  },
+  "browse.horseNo": {
+    "fr": "Cheval n° {n}",
+    "en": "Horse no. {n}",
+    "ha": "Doki lamba {n}"
+  },
+  "browse.podiums": {
+    "fr": "{count} podiums",
+    "en": "{count} podiums",
+    "ha": "Podiums {count}"
+  },
+  "browse.weekend": {
+    "fr": "Week-end",
+    "en": "Weekend",
+    "ha": "Karshen mako"
+  },
+  "browse.trendGoals": {
+    "fr": "70% des matchs avec +2,5 buts ce mois",
+    "en": "70% of matches with +2.5 goals this month",
+    "ha": "70% na wasanni da +2.5 kwallaye wannan wata"
+  },
+  "browse.trendSahel": {
+    "fr": "Sahel SC : 8 victoires de suite à domicile",
+    "en": "Sahel SC: 8 consecutive home wins",
+    "ha": "Sahel SC: nasarori 8 a jere a gida"
+  },
+  "browse.trendDraw": {
+    "fr": "Match nul rare dans le championnat (12%)",
+    "en": "Draws are rare in the league (12%)",
+    "ha": "Daidai ba kasancewar yawa a gasar (12%)"
+  },
+  "browse.pronosSubtitle": {
+    "fr": "Tendances, conseils & suggestions",
+    "en": "Trends, tips & suggestions",
+    "ha": "Yanayi, shawarwari & ra'ayoyi"
+  },
+  "browse.betPmu": {
+    "fr": "Parier PMU",
+    "en": "Bet PMU",
+    "ha": "Caca PMU"
+  },
+  "browse.playLoto": {
+    "fr": "Jouer Loto",
+    "en": "Play Loto",
+    "ha": "Buga Loto"
+  },
+  "browse.betFoot": {
+    "fr": "Parier Foot",
+    "en": "Bet Football",
+    "ha": "Caca Ƙwallon ƙafa"
+  },
+  "browse.favProno": {
+    "fr": "Pronostic favori @ {odds}",
+    "en": "Top pick @ {odds}",
+    "ha": "Zaɓi mafi kyau @ {odds}"
+  },
+  "browse.aiPmuPrompt": {
+    "fr": "Cliquez « PMU » pour générer une analyse IA des chevaux du jour.",
+    "en": "Click "PMU" to generate an AI analysis of today's horses.",
+    "ha": "Danna «PMU» don samar da nazarin AI na dawakai na yau."
+  },
+  "browse.scoreByHorse": {
+    "fr": "Score par cheval",
+    "en": "Score per horse",
+    "ha": "Maki ga kowane doki"
+  },
+  "browse.aiLotoPrompt": {
+    "fr": "Cliquez « Loto » pour analyser la rotation des boules.",
+    "en": "Click "Loto" to analyse ball rotation.",
+    "ha": "Danna «Loto» don nazarin juyawar ƙwallo."
+  },
+  "browse.hotBalls": {
+    "fr": "Chaudes",
+    "en": "Hot",
+    "ha": "Masu zafi"
+  },
+  "browse.coldBalls": {
+    "fr": "Froides",
+    "en": "Cold",
+    "ha": "Sanyi"
+  },
+  "browse.suggestedGrids": {
+    "fr": "Grilles suggérées",
+    "en": "Suggested grids",
+    "ha": "Grid ɗin da aka ba da shawarar"
+  },
+  "browse.heroAction": {
+    "fr": "Jouez. Gagnez. ",
+    "en": "Play. Win. ",
+    "ha": "Buga. Ci. "
+  },
+  "browse.heroEncaissez": {
+    "fr": "Encaissez.",
+    "en": "Cash out.",
+    "ha": "Karɓa."
+  },
+  "browse.heroDesc": {
+    "fr": "PMU quotidien à 15h, Loto Balsa du vendredi (1 à 5 boules sur 90) et Pari Foot. Paiement Airtel, Moov, Zamani, Nita, Amanata, MyNita. Reçu QR sécurisé, SMS gagnant automatique.",
+    "en": "Daily PMU at 3 pm, Friday Loto Balsa (1 to 5 balls out of 90) and Football Betting. Payment via Airtel, Moov, Zamani, Nita, Amanata, MyNita. Secure QR receipt, automatic winner SMS.",
+    "ha": "PMU na yau da kullun da karfe 15, Loto Balsa na Jumma'a (1 zuwa 5 ƙwallo daga 90) da Caca Ƙwallon ƙafa. Biyan kuɗi ta Airtel, Moov, Zamani, Nita, Amanata, MyNita. Rasit QR mai aminci, SMS na nasara atomatik."
+  },
+  "browse.threeClicks": {
+    "fr": "3 clics",
+    "en": "3 clicks",
+    "ha": "Dannawa 3"
+  },
+  "browse.qrSecured": {
+    "fr": "QR sécurisé",
+    "en": "Secure QR",
+    "ha": "QR mai aminci"
+  },
+  "browse.selectGameDesc": {
+    "fr": "Sélectionnez un jeu pour commencer à parier.",
+    "en": "Select a game to start betting.",
+    "ha": "Zaɓi wasa don fara caca."
+  },
+  "browse.seeAllResults": {
+    "fr": "Voir tous les résultats",
+    "en": "See all results",
+    "ha": "Duba dukkan sakamakon"
+  }
+}

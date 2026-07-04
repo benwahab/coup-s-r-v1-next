@@ -16,11 +16,11 @@ export function StepStake() {
     <Card title={t("stake")}>
       {lockedStake != null ? (
         <p className="-mt-2 mb-3 text-sm text-muted-foreground">
-          Mise calculée automatiquement selon votre pari · <b className="tabular-nums">{lockedStake.toLocaleString()} {t("fcfa")}</b>
+          {t("bet.stakeAutoCalculated", { amount: lockedStake.toLocaleString(), fcfa: t("fcfa") })}
         </p>
       ) : legs?.length ? (
         <p className="-mt-2 mb-3 text-sm text-muted-foreground">
-          Mises définies par grille — {allLegs.length} {t("grids")} · {t("totalStake")}: <b className="tabular-nums">{totalStake.toLocaleString()} {t("fcfa")}</b>
+          {t("bet.stakePerGrid", { count: allLegs.length, total: totalStake.toLocaleString(), fcfa: t("fcfa") })}
         </p>
       ) : (<>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -40,7 +40,7 @@ export function StepStake() {
         </div>
         <div className="mt-4">
           <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Autre montant ({t("fcfa")}) — min {minStake.toLocaleString()} · max {maxStake.toLocaleString()}
+            {t("bet.otherAmount", { fcfa: t("fcfa"), min: minStake.toLocaleString(), max: maxStake.toLocaleString() })}
           </label>
           <input
             type="number"

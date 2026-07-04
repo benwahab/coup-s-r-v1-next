@@ -109,8 +109,8 @@ function PmuPage() {
           <div>
             {/* Sélecteur type de pari */}
             <div className="mb-3">
-              <h2 className="font-display text-xl font-bold">1. Quel pari ?</h2>
-              <p className="text-xs text-muted-foreground">Choisissez le type de pari, puis vos chevaux.</p>
+              <h2 className="font-display text-xl font-bold">{t("game.whichBet")}</h2>
+              <p className="text-xs text-muted-foreground">{t("game.chooseBetType")}</p>
             </div>
             <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-2">
               {pmuBets.map((b) => {
@@ -132,7 +132,10 @@ function PmuPage() {
                   <div className="font-bold text-sm">{bet.name}</div>
                   <div className="text-xs text-muted-foreground">{bet.help}</div>
                   <div className="mt-1 text-[11px] tabular-nums">
-                    {bet.minPicks === bet.maxPicks ? `${bet.minPicks} cheval${bet.minPicks > 1 ? "x" : ""}` : `${bet.minPicks}–${bet.maxPicks} chevaux`} · base {bet.baseStake} FCFA · cote ×{bet.odds}
+                    {bet.minPicks === bet.maxPicks
+                      ? `${bet.minPicks} ${bet.minPicks > 1 ? t("horses").toLowerCase() : t("game.horse")}`
+                      : `${bet.minPicks}–${bet.maxPicks} ${t("horses").toLowerCase()}`
+                    } · {t("game.base")} {bet.baseStake} {t("fcfa")} · {t("odds")} ×{bet.odds}
                   </div>
                 </div>
               </div>
@@ -140,7 +143,7 @@ function PmuPage() {
 
             {/* Sélection chevaux */}
             <div className="mt-5 mb-2 flex items-center justify-between">
-              <h2 className="font-display text-xl font-bold">2. Chevaux partants</h2>
+              <h2 className="font-display text-xl font-bold">{t("game.startingHorses")}</h2>
               <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold tabular-nums">
                 {picks.length}/{bet.maxPicks}
               </span>
@@ -175,7 +178,7 @@ function PmuPage() {
 
             {nonPartants.length > 0 && (
               <>
-                <h3 className="mt-5 mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">Non-partants</h3>
+                <h3 className="mt-5 mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("game.nonStarters")}</h3>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {nonPartants.map((h) => (
                     <div key={h.number} className="flex items-center gap-3 rounded-2xl border-2 border-dashed border-border bg-muted/40 px-3 py-2.5 opacity-60">
@@ -195,15 +198,15 @@ function PmuPage() {
             <div className="mt-5 rounded-2xl border border-gold/30 bg-gold/5 p-4">
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Combinaisons</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("game.combinations")}</div>
                   <div className="font-display text-xl font-extrabold tabular-nums">{combos}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Mise totale</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("totalStake")}</div>
                   <div className="font-display text-xl font-extrabold tabular-nums text-gold">{totalStake.toLocaleString()}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Gain potentiel</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("potentialWin")}</div>
                   <div className="font-display text-xl font-extrabold tabular-nums text-success">{Math.round(totalStake * bet.odds).toLocaleString()}</div>
                 </div>
               </div>
@@ -213,11 +216,11 @@ function PmuPage() {
             <div className="mt-4 rounded-2xl border border-gold/30 bg-gold/5 p-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs font-bold uppercase tracking-widest text-gold">
-                  Panier · {cart.length} tirage{cart.length > 1 ? "s" : ""}
+                  {t("game.basket")} · {cart.length} {cart.length > 1 ? t("game.draws") : t("game.draw")}
                 </div>
                 <button type="button" onClick={addCurrentToCart} disabled={!currentValid}
                   className="inline-flex items-center gap-1 rounded-full bg-gold-gradient px-3 py-1.5 text-[11px] font-bold text-[var(--gold-foreground)] shadow-gold disabled:opacity-40">
-                  <Plus className="h-3 w-3" /> Ajouter ce pari
+                  <Plus className="h-3 w-3" /> {t("game.addThisBet")}
                 </button>
               </div>
               {cart.length > 0 && (
@@ -226,21 +229,21 @@ function PmuPage() {
                     <li key={l.legId} className="flex items-center justify-between gap-2 rounded-lg bg-background/50 px-2.5 py-1.5 text-xs">
                       <span className="min-w-0 truncate"><b className="text-primary mr-1">T{i + 1}</b>{l.picksLabel}</span>
                       <span className="shrink-0 tabular-nums font-bold">{l.stake.toLocaleString()}</span>
-                      <button onClick={() => removeFromCart(l.legId)} aria-label="Retirer cette grille" className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => removeFromCart(l.legId)} aria-label={t("game.removeThisGrid")} className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
                     </li>
                   ))}
                 </ul>
               )}
               {cartTotal > 0 && (
                 <div className="mt-2 flex items-center justify-between border-t border-gold/20 pt-2 text-xs">
-                  <span className="font-bold uppercase tracking-widest text-muted-foreground">Mise totale</span>
-                  <span className="font-display text-base font-extrabold tabular-nums text-gold">{cartTotal.toLocaleString()} FCFA</span>
+                  <span className="font-bold uppercase tracking-widest text-muted-foreground">{t("totalStake")}</span>
+                  <span className="font-display text-base font-extrabold tabular-nums text-gold">{cartTotal.toLocaleString()} {t("fcfa")}</span>
                 </div>
               )}
             </div>
 
             {!canContinue && picks.length < bet.minPicks && (
-              <p className="mt-3 text-sm text-muted-foreground">Sélectionnez au moins <b>{bet.minPicks}</b> cheval{bet.minPicks > 1 ? "x" : ""}.</p>
+              <p className="mt-3 text-sm text-muted-foreground">{t("needMin")} <b>{bet.minPicks}</b> {bet.minPicks > 1 ? t("horses").toLowerCase() : t("game.horse")}.</p>
             )}
           </div>
         }

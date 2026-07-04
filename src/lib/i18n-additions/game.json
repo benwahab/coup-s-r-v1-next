@@ -1,0 +1,102 @@
+{
+  "game.whichBet": {
+    "fr": "1. Quel pari ?",
+    "en": "1. Which bet?",
+    "ha": "1. Wane caca?"
+  },
+  "game.chooseBetType": {
+    "fr": "Choisissez le type de pari, puis vos chevaux.",
+    "en": "Choose the bet type, then your horses.",
+    "ha": "Zaɓi nau'in caca, sannan dawakanku."
+  },
+  "game.startingHorses": {
+    "fr": "Chevaux partants",
+    "en": "Starting horses",
+    "ha": "Dawakai masu gudu"
+  },
+  "game.nonStarters": {
+    "fr": "Non-partants",
+    "en": "Non-starters",
+    "ha": "Dawakai marasa gudu"
+  },
+  "game.combinations": {
+    "fr": "Combinaisons",
+    "en": "Combinations",
+    "ha": "Haɗuwa"
+  },
+  "game.basket": {
+    "fr": "Panier",
+    "en": "Basket",
+    "ha": "Kwando"
+  },
+  "game.draw": {
+    "fr": "tirage",
+    "en": "draw",
+    "ha": "zana"
+  },
+  "game.draws": {
+    "fr": "tirages",
+    "en": "draws",
+    "ha": "zane"
+  },
+  "game.addThisBet": {
+    "fr": "Ajouter ce pari",
+    "en": "Add this bet",
+    "ha": "Ƙara wannan caca"
+  },
+  "game.removeThisGrid": {
+    "fr": "Retirer cette grille",
+    "en": "Remove this grid",
+    "ha": "Cire wannan gira"
+  },
+  "game.horse": {
+    "fr": "cheval",
+    "en": "horse",
+    "ha": "doki"
+  },
+  "game.base": {
+    "fr": "base",
+    "en": "base",
+    "ha": "tushe"
+  },
+  "game.ball": {
+    "fr": "boule",
+    "en": "ball",
+    "ha": "ƙwallo"
+  },
+  "game.all": {
+    "fr": "Tout",
+    "en": "All",
+    "ha": "Duka"
+  },
+  "game.combined": {
+    "fr": "Combiné",
+    "en": "Combined",
+    "ha": "Haɗe"
+  },
+  "game.simple": {
+    "fr": "Simple",
+    "en": "Simple",
+    "ha": "Sauƙi"
+  },
+  "game.betSingular": {
+    "fr": "pari",
+    "en": "bet",
+    "ha": "caca"
+  },
+  "game.betsPlural": {
+    "fr": "paris",
+    "en": "bets",
+    "ha": "cacace"
+  },
+  "game.moreMarkets": {
+    "fr": "+ {count} marchés",
+    "en": "+ {count} markets",
+    "ha": "+ {count} kasuwanni"
+  },
+  "game.selections": {
+    "fr": "{count} sélections",
+    "en": "{count} selections",
+    "ha": "{count} zaɓaɓɓun"
+  }
+}

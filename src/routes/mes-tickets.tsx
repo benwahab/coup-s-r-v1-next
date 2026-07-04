@@ -18,13 +18,6 @@ const statusColor: Record<string, string> = {
   paid: "bg-success text-success-foreground",
 };
 
-const statusLabel: Record<string, string> = {
-  pending: "En attente",
-  losing: "Perdu",
-  winning: "Gagnant",
-  paid: "Payé",
-};
-
 const gameLabel: Record<string, string> = {
   pmu: "PMU",
   loto: "Loto Balsa",
@@ -78,7 +71,6 @@ function TicketsPage() {
     <>
       <PageHeader title={t("myTickets")} icon={<TicketIcon className="h-5 w-5" />} />
       <div className="mx-auto max-w-3xl px-4 py-4 space-y-4">
-        {/* Barre de filtres — sticky sur mobile */}
         <div className="sticky top-[64px] z-20 -mx-4 px-4 py-3 bg-background/85 backdrop-blur border-b border-border/50">
           <div className="flex flex-col gap-2">
             <label className="relative block">
@@ -87,7 +79,7 @@ function TicketsPage() {
                 type="search"
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                placeholder="Rechercher un n° de ticket…"
+                placeholder={t("account.searchTicket")}
                 className="w-full rounded-xl border border-border bg-card pl-9 pr-3 py-2 text-sm outline-none focus:border-primary/60"
               />
             </label>
@@ -96,21 +88,21 @@ function TicketsPage() {
                 value={status}
                 onChange={(e) => { setStatus(e.target.value as StatusFilter); setPage(1); }}
                 className="min-w-0 rounded-xl border border-border bg-card px-2 py-2 text-xs font-semibold outline-none focus:border-primary/60"
-                aria-label="Filtrer par statut"
+                aria-label={t("account.filterByStatus")}
               >
-                <option value="all">Tous statuts</option>
-                <option value="pending">En attente</option>
-                <option value="winning">Gagnant</option>
-                <option value="paid">Payé</option>
-                <option value="losing">Perdu</option>
+                <option value="all">{t("account.allStatuses")}</option>
+                <option value="pending">{t("pending")}</option>
+                <option value="winning">{t("winning")}</option>
+                <option value="paid">{t("account.paid")}</option>
+                <option value="losing">{t("losing")}</option>
               </select>
               <select
                 value={game}
                 onChange={(e) => { setGame(e.target.value as GameFilter); setPage(1); }}
                 className="min-w-0 rounded-xl border border-border bg-card px-2 py-2 text-xs font-semibold outline-none focus:border-primary/60"
-                aria-label="Filtrer par jeu"
+                aria-label={t("account.filterByGame")}
               >
-                <option value="all">Tous jeux</option>
+                <option value="all">{t("account.allGames")}</option>
                 <option value="pmu">PMU</option>
                 <option value="loto">Loto Balsa</option>
                 <option value="foot">Pari Foot</option>
@@ -119,11 +111,11 @@ function TicketsPage() {
                 value={period}
                 onChange={(e) => { setPeriod(e.target.value as PeriodFilter); setPage(1); }}
                 className="min-w-0 rounded-xl border border-border bg-card px-2 py-2 text-xs font-semibold outline-none focus:border-primary/60"
-                aria-label="Filtrer par période"
+                aria-label={t("account.filterByPeriod")}
               >
-                <option value="all">Toute période</option>
-                <option value="7d">7 derniers jours</option>
-                <option value="30d">30 derniers jours</option>
+                <option value="all">{t("account.allPeriods")}</option>
+                <option value="7d">{t("account.last7days")}</option>
+                <option value="30d">{t("account.last30days")}</option>
               </select>
             </div>
             <div className="flex items-center justify-between gap-2 text-xs">
@@ -133,13 +125,13 @@ function TicketsPage() {
                 className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 font-semibold text-muted-foreground hover:text-foreground"
               >
                 <ArrowUpDown className="h-3.5 w-3.5" />
-                {sort === "date-desc" ? "Plus récent d'abord" : "Plus ancien d'abord"}
+                {sort === "date-desc" ? t("account.newestFirst") : t("account.oldestFirst")}
               </button>
               <span className="text-muted-foreground tabular-nums">
-                {filtered.length} ticket{filtered.length > 1 ? "s" : ""}
+                {t("account.ticketCount", { count: filtered.length, plural: filtered.length > 1 ? "s" : "" })}
                 {activeFilters && (
                   <button onClick={resetFilters} className="ml-2 font-semibold text-primary hover:underline">
-                    Réinitialiser
+                    {t("account.reset")}
                   </button>
                 )}
               </span>
@@ -147,7 +139,6 @@ function TicketsPage() {
           </div>
         </div>
 
-        {/* Contenu */}
         {loading ? (
           <ul className="space-y-3" aria-busy="true">
             {[0, 1, 2, 3].map((i) => (
@@ -158,7 +149,7 @@ function TicketsPage() {
               </li>
             ))}
             <li className="flex items-center justify-center gap-2 pt-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Chargement des tickets…
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("account.loadingTickets")}
             </li>
           </ul>
         ) : tickets.length === 0 ? (
@@ -172,9 +163,9 @@ function TicketsPage() {
         ) : filtered.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
             <Search className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-2 text-sm text-muted-foreground">Aucun ticket ne correspond à ces filtres.</p>
+            <p className="mt-2 text-sm text-muted-foreground">{t("account.noFilteredTickets")}</p>
             <button onClick={resetFilters} className="mt-4 inline-flex rounded-full border border-border bg-card px-4 py-2 text-xs font-bold text-primary hover:border-primary/60">
-              Réinitialiser les filtres
+              {t("account.resetFilters")}
             </button>
           </div>
         ) : (
@@ -189,17 +180,17 @@ function TicketsPage() {
                   disabled={clampedPage === 1}
                   className="rounded-full border border-border bg-card px-4 py-1.5 text-xs font-bold text-foreground hover:border-primary/50 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Précédent
+                  {t("account.previous")}
                 </button>
                 <span className="text-xs font-semibold tabular-nums text-muted-foreground">
-                  Page {clampedPage} / {totalPages}
+                  {t("account.pageOf", { current: clampedPage, total: totalPages })}
                 </span>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={clampedPage === totalPages}
                   className="rounded-full border border-border bg-card px-4 py-1.5 text-xs font-bold text-foreground hover:border-primary/50 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Suivant
+                  {t("account.next")}
                 </button>
               </nav>
             )}
@@ -212,6 +203,12 @@ function TicketsPage() {
 
 function TicketCard({ tk }: { tk: Ticket }) {
   const { t } = useI18n();
+  const statusLabel: Record<string, string> = {
+    pending: t("pending"),
+    losing: t("losing"),
+    winning: t("winning"),
+    paid: t("account.paid"),
+  };
   return (
     <li>
       <Link

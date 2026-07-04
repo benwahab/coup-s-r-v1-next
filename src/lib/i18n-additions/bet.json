@@ -1,0 +1,92 @@
+{
+  "bet.stakeAutoCalculated": {
+    "fr": "Mise calculée automatiquement selon votre pari · {amount} {fcfa}",
+    "en": "Stake auto-calculated from your bet · {amount} {fcfa}",
+    "ha": "An lissafta caca ta atomatik daga caca · {amount} {fcfa}"
+  },
+  "bet.stakePerGrid": {
+    "fr": "Mises définies par grille — {count} grilles · Mise totale : {total} {fcfa}",
+    "en": "Stakes set per grid — {count} grids · Total stake: {total} {fcfa}",
+    "ha": "Caca a kowace grid — {count} grids · Jimla: {total} {fcfa}"
+  },
+  "bet.otherAmount": {
+    "fr": "Autre montant ({fcfa}) — min {min} · max {max}",
+    "en": "Other amount ({fcfa}) — min {min} · max {max}",
+    "ha": "Wani adadi ({fcfa}) — min {min} · max {max}"
+  },
+  "bet.greetConfirmPhone": {
+    "fr": "Bonjour {name}, confirmez votre numéro.",
+    "en": "Hi {name}, please confirm your phone number.",
+    "ha": "Sannu {name}, tabbatar da lambar wayarka."
+  },
+  "bet.enterPhoneInstruction": {
+    "fr": "Entrez le numéro à débiter, choisissez l'opérateur puis la région.",
+    "en": "Enter the phone to charge, pick the operator then the region.",
+    "ha": "Shigar da lambar da za a caje, zaɓi mai aikin sannan yankin."
+  },
+  "bet.simpleMode": {
+    "fr": "🟢 Mode simple",
+    "en": "🟢 Simple mode",
+    "ha": "🟢 Yanayin sauƙi"
+  },
+  "bet.detailedMode": {
+    "fr": "Mode détaillé",
+    "en": "Detailed mode",
+    "ha": "Yanayi dalla-dalla"
+  },
+  "bet.paymentMode": {
+    "fr": "Mode de paiement",
+    "en": "Payment method",
+    "ha": "Hanyar biya"
+  },
+  "bet.detectedName": {
+    "fr": "Détecté : {name}",
+    "en": "Detected: {name}",
+    "ha": "An gano: {name}"
+  },
+  "bet.editPhoneOperator": {
+    "fr": "Modifier numéro / opérateur",
+    "en": "Edit phone / operator",
+    "ha": "Gyara lamba / mai aikin"
+  },
+  "bet.editSelection": {
+    "fr": "Modifier ma sélection",
+    "en": "Edit my selection",
+    "ha": "Gyara zaɓina"
+  },
+  "bet.confirmHolder": {
+    "fr": "Je valide que {holder} est bien le titulaire du compte {operator} au +227 {phone}.",
+    "en": "I confirm {holder} is the account holder for {operator} at +227 {phone}.",
+    "ha": "Ina tabbatar da cewa {holder} shi ne mai asusun {operator} a +227 {phone}."
+  },
+  "bet.gameClosed": {
+    "fr": "Jeu fermé pour cette session.",
+    "en": "Game closed for this session.",
+    "ha": "An rufe wasan a wannan lokacin."
+  },
+  "bet.reopenAt": {
+    "fr": "Les paiements rouvrent à {hour}h00. Vous pouvez enregistrer votre pari en brouillon et le payer dès la réouverture.",
+    "en": "Payments reopen at {hour}:00. You can save your bet as a draft and pay when it reopens.",
+    "ha": "Biya zai sake buɗewa da ƙarfe {hour}. Za ka iya ajiye cacar a matsayin zane sannan ka biya lokacin buɗewa."
+  },
+  "bet.duplicateBlocked": {
+    "fr": "Paiement bloqué (anti-doublon)",
+    "en": "Payment blocked (duplicate protection)",
+    "ha": "An toshe biya (kariya ta ninki)"
+  },
+  "bet.saveDraft": {
+    "fr": "Enregistrer pour plus tard",
+    "en": "Save for later",
+    "ha": "Ajiye don gaba"
+  },
+  "bet.accountValidated": {
+    "fr": "Compte validé",
+    "en": "Account validated",
+    "ha": "An tabbatar da asusu"
+  },
+  "bet.globalOdds": {
+    "fr": "Cote globale · ×{odds}",
+    "en": "Global odds · ×{odds}",
+    "ha": "Jimlar ƙarancin · ×{odds}"
+  }
+}

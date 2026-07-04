@@ -33,7 +33,7 @@ function TicketPage() {
   if (!ticket) {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center">
-        <p className="text-muted-foreground">Ticket introuvable.</p>
+        <p className="text-muted-foreground">{t("account.ticketNotFound")}</p>
         <Link to="/" className="mt-4 inline-flex items-center gap-1.5 text-primary font-semibold">
           <Home className="h-4 w-4" /> {t("backHome")}
         </Link>
@@ -58,7 +58,7 @@ function TicketPage() {
           )}
           <div className="mt-3 flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-gold" />
-            <span className="text-xs text-white/80">Reçu officiel sécurisé</span>
+            <span className="text-xs text-white/80">{t("account.officialReceipt")}</span>
           </div>
         </div>
 
@@ -111,7 +111,7 @@ function TicketPage() {
 
           <div className="flex flex-col items-center justify-start gap-2">
             {qr && <img src={qr} alt="QR" className="h-40 w-40 rounded-xl border border-border bg-white p-2" />}
-            <div className="text-[10px] text-muted-foreground">QR vérifiable</div>
+            <div className="text-[10px] text-muted-foreground">{t("account.verifiableQR")}</div>
           </div>
         </div>
       </div>

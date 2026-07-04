@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useI18n } from "@/lib/i18n";
 import {
   ChevronDown,
   Mail,
@@ -17,80 +18,6 @@ import {
 
 type Section = { id: string; label: string; icon: typeof Mail; content: React.ReactNode };
 
-const sections: Section[] = [
-  {
-    id: "contact",
-    label: "Nous contacter",
-    icon: Mail,
-    content: (
-      <ul className="space-y-2 text-sm text-white/80">
-        <li className="flex items-start gap-2"><Phone className="h-4 w-4 mt-0.5 text-gold" /> +227 20 73 00 00</li>
-        <li className="flex items-start gap-2"><Mail className="h-4 w-4 mt-0.5 text-gold" /> contact@lonani.ne</li>
-        <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 text-gold" /> Avenue de la Liberté, Niamey, Niger</li>
-      </ul>
-    ),
-  },
-  {
-    id: "about",
-    label: "À propos de nous",
-    icon: Info,
-    content: (
-      <p className="text-sm text-white/75 leading-relaxed">
-        LoNaNi (Loterie Nationale du Niger) propose les jeux PMU, Loto Balsa et Pari Foot
-        en ligne avec paiement Mobile Money sécurisé, reçu QR Code infalsifiable
-        et notification de gain par SMS. Notre mission : offrir un jeu fiable, transparent
-        et accessible à tous les Nigériens.
-      </p>
-    ),
-  },
-  {
-    id: "partners",
-    label: "Nos partenaires",
-    icon: Users,
-    content: (
-      <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm text-white/80">
-        {["Airtel Money", "Moov Money", "Zamani Cash", "Nita", "Amanata", "MyNita"].map((p) => (
-          <li key={p} className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-center text-xs font-semibold">{p}</li>
-        ))}
-      </ul>
-    ),
-  },
-  {
-    id: "privacy",
-    label: "Confidentialité & sécurité",
-    icon: Shield,
-    content: (
-      <div className="space-y-2 text-sm text-white/75 leading-relaxed">
-        <p>
-          Vos données personnelles (nom, téléphone, transactions) sont protégées et utilisées
-          uniquement pour la gestion de votre compte de jeu, le versement des gains et le
-          respect des obligations légales du Niger.
-        </p>
-        <p>
-          Chaque reçu intègre un QR Code signé (HMAC-SHA256) garantissant son authenticité.
-          Paiements traités via les opérateurs Mobile Money agréés. Aucun mot de passe Mobile
-          Money n'est stocké.
-        </p>
-      </div>
-    ),
-  },
-  {
-    id: "support",
-    label: "Service clientèle",
-    icon: Headphones,
-    content: (
-      <div className="space-y-2 text-sm text-white/80">
-        <p>Du lundi au samedi · 8h – 20h (UTC+1)</p>
-        <ul className="space-y-1.5">
-          <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-gold" /> 7000 (appel gratuit Niger)</li>
-          <li className="flex items-center gap-2"><MessageCircle className="h-4 w-4 text-gold" /> WhatsApp : +227 90 00 70 00</li>
-          <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-gold" /> support@lonani.ne</li>
-        </ul>
-      </div>
-    ),
-  },
-];
-
 const socials = [
   { label: "Facebook", icon: Facebook, href: "https://facebook.com" },
   { label: "Instagram", icon: Instagram, href: "https://instagram.com" },
@@ -99,7 +26,43 @@ const socials = [
 ];
 
 export function SiteFooter() {
+  const { t } = useI18n();
   const [open, setOpen] = useState<string | null>(null);
+  const sections = useMemo<Section[]>(() => [
+    { id: "contact", label: t("shell.footer.contact"), icon: Mail, content: (
+      <ul className="space-y-2 text-sm text-white/80">
+        <li className="flex items-start gap-2"><Phone className="h-4 w-4 mt-0.5 text-gold" /> +227 20 73 00 00</li>
+        <li className="flex items-start gap-2"><Mail className="h-4 w-4 mt-0.5 text-gold" /> contact@lonani.ne</li>
+        <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 text-gold" /> Avenue de la Liberté, Niamey, Niger</li>
+      </ul>
+    ) },
+    { id: "about", label: t("shell.footer.about"), icon: Info, content: (
+      <p className="text-sm text-white/75 leading-relaxed">{t("shell.footer.aboutText")}</p>
+    ) },
+    { id: "partners", label: t("shell.footer.partners"), icon: Users, content: (
+      <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm text-white/80">
+        {["Airtel Money", "Moov Money", "Zamani Cash", "Nita", "Amanata", "MyNita"].map((p) => (
+          <li key={p} className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-center text-xs font-semibold">{p}</li>
+        ))}
+      </ul>
+    ) },
+    { id: "privacy", label: t("shell.footer.privacy"), icon: Shield, content: (
+      <div className="space-y-2 text-sm text-white/75 leading-relaxed">
+        <p>{t("shell.footer.privacyText1")}</p>
+        <p>{t("shell.footer.privacyText2")}</p>
+      </div>
+    ) },
+    { id: "support", label: t("shell.footer.support"), icon: Headphones, content: (
+      <div className="space-y-2 text-sm text-white/80">
+        <p>{t("shell.footer.supportHours")}</p>
+        <ul className="space-y-1.5">
+          <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-gold" /> {t("shell.footer.freeCall")}</li>
+          <li className="flex items-center gap-2"><MessageCircle className="h-4 w-4 text-gold" /> {t("shell.footer.whatsapp")}</li>
+          <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-gold" /> support@lonani.ne</li>
+        </ul>
+      </div>
+    ) },
+  ], [t]);
 
   return (
     <footer className="mt-8 border-t border-white/10 bg-hero text-white">
@@ -108,7 +71,7 @@ export function SiteFooter() {
         <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
           <div className="inline-flex items-center gap-2 rounded-full border-2 border-red-500 bg-red-500/15 px-4 py-2 font-display text-base font-extrabold text-red-300 shadow-[0_0_24px_oklch(0.6_0.2_25_/_0.4)]">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-red-500 font-display text-base font-black text-white">-18</span>
-            <span className="uppercase tracking-widest text-xs sm:text-sm">Interdit aux mineurs · Jouez responsable</span>
+            <span className="uppercase tracking-widest text-xs sm:text-sm">{t("shell.footer.minorsWarning")}</span>
           </div>
         </div>
 
@@ -152,22 +115,22 @@ export function SiteFooter() {
             ))}
           </div>
           <div className="text-[11px] text-white/50 text-center">
-            © {new Date().getFullYear()} LoNaNi · Loterie Nationale du Niger · Tous droits réservés
+            {t("shell.footer.copyright", { year: new Date().getFullYear() })}
           </div>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-white/50">
-          <Link to="/" className="hover:text-gold">Accueil</Link>
+          <Link to="/" className="hover:text-gold">{t("home")}</Link>
           <span>·</span>
-          <Link to="/resultats" className="hover:text-gold">Résultats</Link>
+          <Link to="/resultats" className="hover:text-gold">{t("results")}</Link>
           <span>·</span>
-          <Link to="/mes-tickets" className="hover:text-gold">Mes tickets</Link>
+          <Link to="/mes-tickets" className="hover:text-gold">{t("myTickets")}</Link>
           <span>·</span>
-          <Link to="/auth" className="hover:text-gold">Connexion</Link>
+          <Link to="/auth" className="hover:text-gold">{t("shell.login")}</Link>
           <span>·</span>
-          <Link to="/conditions" className="hover:text-gold">Conditions d'utilisation</Link>
+          <Link to="/conditions" className="hover:text-gold">{t("shell.footer.terms")}</Link>
           <span>·</span>
-          <Link to="/confidentialite" className="hover:text-gold">Politique de confidentialité</Link>
+          <Link to="/confidentialite" className="hover:text-gold">{t("shell.footer.privacyPolicy")}</Link>
         </div>
       </div>
     </footer>

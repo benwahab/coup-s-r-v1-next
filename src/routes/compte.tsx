@@ -12,7 +12,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 
 const AccountSchema = z.object({
   firstName: z.string().trim().min(2, "Prénom trop court (2 caractères min).").max(80, "Prénom trop long."),
-  lastName: z.string().trim().min(2, "Nom trop court (2 caractères min).").max(80, "Nom trop long."),
+  lastName: z.string().trim().min(2, "Nom trop court (2 caractères min.).").max(80, "Nom trop long."),
   region: z.string().min(1, "Sélectionnez une région."),
   phone: z.string().regex(/^\d{8}$/, "Numéro à 8 chiffres requis."),
   consented: z.literal(true, { errorMap: () => ({ message: "Vous devez accepter les CGU." }) }),
@@ -75,25 +75,23 @@ function ComptePage() {
         if (key && !errs[key]) errs[key] = issue.message;
       }
       setFieldErrors(errs);
-      toast.error(parsed.error.issues[0]?.message ?? "Formulaire invalide");
+      toast.error(parsed.error.issues[0]?.message ?? t("account.formInvalid"));
       return;
     }
-    // Anti-double compte : le numéro doit être libre (ou déjà à ce compte)
     const avail = isPhoneAvailable(phone, account?.userId);
     if (!avail.ok) {
       if (avail.reason === "active") {
-        const msg = "Ce numéro est déjà associé à un compte actif. Un seul compte est autorisé par numéro.";
+        const msg = t("account.phoneTaken");
         setPhoneError(msg); toast.error(msg);
       } else if (avail.reason === "pending_deletion") {
         const daysLeft = Math.ceil(((avail.recoverableUntil ?? 0) - Date.now()) / (24 * 60 * 60 * 1000));
-        const msg = `Ce numéro appartient à un compte en cours de suppression. Réutilisable dans ${daysLeft} jour(s).`;
+        const msg = t("account.phonePendingDeletion", { days: daysLeft });
         setPhoneError(msg); toast.error(msg);
       }
       return;
     }
-    // Consentement déjà donné via la case à cocher inline (enregistrement horodaté).
     persist();
-    toast.success("Compte enregistré. Vous pouvez maintenant vous connecter.");
+    toast.success(t("account.savedToast"));
   };
 
   return (
@@ -107,25 +105,23 @@ function ComptePage() {
             <h1 className="mt-3 font-display text-2xl font-extrabold tracking-tight text-white">
               {t("myAccount")}
             </h1>
-            <p className="mt-0.5 text-[12px] text-white/60">Créez votre compte joueur en quelques secondes.</p>
+            <p className="mt-0.5 text-[12px] text-white/60">{t("account.createSubtitle")}</p>
           </div>
 
         {account?.deletionRequestedAt && deletionMs > 0 && (
           <div className="rounded-2xl border border-primary/40 bg-primary/10 p-4 text-primary">
             <div className="flex items-center gap-2 font-bold">
-              <Clock className="h-4 w-4" /> Suppression programmée
+              <Clock className="h-4 w-4" /> {t("account.deletionScheduled")}
             </div>
             <p className="mt-1 text-sm">
-              Votre compte sera définitivement supprimé dans{" "}
-              <span className="font-bold">{deletionDaysLeft} jour{deletionDaysLeft > 1 ? "s" : ""}</span>.
-              Vous pouvez annuler à tout moment pendant ce délai.
+              {t("account.deletionNotice", { days: deletionDaysLeft, plural: deletionDaysLeft > 1 ? "s" : "" })}
             </p>
             <button
               type="button"
               onClick={cancelDeletion}
               className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary/20 px-4 py-2 text-sm font-bold text-primary hover:bg-primary/30"
             >
-              <RotateCcw className="h-4 w-4" /> Annuler la suppression
+              <RotateCcw className="h-4 w-4" /> {t("account.cancelDeletion")}
             </button>
           </div>
         )}
@@ -164,22 +160,22 @@ function ComptePage() {
               checked={consented}
               onChange={(e) => { setConsented(e.target.checked); if (fieldErrors.consented) setFieldErrors((s) => ({ ...s, consented: undefined })); }}
               className="mt-0.5 h-5 w-5 shrink-0 accent-[#00C896] cursor-pointer"
-              aria-label="J'accepte les conditions d'utilisation et la politique de confidentialité"
+              aria-label={t("account.consentAriaLabel")}
             />
             <span className="text-[12px] leading-relaxed text-white/80">
-              J'accepte les{" "}
+              {t("account.consentPrefix")}{" "}
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); setLegalOpen("terms"); }}
                 className="font-semibold text-[#00C896] hover:underline"
-              >Conditions d'utilisation</button>{" "}
-              et la{" "}
+              >{t("account.termsLink")}</button>{" "}
+              {t("account.consentAnd")}{" "}
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); setLegalOpen("privacy"); }}
                 className="font-semibold text-[#00C896] hover:underline"
-              >Politique de confidentialité</button>{" "}
-              de Coup Sûr. Un enregistrement horodaté sera conservé pour prouver ce consentement.
+              >{t("account.privacyLink")}</button>{" "}
+              {t("account.consentSuffix")}
             </span>
           </label>
           {fieldErrors.consented && (
@@ -230,14 +226,14 @@ function ComptePage() {
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader>
             <DrawerTitle>
-              {legalOpen === "privacy" ? "Politique de confidentialité" : "Conditions d'utilisation"}
+              {legalOpen === "privacy" ? t("account.privacyLink") : t("account.termsLink")}
             </DrawerTitle>
           </DrawerHeader>
           <div className="flex-1 overflow-hidden px-2 pb-4">
             {legalOpen && (
               <iframe
                 src={legalOpen === "privacy" ? "/confidentialite" : "/conditions"}
-                title={legalOpen === "privacy" ? "Politique de confidentialité" : "Conditions d'utilisation"}
+                title={legalOpen === "privacy" ? t("account.privacyLink") : t("account.termsLink")}
                 className="h-[70vh] w-full rounded-2xl border border-border bg-background"
               />
             )}
@@ -266,6 +262,7 @@ function Field({ label, value, onChange, placeholder, type = "text", error }: { 
 }
 
 function ConfirmDeleteModal({ onCancel, onConfirm, onPurge }: { onCancel: () => void; onConfirm: () => void; onPurge: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-0 sm:p-4" role="dialog" aria-modal="true">
       <div className="w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border border-border bg-card shadow-elevated overflow-hidden">
@@ -275,47 +272,41 @@ function ConfirmDeleteModal({ onCancel, onConfirm, onPurge }: { onCancel: () => 
               <Trash2 className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-display text-lg font-extrabold">Supprimer mon compte</h3>
-              <p className="text-xs text-muted-foreground">Un délai de rétractation s'applique</p>
+              <h3 className="font-display text-lg font-extrabold">{t("account.deleteMyAccount")}</h3>
+              <p className="text-xs text-muted-foreground">{t("account.deletionCooldown")}</p>
             </div>
           </div>
-          <button onClick={onCancel} aria-label="Fermer" className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground">
+          <button onClick={onCancel} aria-label={t("account.close")} className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground">
             <X className="h-4 w-4" />
           </button>
         </div>
         <div className="p-5 space-y-4">
           <div className="rounded-2xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary">
-            <p className="font-bold">Suppression avec délai de 30 jours (recommandé)</p>
-            <p className="mt-1 text-xs opacity-90">
-              Votre compte sera désactivé immédiatement. Pendant 30 jours, vous pouvez le
-              récupérer en annulant la suppression. Passé ce délai, le numéro sera libéré et
-              pourra être associé à un nouveau compte.
-            </p>
+            <p className="font-bold">{t("account.deletionSoft")}</p>
+            <p className="mt-1 text-xs opacity-90">{t("account.deletionSoftDesc")}</p>
           </div>
           <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-            <p className="font-bold">Suppression immédiate & définitive</p>
-            <p className="mt-1 text-xs opacity-90">
-              Toutes les données locales seront effacées maintenant. Cette action est irréversible.
-            </p>
+            <p className="font-bold">{t("account.deletionHard")}</p>
+            <p className="mt-1 text-xs opacity-90">{t("account.deletionHardDesc")}</p>
           </div>
           <div className="flex flex-col gap-2 pt-2">
             <button
               onClick={onConfirm}
               className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-extrabold uppercase tracking-wide text-primary-foreground hover:brightness-110"
             >
-              Programmer la suppression (30 jours)
+              {t("account.scheduleDeletion")}
             </button>
             <button
               onClick={onPurge}
               className="w-full rounded-2xl border border-destructive/50 bg-destructive/15 px-4 py-3 text-sm font-bold text-destructive hover:bg-destructive/25"
             >
-              Supprimer définitivement maintenant
+              {t("account.deletePermanent")}
             </button>
             <button
               onClick={onCancel}
               className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground hover:border-primary/50"
             >
-              Annuler
+              {t("account.cancel")}
             </button>
           </div>
         </div>

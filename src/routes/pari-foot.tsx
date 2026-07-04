@@ -80,7 +80,7 @@ function FootPage() {
   const visibleMatches = league === "all" ? footMatches : footMatches.filter((m) => m.league === league);
 
   // Compétitions avec compteur de matchs
-  const leagueTabs = [{ id: "all", name: "Tout", country: "🌐", count: footMatches.length }, ...leagues.map((l) => ({ ...l, count: footMatches.filter((m) => m.league === l.id).length }))];
+  const leagueTabs = [{ id: "all", name: t("game.all"), country: "🌐", count: footMatches.length }, ...leagues.map((l) => ({ ...l, count: footMatches.filter((m) => m.league === l.id).length }))];
 
   return (
     <>
@@ -113,7 +113,7 @@ function FootPage() {
         gameName="Pari Foot"
         drawDate={new Date(Date.now() + 1000 * 60 * 60 * 36).toISOString()}
         selection={list}
-        picksLabel={`[${mode === "combi" ? "Combiné" : "Simple"}] ${picksLabel} | Cote ×${totalOdds.toFixed(2)}`}
+        picksLabel={`[${mode === "combi" ? t("game.combined") : t("game.simple")}] ${picksLabel} | ${t("odds")} ×${totalOdds.toFixed(2)}`}
         canContinue={validation.success}
         gameOpen={isGameOpen(8, 22)}
         openHour={8}
@@ -133,11 +133,11 @@ function FootPage() {
                     <button key={mo} onClick={() => setMode(mo)} className={cn(
                       "rounded-full px-2.5 py-1 text-[10px] font-bold uppercase transition",
                       mode === mo ? "bg-primary text-primary-foreground" : "text-muted-foreground",
-                    )}>{mo === "combi" ? "Combiné" : "Simple"}</button>
+                    )}>{mo === "combi" ? t("game.combined") : t("game.simple")}</button>
                   ))}
                 </div>
                 <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold tabular-nums">
-                  {list.length} pari{list.length > 1 ? "s" : ""}
+                  {list.length} {list.length > 1 ? t("game.betsPlural") : t("game.betSingular")}
                 </span>
               </div>
             </div>
@@ -222,9 +222,9 @@ function FootPage() {
                       className="mt-3 flex w-full items-center justify-between rounded-xl border border-border bg-secondary/40 px-3 py-2 text-xs font-bold text-muted-foreground hover:text-primary hover:border-primary/40"
                     >
                       <span className="inline-flex items-center gap-2">
-                        + {markets.length - 1} marchés
+                        {t("game.moreMarkets", { count: markets.length - 1 })}
                         {matchPicks > 1 && (
-                          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] text-primary">{matchPicks} sélections</span>
+                          <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[9px] text-primary">{t("game.selections", { count: matchPicks })}</span>
                         )}
                       </span>
                       {isOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}

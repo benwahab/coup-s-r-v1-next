@@ -16,9 +16,9 @@ export function StepIdentity() {
   return (
     <Card title={t("identity")}>
       <div className="-mt-2 mb-3 flex items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">{account ? `Bonjour ${account.firstName}, confirmez votre numéro.` : "Entrez le numéro à débiter, choisissez l'opérateur puis la région."}</p>
+        <p className="text-sm text-muted-foreground">{account ? t("bet.greetConfirmPhone", { name: account.firstName }) : t("bet.enterPhoneInstruction")}</p>
         <button type="button" onClick={() => setSimpleMode((v) => !v)} className={cn("shrink-0 rounded-full border px-3 py-1 text-[11px] font-bold transition", simpleMode ? "border-success/40 bg-success/10 text-success" : "border-border bg-card text-muted-foreground")}>
-          {simpleMode ? "🟢 Mode simple" : "Mode détaillé"}
+          {simpleMode ? t("bet.simpleMode") : t("bet.detailedMode")}
         </button>
       </div>
       <label className="block">
@@ -33,10 +33,10 @@ export function StepIdentity() {
       </label>
       <div className="mt-5">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Mode de paiement *</span>
+          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("bet.paymentMode")} *</span>
           {operatorAuto && (
             <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
-              Détecté : {operatorAuto.name}
+              {t("bet.detectedName", { name: operatorAuto.name })}
             </span>
           )}
         </div>
