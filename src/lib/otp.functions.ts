@@ -128,19 +128,43 @@ export const verifyOtp = createServerFn({ method: "POST" })
       { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
     );
 
-    // Tente une connexion : si l'utilisateur existe déjà, on est bon.
+    // Tente une connexion : si l'utilisateur existe déjà avec cet e-mail, OK.
     let signRes = await anon.auth.signInWithPassword({ email, password });
     if (signRes.error || !signRes.data.session) {
-      // Sinon on crée l'utilisateur puis on retente.
-      const { error: createErr } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
-        phone: phoneE164,
-        email_confirm: true,
-        phone_confirm: true,
-      });
-      if (createErr && !/already|exists|registered/i.test(createErr.message)) {
-        throw new Error(`user_create_failed: ${createErr.message}`);
+      // Cherche un utilisateur existant par téléphone (issu d'anciens comptes
+      // créés avec le provider phone qui est désormais désactivé).
+      const phoneWithoutPlus = phoneE164.replace(/^\+/, "");
+      let existingUserId: string | undefined;
+      for (let page = 1; page <= 10 && !existingUserId; page++) {
+        const { data: list, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
+          page,
+          perPage: 200,
+        });
+        if (listErr) break;
+        const match = list.users.find(
+          (u) => u.phone === phoneWithoutPlus || u.phone === phoneE164,
+        );
+        if (match) existingUserId = match.id;
+        if (!list.users.length || list.users.length < 200) break;
+      }
+      if (existingUserId) {
+        // Migre l'utilisateur existant vers e-mail/mot de passe.
+        const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(
+          existingUserId,
+          { email, password, email_confirm: true },
+        );
+        if (updErr) throw new Error(`user_update_failed: ${updErr.message}`);
+      } else {
+        const { error: createErr } = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password,
+          phone: phoneE164,
+          email_confirm: true,
+          phone_confirm: true,
+        });
+        if (createErr && !/already|exists|registered/i.test(createErr.message)) {
+          throw new Error(`user_create_failed: ${createErr.message}`);
+        }
       }
       signRes = await anon.auth.signInWithPassword({ email, password });
       if (signRes.error || !signRes.data.session) {
