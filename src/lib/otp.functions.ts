@@ -112,32 +112,42 @@ export const verifyOtp = createServerFn({ method: "POST" })
       .eq("id", otp.id);
 
     // Bootstrap de l'utilisateur Supabase à partir du téléphone.
+    // Le provider "phone" n'est pas activé sur ce projet Supabase → on utilise
+    // une adresse e-mail synthétique dérivée du téléphone (le provider e-mail
+    // est actif par défaut). Le numéro reste stocké dans auth.users.phone et
+    // dans profiles.phone.
     const secret = process.env.TICKET_HMAC_SECRET;
     if (!secret) throw new Error("TICKET_HMAC_SECRET missing");
     const password = await derivePhonePassword(phoneE164, secret);
+    const email = `phone-${phoneE164.replace(/\D/g, "")}@coup-sur.local`;
 
-    const { error: createErr } = await supabaseAdmin.auth.admin.createUser({
-      phone: phoneE164,
-      password,
-      phone_confirm: true,
-    });
-    if (createErr && !/already|exists|registered/i.test(createErr.message)) {
-      throw new Error(`user_create_failed: ${createErr.message}`);
-    }
-
-    // Établit la session via un client publishable, sans persistance.
+    // Client publishable, sans persistance, pour établir la session.
     const anon = createClient(
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_PUBLISHABLE_KEY!,
       { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
     );
-    const { data: sess, error: signErr } = await anon.auth.signInWithPassword({
-      phone: phoneE164,
-      password,
-    });
-    if (signErr || !sess.session) {
-      throw new Error(`sign_in_failed: ${signErr?.message ?? "no session"}`);
+
+    // Tente une connexion : si l'utilisateur existe déjà, on est bon.
+    let signRes = await anon.auth.signInWithPassword({ email, password });
+    if (signRes.error || !signRes.data.session) {
+      // Sinon on crée l'utilisateur puis on retente.
+      const { error: createErr } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        phone: phoneE164,
+        email_confirm: true,
+        phone_confirm: true,
+      });
+      if (createErr && !/already|exists|registered/i.test(createErr.message)) {
+        throw new Error(`user_create_failed: ${createErr.message}`);
+      }
+      signRes = await anon.auth.signInWithPassword({ email, password });
+      if (signRes.error || !signRes.data.session) {
+        throw new Error(`sign_in_failed: ${signRes.error?.message ?? "no session"}`);
+      }
     }
+    const sess = signRes.data;
 
     // Upsert du profil : le trigger `handle_new_user` a inséré la ligne de base
     // (id + phone). On complète avec les champs facultatifs saisis avant l'OTP.
