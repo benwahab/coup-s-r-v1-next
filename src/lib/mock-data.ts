@@ -130,6 +130,7 @@ export const expertTips = [
 
 export const paymentMethods = [
   { id: "airtel", name: "Airtel Money", color: "#E40000" },
+  { id: "nita", name: "Nita", color: "#FFB300" },
   { id: "amanata", name: "Amanata", color: "#0F766E" },
   { id: "mynita", name: "MyNita", color: "#7C3AED" },
   { id: "moov", name: "Moov Flooz", color: "#005EB8" },
