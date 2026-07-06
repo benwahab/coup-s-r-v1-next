@@ -99,32 +99,34 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1 pb-24">{children}</main>
+      <main className={cn("flex-1", showGlobalBackdrop && "pb-24")}>{children}</main>
 
       <SiteFooter />
 
-      {/* Mobile bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-card/95 backdrop-blur shadow-elevated">
-        <ul className="mx-auto grid max-w-6xl grid-cols-4">
-          {navItems.map((it) => {
-            const active = it.exact ? pathname === it.to : pathname.startsWith(it.to);
-            return (
-              <li key={it.to}>
-                <Link
-                  to={it.to as "/"}
-                  className={cn(
-                    "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition",
-                    active ? "text-primary" : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <it.icon className={cn("h-5 w-5", active && "text-primary")} />
-                  {it.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+      {/* Mobile bottom nav — masquée sur /auth */}
+      {showGlobalBackdrop && (
+        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-card/95 backdrop-blur shadow-elevated">
+          <ul className="mx-auto grid max-w-6xl grid-cols-4">
+            {navItems.map((it) => {
+              const active = it.exact ? pathname === it.to : pathname.startsWith(it.to);
+              return (
+                <li key={it.to}>
+                  <Link
+                    to={it.to as "/"}
+                    className={cn(
+                      "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition",
+                      active ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <it.icon className={cn("h-5 w-5", active && "text-primary")} />
+                    {it.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      )}
     </div>
   );
 }
