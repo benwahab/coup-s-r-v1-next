@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
-// TODO: remplacer par l'URL de production une fois le domaine défini.
-const BASE_URL = "";
+const BASE_URL = "https://coupsur.ne";
 
 interface SitemapEntry {
   path: string;

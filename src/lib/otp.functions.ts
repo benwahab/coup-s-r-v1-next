@@ -3,6 +3,8 @@ import { z } from "zod";
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const MAX_ATTEMPTS = 3;
+const OTP_RATE_WINDOW_MS = 15 * 60 * 1000;
+const MAX_OTP_REQUESTS_PER_WINDOW = 5;
 
 const PhoneInput = z.object({ phone: z.string().regex(/^\d{8}$/) });
 const VerifyInput = z.object({
@@ -30,6 +32,21 @@ export const sendOtp = createServerFn({ method: "POST" })
     const { generateOtpCode, sha256Hex, toE164Phone } = await import("./otp.server");
 
     const phoneE164 = toE164Phone(data.phone);
+
+    // Limitation de débit serveur : évite qu'un même numéro déclenche un
+    // nombre illimité de demandes d'OTP (spam, coût SMS futur, contournement
+    // du compteur de tentatives en redemandant sans cesse un nouveau code).
+    const windowStartIso = new Date(Date.now() - OTP_RATE_WINDOW_MS).toISOString();
+    const { count: recentCount, error: rateErr } = await supabaseAdmin
+      .from("otp_codes")
+      .select("id", { count: "exact", head: true })
+      .eq("phone", phoneE164)
+      .gte("created_at", windowStartIso);
+    if (rateErr) throw new Error(`otp_rate_check_failed: ${rateErr.message}`);
+    if ((recentCount ?? 0) >= MAX_OTP_REQUESTS_PER_WINDOW) {
+      return { ok: false as const, reason: "rate-limited" as const };
+    }
+
     const code = generateOtpCode();
     const codeHash = await sha256Hex(code);
     const expiresAt = new Date(Date.now() + OTP_TTL_MS).toISOString();

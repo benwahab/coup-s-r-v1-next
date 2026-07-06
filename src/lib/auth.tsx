@@ -126,6 +126,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Serveur : génère + stocke un hash SHA-256 (TTL 5 min).
     // Le code est renvoyé en clair uniquement parce que le mode démo est simulé.
     const res = await sendOtp({ data: { phone } });
+    if (!res.ok) {
+      logAuthEvent("rate-limited", phone, `server blocked (${res.reason})`);
+      return { ok: false as const, rate: { ok: false, reason: "phone" as const, retryInMs: 15 * 60 * 1000 } };
+    }
     return { ok: true as const, code: res.code };
   }, []);
 
