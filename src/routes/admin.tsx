@@ -10,8 +10,9 @@ import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
 import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
 import { useDrafts } from "@/lib/drafts";
 import { listMyIntents, type PaymentIntent } from "@/lib/payments";
-import { checkIsAdmin, adminListAllPayments } from "@/lib/admin.functions";
+import { adminListAllPayments } from "@/lib/admin.functions";
 import { useAuth } from "@/lib/auth";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useThemeChartColors } from "@/hooks/use-theme-chart-colors";
 import { downloadCsv, gameLabel, type TxRow } from "@/components/admin/shared";
 import { DashboardTab, type ActivityItem } from "@/components/admin/tabs/DashboardTab";
@@ -41,40 +42,15 @@ function AdminPage() {
   const { authed, session } = useAuth();
   const chart = useThemeChartColors();
   const gameColor: Record<string, string> = { pmu: chart.gold, loto: chart.teal, foot: chart.primary };
-  const [gate, setGate] = useState<"checking" | "ok" | "denied" | "anon">("checking");
-  useEffect(() => {
-    if (!authed || !session) { setGate("anon"); return; }
-    let cancelled = false;
-    (async () => {
-      try {
-        const { isAdmin } = await checkIsAdmin();
-        if (cancelled) return;
-        setGate(isAdmin ? "ok" : "denied");
-      } catch {
-        if (!cancelled) setGate("denied");
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [authed, session]);
-
-  if (gate === "checking") return <div className="min-h-[60vh]" aria-hidden />;
-  if (gate === "anon") return <Navigate to="/auth" replace />;
-  if (gate === "denied") {
-    return (
-      <div className="min-h-[60vh] grid place-items-center px-4">
-        <div className="max-w-md rounded-3xl border border-destructive/30 bg-destructive/5 p-8 text-center">
-          <ShieldCheck className="mx-auto h-10 w-10 text-destructive" />
-          <h1 className="mt-3 font-display text-xl font-extrabold">Accès refusé</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Cette zone est réservée aux administrateurs. Contactez le service technique si vous devez y accéder.
-          </p>
-          <Link to="/" className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground">
-            Retour à l'accueil
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const isAdminResult = useIsAdmin();
+  const gate: "checking" | "ok" | "denied" | "anon" =
+    !authed || !session
+      ? "anon"
+      : isAdminResult === null
+        ? "checking"
+        : isAdminResult
+          ? "ok"
+          : "denied";
 
   const { tickets, updateStatus, updateLegStatus } = useTickets();
   const { drafts, removeDraft } = useDrafts();
@@ -95,6 +71,7 @@ function AdminPage() {
 
   const [allIntents, setAllIntents] = useState<PaymentIntent[]>([]);
   useEffect(() => {
+    if (gate !== "ok") return;
     (async () => {
       try {
         const { payments } = await adminListAllPayments();
@@ -110,7 +87,7 @@ function AdminPage() {
       } catch { setAllIntents([]); }
     })();
     void listMyIntents;
-  }, []);
+  }, [gate]);
 
   useEffect(() => {
     if (!autoSms) return;
@@ -329,6 +306,25 @@ function AdminPage() {
       intents: allIntents.slice(0, 20),
     };
   }, [claimPhone, tickets, drafts, authLog, allIntents]);
+
+  if (gate === "checking") return <div className="min-h-[60vh]" aria-hidden />;
+  if (gate === "anon") return <Navigate to="/auth" replace />;
+  if (gate === "denied") {
+    return (
+      <div className="min-h-[60vh] grid place-items-center px-4">
+        <div className="max-w-md rounded-3xl border border-destructive/30 bg-destructive/5 p-8 text-center">
+          <ShieldCheck className="mx-auto h-10 w-10 text-destructive" />
+          <h1 className="mt-3 font-display text-xl font-extrabold">Accès refusé</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Cette zone est réservée aux administrateurs. Contactez le service technique si vous devez y accéder.
+          </p>
+          <Link to="/" className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground">
+            Retour à l'accueil
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
