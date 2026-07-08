@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 import { Goal, Trophy, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
-import { isGameOpen } from "@/lib/schedule";
 import { PageHeader } from "@/components/AppShell";
 import { footMatches, leagues } from "@/lib/mock-data";
 import { marketsForMatch, oddForPick, labelForPick } from "@/lib/foot-markets";
@@ -115,8 +114,8 @@ function FootPage() {
         selection={list}
         picksLabel={`[${mode === "combi" ? t("game.combined") : t("game.simple")}] ${picksLabel} | ${t("odds")} ×${totalOdds.toFixed(2)}`}
         canContinue={validation.success}
-        gameOpen={isGameOpen(8, 22)}
-        openHour={8}
+        gameOpen={true}
+        openHour={0}
         odds={totalOdds}
         renderSelection={
           <div>
