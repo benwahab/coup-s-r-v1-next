@@ -18,7 +18,7 @@ interface Props {
   ticketsCount: number;
   totalPayout: number;
   revenueSeries: { date: string; label: string; mises: number; gains: number }[];
-  byGameData: { id: string; name: string; value: number; fill: string }[];
+  byGameData: { id: string; name: string; value: number; fill: string; count: number; pct: number }[];
   hourlyData: { hour: string; count: number }[];
   monthlyData: { month: string; mises: number; gains: number }[];
   peakHour: { hour: string; count: number };
@@ -41,6 +41,28 @@ export function DashboardTab(p: Props) {
         <Kpi icon={Zap} label="Ventes du jour" value={`${formatFcfa(p.todayStake)} FCFA`} delta={p.growth} sub="vs hier" />
         <Kpi icon={Users} label="Joueurs inscrits" value={String(p.activePlayers)} sub={`+${p.ticketsCount} tickets live`} />
         <Kpi icon={Trophy} label="Gagnants" value={String(p.winnersCount)} accent sub={`${formatFcfa(p.totalPayout)} FCFA versés`} />
+      </section>
+
+      <section>
+        <div className="mb-2 flex items-center gap-2">
+          <Trophy className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-base font-bold">Mises par jeu</h2>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {p.byGameData.map((g) => (
+            <div key={g.id} className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: g.fill }} />
+                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{g.name}</span>
+                </div>
+                <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-secondary-foreground">{g.pct}%</span>
+              </div>
+              <div className="mt-2 font-display text-xl font-bold tabular-nums">{formatFcfa(g.value)} FCFA</div>
+              <div className="mt-1 text-[11px] text-muted-foreground">{g.count} ticket{g.count > 1 ? "s" : ""}</div>
+            </div>
+          ))}
+        </div>
       </section>
 
       <Suspense fallback={<div className="grid gap-4 xl:grid-cols-[2fr_1fr]"><div className="h-72 rounded-3xl border border-border bg-card animate-pulse" /><div className="h-72 rounded-3xl border border-border bg-card animate-pulse" /></div>}>

@@ -1,4 +1,4 @@
-import { Download } from "lucide-react";
+import { Download, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AuthEvent, AuthEventKind } from "@/lib/auth-logs";
 
@@ -14,7 +14,10 @@ export function LogsTab(p: Props) {
   return (
     <section className="rounded-3xl border border-border bg-card shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
-        <h2 className="font-display text-lg font-bold">Journal des connexions</h2>
+        <div className="flex items-center gap-2">
+          <LogIn className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-lg font-bold">Journal des connexions</h2>
+        </div>
         <div className="flex flex-wrap items-center gap-1.5">
           <input value={p.logPhone} onChange={(e) => p.setLogPhone(e.target.value)} placeholder="Filtrer numéro" className="rounded-full border border-border bg-background px-3 py-1 text-[11px]" />
           <input value={p.logIp} onChange={(e) => p.setLogIp(e.target.value)} placeholder="Filtrer IP" className="rounded-full border border-border bg-background px-3 py-1 text-[11px]" />
@@ -49,7 +52,7 @@ export function LogsTab(p: Props) {
             </thead>
             <tbody className="divide-y divide-border">
               {p.filteredLog.slice(0, 200).map((e, i) => (
-                <tr key={i}>
+                <tr key={i} className="hover:bg-secondary/30 transition-colors">
                   <td className="px-3 py-2 tabular-nums text-muted-foreground">{new Date(e.at).toLocaleString("fr-FR", { hour12: false })}</td>
                   <td className="px-3 py-2 font-mono">{e.phone || "—"}</td>
                   <td className="px-3 py-2 font-mono text-muted-foreground">{e.ip}</td>

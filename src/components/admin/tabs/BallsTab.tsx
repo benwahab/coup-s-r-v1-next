@@ -1,3 +1,4 @@
+import { Dices } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import type { BallStat } from "@/lib/mock-stats";
@@ -15,7 +16,10 @@ export function BallsTab({ ballStats, maxBall, selectedBall, setSelectedBall, se
   return (
     <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
       <div className="rounded-3xl border border-border bg-card p-5 shadow-soft">
-        <h2 className="font-display text-lg font-bold">Boules — fréquence de jeu</h2>
+        <div className="flex items-center gap-2">
+          <Dices className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-lg font-bold">Boules — fréquence de jeu</h2>
+        </div>
         <p className="text-xs text-muted-foreground">Cliquez une boule pour voir la répartition seule / combinaison et ses paires fréquentes.</p>
         <div className="mt-4 grid grid-cols-9 gap-1.5 sm:grid-cols-10">
           {ballStats.map((b) => {

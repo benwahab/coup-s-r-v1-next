@@ -1,4 +1,4 @@
-import { Search, X } from "lucide-react";
+import { LifeBuoy, Search, X } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { statusColor } from "../shared";
 import type { Ticket } from "@/lib/tickets";
@@ -25,7 +25,10 @@ export function ClaimsTab({ claimPhone, setClaimPhone, claim, updateStatus, remo
   return (
     <div className="space-y-4">
       <div className="rounded-3xl border border-border bg-card p-5 shadow-soft">
-        <h2 className="font-display text-lg font-bold">Réclamations — recherche par numéro</h2>
+        <div className="flex items-center gap-2">
+          <LifeBuoy className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-lg font-bold">Réclamations — recherche par numéro</h2>
+        </div>
         <p className="text-xs text-muted-foreground">Consultez l'historique complet du joueur.</p>
         <div className="mt-3 flex items-center gap-2">
           <div className="relative flex-1">

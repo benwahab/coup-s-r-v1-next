@@ -21,10 +21,12 @@ export function downloadCsv(csv: string, filename: string) {
 export function Kpi({ icon: Icon, label, value, accent, delta, sub }: { icon: LucideIcon; label: string; value: string; accent?: boolean; delta?: number; sub?: string }) {
   const positive = (delta ?? 0) >= 0;
   return (
-    <div className={cn("rounded-2xl border border-border p-4 shadow-soft", accent ? "bg-gold-gradient text-[var(--gold-foreground)]" : "bg-card")}>
+    <div className={cn("rounded-2xl border border-border p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-elevated", accent ? "bg-gold-gradient text-[var(--gold-foreground)]" : "bg-card")}>
       <div className="flex items-center justify-between">
         <div className={cn("text-xs font-semibold uppercase tracking-widest", accent ? "text-[var(--gold-foreground)]/70" : "text-muted-foreground")}>{label}</div>
-        <Icon className="h-4 w-4 opacity-70" />
+        <div className={cn("grid h-7 w-7 shrink-0 place-items-center rounded-lg", accent ? "bg-black/10" : "bg-primary/10")}>
+          <Icon className={cn("h-3.5 w-3.5", accent ? "text-[var(--gold-foreground)]" : "text-primary")} />
+        </div>
       </div>
       <div className="mt-2 font-display text-2xl font-bold tabular-nums">{value}</div>
       <div className="mt-1 flex items-center gap-2 text-[11px]">

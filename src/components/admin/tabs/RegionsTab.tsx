@@ -1,10 +1,14 @@
+import { MapPin } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import type { RegionStat } from "@/lib/mock-stats";
 
 export function RegionsTab({ regionStats, maxRegion }: { regionStats: RegionStat[]; maxRegion: number }) {
   return (
     <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
-      <h2 className="font-display text-lg font-bold">Tendance par région</h2>
+      <div className="flex items-center gap-2">
+        <MapPin className="h-4 w-4 text-primary" />
+        <h2 className="font-display text-lg font-bold">Tendance par région</h2>
+      </div>
       <p className="text-xs text-muted-foreground">Montant misé, gains versés et évolution sur 7 jours.</p>
       <ul className="mt-4 space-y-3">
         {regionStats.map((r) => {

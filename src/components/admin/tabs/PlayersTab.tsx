@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import type { RegionStat } from "@/lib/mock-stats";
@@ -17,7 +18,10 @@ export function PlayersTab(p: Props) {
   return (
     <section className="rounded-3xl border border-border bg-card shadow-soft">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-5 py-3 sm:flex sm:flex-wrap sm:justify-between">
-        <h2 className="font-display text-lg font-bold min-w-0 truncate">{t("players")}</h2>
+        <div className="flex min-w-0 items-center gap-2">
+          <Users className="h-4 w-4 shrink-0 text-primary" />
+          <h2 className="font-display text-lg font-bold min-w-0 truncate">{t("players")}</h2>
+        </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <input value={p.searchPlayer} onChange={(e) => p.setSearchPlayer(e.target.value)} placeholder="Rechercher…" className="rounded-full border border-border bg-background px-3 py-1.5 text-xs" />
           <select value={p.filterRegion} onChange={(e) => p.setFilterRegion(e.target.value)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs">
@@ -33,7 +37,7 @@ export function PlayersTab(p: Props) {
           </thead>
           <tbody className="divide-y divide-border">
             {p.filteredPlayers.map((row) => (
-              <tr key={row.player + row.region}>
+              <tr key={row.player + row.region} className="hover:bg-secondary/30 transition-colors">
                 <td className="px-4 py-2 font-semibold">{row.player}</td>
                 <td className="px-4 py-2 text-muted-foreground">{row.region}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{row.tickets}</td>

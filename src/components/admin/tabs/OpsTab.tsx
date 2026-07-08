@@ -1,4 +1,4 @@
-import { BellRing, Check, Download, MessageCircle } from "lucide-react";
+import { BellRing, Check, Download, MessageCircle, Send, Settings } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import type { Ticket } from "@/lib/tickets";
@@ -21,7 +21,10 @@ export function OpsTab(p: Props) {
   return (
     <div className="space-y-4">
       <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
-        <h2 className="font-display text-lg font-bold">Paramètres</h2>
+        <div className="flex items-center gap-2">
+          <Settings className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-lg font-bold">Paramètres</h2>
+        </div>
         <div className="mt-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
           <div className="flex items-start gap-3">
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/20 text-primary"><BellRing className="h-4 w-4" /></div>
@@ -53,7 +56,10 @@ export function OpsTab(p: Props) {
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-3xl border border-border bg-card shadow-soft">
           <div className="flex items-center justify-between border-b border-border px-5 py-3">
-            <h2 className="font-display text-lg font-bold">{t("cashoutRequests")}</h2>
+            <div className="flex items-center gap-2">
+              <Send className="h-4 w-4 text-gold" />
+              <h2 className="font-display text-lg font-bold">{t("cashoutRequests")}</h2>
+            </div>
             <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gold">{p.cashoutRequests.length}</span>
           </div>
           {p.cashoutRequests.length === 0 ? (
@@ -82,8 +88,10 @@ export function OpsTab(p: Props) {
 
         <section className="rounded-3xl border border-border bg-card shadow-soft">
           <div className="flex items-center justify-between border-b border-border px-5 py-3">
-            <h2 className="font-display text-lg font-bold">{t("sendSms")} — log auto</h2>
-            <MessageCircle className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4 text-primary" />
+              <h2 className="font-display text-lg font-bold">{t("sendSms")} — log auto</h2>
+            </div>
           </div>
           {p.sentLog.length === 0 ? (
             <p className="px-5 py-8 text-center text-sm text-muted-foreground">Aucun SMS envoyé.</p>

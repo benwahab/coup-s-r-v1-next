@@ -1,4 +1,4 @@
-import { Download, Search } from "lucide-react";
+import { Download, ListChecks, Search } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { statusColor, gameLabel, type TxRow } from "../shared";
 
@@ -20,7 +20,10 @@ export function TransactionsTab(p: Props) {
     <section className="rounded-3xl border border-border bg-card shadow-soft">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3 sm:flex sm:flex-wrap sm:justify-between sm:px-5">
         <div className="min-w-0">
-          <h2 className="font-display text-lg font-bold truncate">Transactions</h2>
+          <div className="flex items-center gap-2">
+            <ListChecks className="h-4 w-4 shrink-0 text-primary" />
+            <h2 className="font-display text-lg font-bold truncate">Transactions</h2>
+          </div>
           <p className="text-xs text-muted-foreground truncate">{p.filteredRows.length} résultats · live + simulation</p>
         </div>
         <button onClick={p.exportTransactionsCsv} className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-primary hover:border-primary/40">
@@ -68,7 +71,7 @@ export function TransactionsTab(p: Props) {
           </thead>
           <tbody className="divide-y divide-border">
             {p.pageRows.map((r) => (
-              <tr key={r.id} className="hover:bg-secondary/30">
+              <tr key={r.id} className="hover:bg-secondary/30 transition-colors">
                 <td className="px-3 py-2 font-mono text-xs font-bold">{r.id}</td>
                 <td className="px-3 py-2 text-xs text-muted-foreground tabular-nums">{r.date.slice(0, 10)}</td>
                 <td className="px-3 py-2">

@@ -137,9 +137,14 @@ function AdminPage() {
 
   const byGameData = useMemo(() => {
     const acc: Record<string, number> = { pmu: 0, loto: 0, foot: 0 };
-    sims.forEach(s => { acc[s.gameId] += s.stake; });
-    tickets.forEach(t => { if (acc[t.gameId] !== undefined) acc[t.gameId] += t.stake; });
-    return Object.entries(acc).map(([id, value]) => ({ id, name: gameLabel[id], value, fill: gameColor[id] }));
+    const counts: Record<string, number> = { pmu: 0, loto: 0, foot: 0 };
+    sims.forEach(s => { acc[s.gameId] += s.stake; counts[s.gameId] += 1; });
+    tickets.forEach(t => { if (acc[t.gameId] !== undefined) { acc[t.gameId] += t.stake; counts[t.gameId] += 1; } });
+    const total = Object.values(acc).reduce((a, b) => a + b, 0) || 1;
+    return Object.entries(acc).map(([id, value]) => ({
+      id, name: gameLabel[id], value, fill: gameColor[id],
+      count: counts[id], pct: Math.round((value / total) * 100),
+    }));
   }, [sims, tickets, gameColor]);
 
   const hourlyData = useMemo(() => {
