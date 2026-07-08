@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { useAccount } from "@/lib/account";
 import { useI18n } from "@/lib/i18n";
 import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
+import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=160&quality=90&url";
 
 // Validation client — miroir de la validation serveur dans otp.functions.ts.
 const PhoneSchema = z.string().regex(/^\d{8}$/, "Saisissez un numéro à 8 chiffres.");
@@ -158,8 +159,8 @@ function AuthPage() {
     <PremiumPhoneCard>
       <div className="pt-4 space-y-4">
         <div className="text-center pb-2">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-white/15 bg-white/10 backdrop-blur-md shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)]">
-            <span className="font-display text-2xl font-black text-white">C<span className="text-[#00C896]">S</span></span>
+          <div className="mx-auto h-16 w-16">
+            <img src={logoCoupSur} alt="Coup Sûr" className="h-full w-full object-contain drop-shadow-[0_10px_24px_rgba(0,0,0,0.45)]" />
           </div>
           <h1 className="mt-3 font-display text-2xl font-extrabold tracking-tight text-white">
             COUP <span className="text-[#00C896]">SÛR</span>
