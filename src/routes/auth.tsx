@@ -190,7 +190,6 @@ function AuthPage() {
                   <>
                     <div>
                       <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">{t("account.step1")}</div>
-                      <h2 className="font-display text-xl font-extrabold text-white">{t("account.yourNumber")}</h2>
                       <p className="mt-0.5 text-[12px] text-white/60">{t("account.smsWillBeSent")}</p>
                     </div>
                     <label className="cs-field group block">

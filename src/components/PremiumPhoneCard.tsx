@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from "react";
 
 type Props = {
   children: ReactNode;
-  statusLabel?: string;
 };
 
 /**
@@ -10,7 +9,7 @@ type Props = {
  * bouton latéral, ombre portée, et arrière-plan à boules de loto numérotées.
  * Partagé entre /auth et /compte.
  */
-export function PremiumPhoneCard({ children, statusLabel = "COUP SÛR" }: Props) {
+export function PremiumPhoneCard({ children }: Props) {
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -52,12 +51,6 @@ export function PremiumPhoneCard({ children, statusLabel = "COUP SÛR" }: Props)
             <div className="cs-phone-screen">
               <div className="cs-notch" aria-hidden />
               <div className="cs-glass-reflection" aria-hidden />
-
-              <div className="flex items-center justify-between px-6 pt-3 text-[10px] font-semibold text-white/70 relative z-10">
-                <span className="tabular-nums">9:41</span>
-                <span className="tracking-[0.22em]">{statusLabel}</span>
-                <span className="tabular-nums">••• 100%</span>
-              </div>
 
               <div className="cs-phone-content relative z-10">{children}</div>
 
