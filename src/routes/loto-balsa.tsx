@@ -152,8 +152,8 @@ function LotoPage() {
         canContinue={effectiveLegs.length > 0 || picks.length === mode}
         defaultStake={stake}
         skipStake
-        gameOpen={isGameOpen(8, 19)}
-        openHour={8}
+        gameOpen={isGameOpen(drawSchedule.loto.openHour, drawSchedule.loto.closeHour)}
+        openHour={drawSchedule.loto.openHour}
         renderSelection={
           <div>
             <div className="mb-4">

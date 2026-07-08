@@ -138,15 +138,15 @@ export const paymentMethods = [
 ];
 
 export const games = [
-  { id: "pmu" as GameId, name: "PMU", emoji: "🐎", closes: "Tous les jours 14:00", color: "from-[oklch(0.78_0.20_150)] to-[oklch(0.45_0.12_160)]" },
-  { id: "loto" as GameId, name: "Loto Balsa", emoji: "🎱", closes: "Tous les jours 19:00", color: "from-[oklch(0.82_0.17_82)] to-[oklch(0.65_0.18_60)]" },
-  { id: "foot" as GameId, name: "Pari Foot", emoji: "⚽", closes: "Samedi 16:00", color: "from-[oklch(0.72_0.13_215)] to-[oklch(0.35_0.10_240)]" },
+  { id: "pmu" as GameId, name: "PMU", emoji: "🐎", closes: "Tous les jours 15:00", color: "from-[oklch(0.78_0.20_150)] to-[oklch(0.45_0.12_160)]" },
+  { id: "loto" as GameId, name: "Loto Balsa", emoji: "🎱", closes: "Tous les jours 15:00", color: "from-[oklch(0.82_0.17_82)] to-[oklch(0.65_0.18_60)]" },
+  { id: "foot" as GameId, name: "Pari Foot", emoji: "⚽", closes: "Disponible 24h/24", color: "from-[oklch(0.72_0.13_215)] to-[oklch(0.35_0.10_240)]" },
 ];
 
-/** Calendrier officiel des tirages. */
+/** Calendrier officiel des tirages. Cycle quotidien : ouverture 16h00, fermeture 15h00 le lendemain. */
 export const drawSchedule = {
-  pmu: { openHour: 8, closeHour: 14, drawHour: 15, daily: true, label: "Quinté du jour — 15h00" },
-  loto: { openHour: 8, closeHour: 19, drawHour: 20, daily: true, label: "Tirage quotidien — 20h00" },
+  pmu: { openHour: 16, closeHour: 15, drawHour: 15, daily: true, label: "Quinté du jour — 15h00" },
+  loto: { openHour: 16, closeHour: 15, drawHour: 15, daily: true, label: "Tirage quotidien — 15h00" },
 } as const;
 
 /** Régions du Niger. */

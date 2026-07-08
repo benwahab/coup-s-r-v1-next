@@ -61,12 +61,25 @@ export function nigerDateLabel(d: Date = new Date()): string {
 export type DrawStage = "openAt" | "closesIn" | "drawIn";
 export interface NextEvent { stage: DrawStage; target: Date; }
 
-/** Prochain jalon (ouverture / clôture / tirage) pour un jeu à 3 horaires quotidiens, sur fuseau Niger. */
+/** Prochain jalon (ouverture / clôture / tirage) pour un jeu à 3 horaires quotidiens, sur fuseau Niger.
+ *  Supporte le cycle traversant minuit (ex : ouverture 16h, fermeture 15h le
+ *  lendemain, tirage peu après la fermeture). Dans ce cas, l'ordre chronologique
+ *  des jalons dans une même journée Niger est : fermeture → tirage → ouverture. */
 export function nextDailyEvent(openHour: number, closeHour: number, drawHour: number, now: Date = new Date()): NextEvent {
   const p = nigerParts(now);
   const open = nigerInstant(p.year, p.month, p.day, openHour);
   const close = nigerInstant(p.year, p.month, p.day, closeHour);
   const draw = nigerInstant(p.year, p.month, p.day, drawHour);
+
+  if (openHour > closeHour) {
+    // Cycle traversant minuit : fermeture → tirage → ouverture, dans cet ordre.
+    if (now < close) return { stage: "closesIn", target: close };
+    if (now < draw) return { stage: "drawIn", target: draw };
+    if (now < open) return { stage: "openAt", target: open };
+    // Session en cours depuis 'open' aujourd'hui : ferme demain à closeHour.
+    return { stage: "closesIn", target: new Date(close.getTime() + 24 * 3600 * 1000) };
+  }
+
   if (now < open) return { stage: "openAt", target: open };
   if (now < close) return { stage: "closesIn", target: close };
   if (now < draw) return { stage: "drawIn", target: draw };
@@ -107,12 +120,17 @@ export function mockAccountHolder(phone: string): string {
   return noms[sum % noms.length];
 }
 
-/** Indique si un jeu est ouvert à la prise de paris à l'instant t (Niger TZ). */
+/** Indique si un jeu est ouvert à la prise de paris à l'instant t (Niger TZ).
+ *  Gère le cas d'un cycle traversant minuit (ex : ouverture 16h, fermeture
+ *  15h le lendemain) — le jeu n'est alors fermé que sur la courte fenêtre
+ *  quotidienne [closeHour, openHour). */
 export function isGameOpen(openHour: number, closeHour: number, now: Date = new Date()): boolean {
   const p = nigerParts(now);
   const open = nigerInstant(p.year, p.month, p.day, openHour);
   const close = nigerInstant(p.year, p.month, p.day, closeHour);
-  return now >= open && now < close;
+  if (openHour < closeHour) return now >= open && now < close;
+  if (openHour > closeHour) return !(now >= close && now < open);
+  return true; // openHour === closeHour : ouvert en continu (ex. Pari Foot)
 }
 
 /** Renvoie l'instant de réouverture (lendemain à openHour) si actuellement fermé. */
