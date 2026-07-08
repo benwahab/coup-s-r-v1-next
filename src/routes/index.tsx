@@ -14,9 +14,9 @@ import heroJpg from "@/assets/hero-winners.jpg";
 import heroWebp from "@/assets/hero-winners.jpg?format=webp&w=1600&quality=72&url";
 import heroAvif from "@/assets/hero-winners.jpg?format=avif&w=1600&quality=55&url";
 import ogImage from "@/assets/og-coup-sur.png.asset.json";
+import { SITE_ORIGIN, absoluteOgUrl } from "@/lib/og";
 
-const SITE_ORIGIN = "https://project--d012cc30-70a9-4deb-91e9-b223040ce8ed.lovable.app";
-const OG_IMAGE_URL = `${SITE_ORIGIN}${ogImage.url}`;
+const OG_IMAGE_URL = absoluteOgUrl(ogImage.url);
 
 export const Route = createFileRoute("/")({
   head: () => ({
