@@ -214,6 +214,123 @@ export type Database = {
         }
         Relationships: []
       }
+      foot_fixtures: {
+        Row: {
+          away_score: number | null
+          away_team: string
+          away_team_logo: string | null
+          created_at: string
+          external_id: number
+          home_score: number | null
+          home_team: string
+          home_team_logo: string | null
+          id: string
+          kickoff_at: string
+          league_external_id: number
+          league_name: string
+          odds_away: number | null
+          odds_draw: number | null
+          odds_home: number | null
+          season: number | null
+          settled_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          away_score?: number | null
+          away_team: string
+          away_team_logo?: string | null
+          created_at?: string
+          external_id: number
+          home_score?: number | null
+          home_team: string
+          home_team_logo?: string | null
+          id?: string
+          kickoff_at: string
+          league_external_id: number
+          league_name: string
+          odds_away?: number | null
+          odds_draw?: number | null
+          odds_home?: number | null
+          season?: number | null
+          settled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          away_score?: number | null
+          away_team?: string
+          away_team_logo?: string | null
+          created_at?: string
+          external_id?: number
+          home_score?: number | null
+          home_team?: string
+          home_team_logo?: string | null
+          id?: string
+          kickoff_at?: string
+          league_external_id?: number
+          league_name?: string
+          odds_away?: number | null
+          odds_draw?: number | null
+          odds_home?: number | null
+          season?: number | null
+          settled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      foot_picks: {
+        Row: {
+          created_at: string
+          fixture_id: string
+          id: string
+          odds: number
+          selection: string
+          settled_at: string | null
+          status: Database["public"]["Enums"]["ticket_status"]
+          ticket_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fixture_id: string
+          id?: string
+          odds: number
+          selection: string
+          settled_at?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          ticket_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fixture_id?: string
+          id?: string
+          odds?: number
+          selection?: string
+          settled_at?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          ticket_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "foot_picks_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "foot_fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "foot_picks_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string

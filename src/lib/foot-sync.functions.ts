@@ -49,17 +49,13 @@ export const syncFootFixtures = createServerFn({ method: "POST" }).handler(async
   }
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  // NOTE TEMPORAIRE : foot_fixtures/foot_picks existent dans la migration
-  // mais pas encore dans les types Database générés (en attente que Lovable
-  // resynchronise après application de la migration). Cast explicite le
-  // temps que ça se régénère — RLS reste appliqué normalement côté serveur,
-  // ce cast ne contourne que la vérification TypeScript, pas la sécurité.
-  const footFixtures = supabaseAdmin.from("foot_fixtures" as never) as unknown as {
-    select: (cols: string) => { order: (col: string, opts: { ascending: boolean }) => { limit: (n: number) => { maybeSingle: () => Promise<{ data: { updated_at: string } | null }> } } };
-    upsert: (rows: unknown[], opts: { onConflict: string }) => Promise<{ error: unknown }>;
-  };
 
-  const { data: freshest } = await footFixtures.select("updated_at").order("updated_at", { ascending: false }).limit(1).maybeSingle();
+  const { data: freshest } = await supabaseAdmin
+    .from("foot_fixtures")
+    .select("updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   const lastSync = freshest?.updated_at ? new Date(freshest.updated_at).getTime() : 0;
   if (Date.now() - lastSync < SYNC_STALE_MS) {
@@ -94,7 +90,7 @@ export const syncFootFixtures = createServerFn({ method: "POST" }).handler(async
     }));
 
     if (rows.length > 0) {
-      const { error } = await footFixtures.upsert(rows, { onConflict: "external_id" });
+      const { error } = await supabaseAdmin.from("foot_fixtures").upsert(rows, { onConflict: "external_id" });
       if (!error) upserted += rows.length;
     }
   }
