@@ -34,7 +34,7 @@ function fmtMs(ms: number) {
 function AuthPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
-  const { account } = useAccount();
+  const { account, isPhoneAvailable } = useAccount();
   const { requestOtp, verifyOtp, remainingLockMs, isPermanent, failedAttempts } = useAuth();
 
   const [step, setStep] = useState<"phone" | "otp">("phone");
@@ -48,6 +48,7 @@ function AuthPage() {
   const [autoRead, setAutoRead] = useState<"idle" | "listening" | "ok" | "unavailable">("idle");
   const [demoCode, setDemoCode] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
+  const [noAccountOpen, setNoAccountOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const lockMs = remainingLockMs();
@@ -82,6 +83,13 @@ function AuthPage() {
     setError(null);
     const parsed = PhoneSchema.safeParse(phone);
     if (!parsed.success) { setError(parsed.error.issues[0].message); return; }
+
+    // Aucun compte pour ce numéro : on ne génère aucun OTP, on invite à en créer un.
+    if (isPhoneAvailable(phone).ok) {
+      setNoAccountOpen(true);
+      return;
+    }
+
     setSending(true);
     try {
       const res = await requestOtp(phone);
@@ -156,6 +164,7 @@ function AuthPage() {
   };
 
   return (
+    <>
     <PremiumPhoneCard>
       <div className="pt-4 space-y-4">
         <div className="text-center pb-2">
@@ -326,6 +335,37 @@ function AuthPage() {
         </p>
       </div>
     </PremiumPhoneCard>
+
+    {noAccountOpen && (
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-0 sm:p-4" role="dialog" aria-modal="true">
+        <div className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl border border-border bg-card shadow-elevated overflow-hidden">
+          <div className="flex items-start gap-3 border-b border-border/60 bg-gradient-to-br from-primary/15 to-transparent p-5">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/20 text-primary">
+              <ShieldAlert className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-extrabold">{t("account.noAccountTitle")}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{t("account.noAccountDesc")}</p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 p-5">
+            <a
+              href="/compte"
+              className="w-full rounded-2xl bg-primary px-4 py-3 text-center text-sm font-extrabold uppercase tracking-wide text-primary-foreground hover:brightness-110"
+            >
+              {t("createAccount")}
+            </a>
+            <button
+              onClick={() => setNoAccountOpen(false)}
+              className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground hover:border-primary/50"
+            >
+              {t("account.cancel")}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

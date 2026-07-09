@@ -45,6 +45,7 @@ function ComptePage() {
   const deletionDaysLeft = Math.ceil(deletionMs / (24 * 60 * 60 * 1000));
 
   const persist = () => {
+    const isNewAccount = !account;
     saveAccount({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -60,7 +61,9 @@ function ComptePage() {
       },
     });
     setSaved(true);
-    setTimeout(() => navigate({ to: "/" }), 700);
+    // Un nouveau compte doit se connecter via OTP sur /auth ; une simple
+    // mise à jour de profil ramène à l'accueil comme avant.
+    setTimeout(() => navigate({ to: isNewAccount ? "/auth" : "/" }), 700);
   };
 
   const submit = (e: React.FormEvent) => {

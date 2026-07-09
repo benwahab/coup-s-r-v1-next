@@ -16,7 +16,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const lockMs = remainingLockMs();
   const locked = isPermanent() || lockMs > 0;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const showGlobalBackdrop = !pathname.startsWith("/auth");
+  const onAuth = pathname.startsWith("/auth");
+  const onCompte = pathname.startsWith("/compte");
+  const showGlobalBackdrop = !onAuth && !onCompte;
 
   const navItems: { to: string; label: string; icon: typeof Home; exact?: boolean }[] = [
     { to: "/", label: t("home"), icon: Home, exact: true },
@@ -52,7 +54,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               -18
             </span>
-            {!authed && (
+            {!authed && !onAuth && (
               <Link
                 to="/auth"
                 className={cn(
@@ -79,13 +81,15 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </button>
               </>
             )}
-            <Link
-              to="/compte"
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition"
-            >
-              <UserCircle2 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{account ? account.firstName : t("createAccount")}</span>
-            </Link>
+            {!onCompte && (
+              <Link
+                to="/compte"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition"
+              >
+                <UserCircle2 className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{account ? account.firstName : t("createAccount")}</span>
+              </Link>
+            )}
             {isAdmin && (
               <Link
                 to="/admin"
@@ -101,9 +105,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className={cn("flex-1", showGlobalBackdrop && "pb-24")}>{children}</main>
 
-      <SiteFooter />
+      {!onCompte && <SiteFooter />}
 
-      {/* Mobile bottom nav — masquée sur /auth */}
+      {/* Mobile bottom nav — masquée sur /auth et /compte */}
       {showGlobalBackdrop && (
         <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-card/95 backdrop-blur shadow-elevated">
           <ul className="mx-auto grid max-w-6xl grid-cols-4">
