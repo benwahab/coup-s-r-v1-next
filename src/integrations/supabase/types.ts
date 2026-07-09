@@ -285,6 +285,7 @@ export type Database = {
           created_at: string
           fixture_id: string
           id: string
+          market_id: string
           odds: number
           selection: string
           settled_at: string | null
@@ -296,6 +297,7 @@ export type Database = {
           created_at?: string
           fixture_id: string
           id?: string
+          market_id?: string
           odds: number
           selection: string
           settled_at?: string | null
@@ -307,6 +309,7 @@ export type Database = {
           created_at?: string
           fixture_id?: string
           id?: string
+          market_id?: string
           odds?: number
           selection?: string
           settled_at?: string | null
