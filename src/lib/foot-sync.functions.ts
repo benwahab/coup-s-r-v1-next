@@ -8,6 +8,7 @@ type SupabaseAdmin = typeof SupabaseAdminInstance;
  * 100 requêtes/jour). IDs de championnat stables côté API-Football.
  */
 export const TRACKED_LEAGUES = [
+  { id: 1, name: "Coupe du Monde FIFA" },
   { id: 61, name: "Ligue 1" },
   { id: 39, name: "Premier League" },
   { id: 140, name: "La Liga" },

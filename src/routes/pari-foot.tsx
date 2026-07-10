@@ -15,6 +15,7 @@ const OG = absoluteOgUrl(ogAsset.url);
 
 /** Petites icônes par championnat suivi (purement cosmétique). */
 const LEAGUE_FLAGS: Record<string, string> = {
+  "Coupe du Monde FIFA": "🌍",
   "Ligue 1": "🇫🇷",
   "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
   "La Liga": "🇪🇸",
