@@ -145,3 +145,72 @@ export const adminListAllPayments = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { payments: data ?? [] };
   });
+
+/** Liste des comptes ayant le rôle admin — admin uniquement. */
+export const adminListAdmins = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase as SB, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: roles, error } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id, created_at")
+      .eq("role", "admin")
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    const userIds = (roles ?? []).map((r) => r.user_id);
+    if (userIds.length === 0) return { admins: [] };
+    const { data: profiles, error: e2 } = await supabaseAdmin
+      .from("profiles")
+      .select("id, phone, first_name, last_name")
+      .in("id", userIds);
+    if (e2) throw new Error(e2.message);
+    const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
+    return {
+      admins: (roles ?? []).map((r) => ({
+        userId: r.user_id,
+        grantedAt: r.created_at,
+        phone: profileById.get(r.user_id)?.phone ?? null,
+        firstName: profileById.get(r.user_id)?.first_name ?? null,
+        lastName: profileById.get(r.user_id)?.last_name ?? null,
+      })),
+    };
+  });
+
+/** Accorde le rôle admin à un compte existant, identifié par son numéro de téléphone. */
+export const adminGrantRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ phone: z.string().regex(/^\d{8}$/) }).parse(data))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase as SB, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile, error: e1 } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("phone", data.phone)
+      .maybeSingle();
+    if (e1) throw new Error(e1.message);
+    if (!profile) return { ok: false as const, reason: "no_account" as const };
+    const { error: e2 } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: profile.id, role: "admin" })
+      .select()
+      .maybeSingle();
+    // Contrainte UNIQUE(user_id, role) : déjà admin, on considère ça réussi (idempotent).
+    if (e2 && !e2.message.includes("duplicate")) throw new Error(e2.message);
+    return { ok: true as const };
+  });
+
+/** Retire le rôle admin d'un compte. Un admin ne peut pas se retirer lui-même
+ *  (garde-fou pour éviter de se verrouiller hors du panneau par erreur). */
+export const adminRevokeRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ userId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase as SB, context.userId);
+    if (data.userId === context.userId) return { ok: false as const, reason: "cannot_self_revoke" as const };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId).eq("role", "admin");
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
