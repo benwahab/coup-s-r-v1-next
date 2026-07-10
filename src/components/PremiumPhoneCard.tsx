@@ -32,11 +32,11 @@ export function PremiumPhoneCard({ children }: Props) {
   }, []);
 
   return (
-    <div className="cs-auth-scope relative isolate min-h-[calc(100vh-64px)] overflow-hidden">
+    <div className="cs-auth-scope relative isolate min-h-[calc(100dvh-64px)] overflow-hidden">
       <LotoBackdrop parallax={parallax} />
-      <div className="relative z-10 mx-auto flex max-w-md flex-col items-center px-4 py-6 sm:py-10">
+      <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-64px)] max-w-md flex-col items-center justify-center px-4 py-3 sm:py-5">
         <div
-          className="cs-phone relative w-full max-w-[400px]"
+          className="cs-phone relative w-full max-w-[340px]"
           style={{
             transform: `perspective(1400px) rotateX(${parallax.y * -1.2}deg) rotateY(${parallax.x * 1.8}deg)`,
           }}
@@ -208,7 +208,7 @@ const CS_CARD_CSS = `
     radial-gradient(120% 80% at 50% 0%, rgba(0, 200, 150, 0.22), transparent 60%),
     linear-gradient(180deg, rgba(0, 40, 34, 0.92), rgba(0, 18, 15, 0.96));
   overflow: hidden;
-  min-height: 640px;
+  min-height: 460px;
   box-shadow:
     inset 0 0 0 1px rgba(255,255,255,0.06),
     inset 0 -30px 60px rgba(0,0,0,0.4);
@@ -267,7 +267,7 @@ const CS_CARD_CSS = `
 
 /* Zone de contenu à l'intérieur de l'écran */
 .cs-phone-content {
-  padding: 18px 22px 28px;
+  padding: 14px 18px 20px;
 }
 
 /* ============ CHAMPS / BOUTONS (utilisés par /auth) ============ */
@@ -281,7 +281,7 @@ const CS_CARD_CSS = `
 .cs-field-wrap {
   display: flex; align-items: center; gap: 10px;
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 10px 14px;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
   transition: border-color 200ms ease, background-color 200ms ease, box-shadow 200ms ease;
@@ -292,7 +292,7 @@ const CS_CARD_CSS = `
   box-shadow: 0 0 0 4px rgba(0, 200, 150, 0.18);
 }
 .cs-otp {
-  height: 56px; width: 100%;
+  height: 46px; width: 100%;
   border-radius: 14px;
   background: rgba(255,255,255,0.06);
   border: 1.5px solid rgba(255,255,255,0.15);
@@ -300,7 +300,7 @@ const CS_CARD_CSS = `
   text-align: center;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 26px;
+  font-size: 22px;
   font-variant-numeric: tabular-nums;
   outline: none;
   transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease, transform 100ms ease;
@@ -313,14 +313,14 @@ const CS_CARD_CSS = `
 .cs-cta {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   width: 100%;
-  min-height: 54px;
-  padding: 14px 20px;
+  min-height: 46px;
+  padding: 12px 20px;
   border-radius: 9999px;
   color: #fff;
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: 14px;
+  font-size: 13px;
   background: linear-gradient(180deg, #FFA23A 0%, #FF8A00 55%, #E67A00 100%);
   box-shadow:
     0 12px 28px -10px rgba(255, 138, 0, 0.55),

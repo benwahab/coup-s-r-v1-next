@@ -166,30 +166,29 @@ function AuthPage() {
   return (
     <>
     <PremiumPhoneCard>
-      <div className="pt-4 space-y-4">
-        <div className="text-center pb-2">
-          <div className="mx-auto h-16 w-16">
+      <div className="pt-1 space-y-2.5">
+        <div className="text-center pb-1">
+          <div className="mx-auto h-11 w-11">
             <img src={logoCoupSur} alt="Coup Sûr" className="h-full w-full object-contain drop-shadow-[0_10px_24px_rgba(0,0,0,0.45)]" />
           </div>
-          <h1 className="mt-3 font-display text-2xl font-extrabold tracking-tight text-white">
+          <h1 className="mt-1.5 font-display text-lg font-extrabold tracking-tight text-white">
             COUP <span className="text-[#00C896]">SÛR</span>
           </h1>
-          <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#00C896]/90">Pariez. Analysez. Gagnez.</p>
-          <p className="mt-3 font-display text-xl font-extrabold text-white">{t("account.welcome")}</p>
-          <p className="mt-0.5 text-[12px] text-white/60">{t("account.loginSubtitle")}</p>
+          <p className="mt-1.5 font-display text-base font-extrabold text-white">{t("account.welcome")}</p>
+          <p className="mt-0.5 text-[11px] text-white/60">{t("account.loginSubtitle")}</p>
         </div>
                 {locked && (
-                  <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-red-100 backdrop-blur-sm">
-                    <div className="flex items-center gap-2 font-bold">
-                      <ShieldAlert className="h-5 w-5" />
+                  <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-3 text-red-100 backdrop-blur-sm">
+                    <div className="flex items-center gap-2 font-bold text-sm">
+                      <ShieldAlert className="h-4 w-4" />
                       {permanent ? t("account.blockedPermanent") : t("account.blockedTemp")}
                     </div>
                     {permanent ? (
-                      <p className="mt-2 text-sm">
+                      <p className="mt-1.5 text-xs">
                         {t("account.contactSupport")}
                       </p>
                     ) : (
-                      <p className="mt-2 text-sm tabular-nums">
+                      <p className="mt-1.5 text-xs tabular-nums">
                         {t("account.retryIn", { time: fmtMs(lockMs) })}
                       </p>
                     )}
@@ -199,8 +198,8 @@ function AuthPage() {
                 {step === "phone" && (
                   <>
                     <div>
-                      <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">{t("account.step1")}</div>
-                      <p className="mt-0.5 text-[12px] text-white/60">{t("account.smsWillBeSent")}</p>
+                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">{t("account.step1")}</div>
+                      <p className="mt-0.5 text-[11px] text-white/60">{t("account.smsWillBeSent")}</p>
                     </div>
                     <label className="cs-field group block">
                       <span className="cs-field-label">{t("account.phoneLabel")}</span>
@@ -243,10 +242,10 @@ function AuthPage() {
                 {step === "otp" && (
                   <>
                     <div>
-                      <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">{t("account.step2")}</div>
-                      <h2 className="font-display text-xl font-extrabold text-white">{t("account.enterCode")}</h2>
+                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">{t("account.step2")}</div>
+                      <h2 className="font-display text-lg font-extrabold text-white">{t("account.enterCode")}</h2>
                     </div>
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/70 backdrop-blur">
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-xs text-white/70 backdrop-blur">
                       {t("account.codeSentTo")} <span className="font-bold text-white">+227 {phone}</span>.{" "}
                       <button onClick={() => { setStep("phone"); setOtp(""); }} className="font-bold text-[#00C896] hover:underline">{t("account.modify")}</button>
                     </div>
@@ -320,7 +319,7 @@ function AuthPage() {
                     <button
                       onClick={sendCode}
                       disabled={locked || sending || resendIn > 0}
-                      className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm font-bold text-white/90 backdrop-blur transition hover:bg-white/10 disabled:opacity-60"
+                      className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-bold text-white/90 backdrop-blur transition hover:bg-white/10 disabled:opacity-60"
                     >
                       <RefreshCw className={`h-4 w-4 ${sending ? "animate-spin" : ""}`} />
                       {resendIn > 0 ? t("account.resendIn", { seconds: resendIn }) : t("account.resendSms")}
