@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Goal, Trophy, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Goal, Trophy, X, ChevronDown, ChevronUp, Lock } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
 import { PageHeader } from "@/components/AppShell";
-import { footMatches, leagues } from "@/lib/mock-data";
+import { useFootFixtures } from "@/lib/foot-fixtures";
 import { marketsForMatch, oddForPick, labelForPick } from "@/lib/foot-markets";
 import { cn } from "@/lib/utils";
 import { z } from "zod";
@@ -12,6 +12,15 @@ import ogAsset from "@/assets/og-foot.jpg.asset.json";
 import { absoluteOgUrl } from "@/lib/og";
 
 const OG = absoluteOgUrl(ogAsset.url);
+
+/** Petites icônes par championnat suivi (purement cosmétique). */
+const LEAGUE_FLAGS: Record<string, string> = {
+  "Ligue 1": "🇫🇷",
+  "Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "La Liga": "🇪🇸",
+  "Serie A": "🇮🇹",
+  "UEFA Champions League": "🏆",
+};
 
 /** Validation client des paris foot : au moins 1 sélection, format `matchId:market:option`. */
 const PickKeySchema = z.string().regex(/^[^:]+:[^:]+:[^:]+$/, "Format de sélection invalide.");
@@ -42,16 +51,20 @@ export const Route = createFileRoute("/pari-foot")({
 
 function FootPage() {
   const { t } = useI18n();
+  const { matches, pickedFixtureIds, loading } = useFootFixtures();
   // clé pick = "matchId:marketId:optionKey" (permet marchés multiples par match)
   const [picks, setPicks] = useState<Record<string, true>>({});
   const [league, setLeague] = useState<string>("all");
   const [openMatch, setOpenMatch] = useState<string | null>(null);
   const [mode, setMode] = useState<"combi" | "simple">("combi");
 
-  const togglePick = (key: string) => setPicks((p) => {
-    if (p[key]) { const { [key]: _, ...rest } = p; return rest; }
-    return { ...p, [key]: true };
-  });
+  const togglePick = (matchId: string, key: string) => {
+    if (pickedFixtureIds.has(matchId)) return; // déjà parié sur ce match, pour toujours
+    setPicks((p) => {
+      if (p[key]) { const { [key]: _, ...rest } = p; return rest; }
+      return { ...p, [key]: true };
+    });
+  };
   const removePick = (key: string) => setPicks((p) => { const { [key]: _, ...rest } = p; return rest; });
 
   const list = Object.keys(picks);
@@ -60,7 +73,7 @@ function FootPage() {
   const picksLabel = list.length
     ? list.map((k) => {
         const [mid] = k.split(":");
-        const m = footMatches.find((x) => x.id === mid);
+        const m = matches.find((x) => x.id === mid);
         return m ? labelForPick(k, m) : k;
       }).join(" • ")
     : "—";
@@ -69,17 +82,21 @@ function FootPage() {
     () => mode === "combi"
       ? list.reduce((acc, k) => {
           const [mid] = k.split(":");
-          const m = footMatches.find((x) => x.id === mid);
+          const m = matches.find((x) => x.id === mid);
           return acc * (m ? oddForPick(k, m) : 1);
         }, 1)
       : 1,
-    [list, mode],
+    [list, mode, matches],
   );
 
-  const visibleMatches = league === "all" ? footMatches : footMatches.filter((m) => m.league === league);
+  const visibleMatches = league === "all" ? matches : matches.filter((m) => m.league === league);
 
-  // Compétitions avec compteur de matchs
-  const leagueTabs = [{ id: "all", name: t("game.all"), country: "🌐", count: footMatches.length }, ...leagues.map((l) => ({ ...l, count: footMatches.filter((m) => m.league === l.id).length }))];
+  // Compétitions avec compteur de matchs, dérivées des championnats réellement synchronisés.
+  const distinctLeagues = Array.from(new Set(matches.map((m) => m.league)));
+  const leagueTabs = [
+    { id: "all", name: t("game.all"), country: "🌐", count: matches.length },
+    ...distinctLeagues.map((name) => ({ id: name, name, country: LEAGUE_FLAGS[name] ?? "🏆", count: matches.filter((m) => m.league === name).length })),
+  ];
 
   return (
     <>
@@ -155,7 +172,7 @@ function FootPage() {
                 <ul className="space-y-1.5">
                   {list.map((k) => {
                     const [mid] = k.split(":");
-                    const m = footMatches.find((x) => x.id === mid);
+                    const m = matches.find((x) => x.id === mid);
                     if (!m) return null;
                     const odd = oddForPick(k, m);
                     return (
@@ -172,16 +189,26 @@ function FootPage() {
               </div>
             )}
 
+            {loading && matches.length === 0 && (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => <div key={i} className="h-32 animate-pulse rounded-2xl border border-border bg-card" />)}
+              </div>
+            )}
+            {!loading && visibleMatches.length === 0 && (
+              <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+                Aucun match disponible pour le moment. Revenez un peu plus tard.
+              </div>
+            )}
             <ul className="space-y-3">
               {visibleMatches.map((m) => {
-                const lg = leagues.find((l) => l.id === m.league);
                 const isOpen = openMatch === m.id;
+                const alreadyPicked = pickedFixtureIds.has(m.id);
                 const matchPicks = list.filter((k) => k.startsWith(m.id + ":")).length;
                 const markets = marketsForMatch(m);
                 return (
-                  <li key={m.id} className="rounded-2xl border border-border bg-card p-3 shadow-soft">
+                  <li key={m.id} className={cn("rounded-2xl border border-border bg-card p-3 shadow-soft", alreadyPicked && "opacity-60")}>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">{lg?.country} <span className="font-semibold">{lg?.name}</span></span>
+                      <span className="inline-flex items-center gap-1">{LEAGUE_FLAGS[m.league] ?? "🏆"} <span className="font-semibold">{m.league}</span></span>
                       <span>{m.date}</span>
                     </div>
                     <div className="mt-1 flex items-center justify-between gap-2">
@@ -189,6 +216,11 @@ function FootPage() {
                       <span className="text-xs text-muted-foreground">vs</span>
                       <span className="min-w-0 truncate font-bold text-right">{m.away}</span>
                     </div>
+                    {alreadyPicked && (
+                      <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                        <Lock className="h-3 w-3" /> Déjà parié sur ce match
+                      </div>
+                    )}
                     {/* 1X2 rapide toujours visible */}
                     <div className="mt-3 grid grid-cols-3 gap-2">
                       {(["1", "X", "2"] as const).map((o) => {
@@ -198,9 +230,11 @@ function FootPage() {
                           <button
                             key={o}
                             type="button"
-                            onClick={() => togglePick(key)}
+                            disabled={alreadyPicked}
+                            onClick={() => togglePick(m.id, key)}
                             className={cn(
                               "rounded-xl border-2 px-3 py-3 text-center font-display font-bold transition",
+                              alreadyPicked ? "cursor-not-allowed border-border bg-background/50" :
                               active
                                 ? "border-primary bg-primary/10 text-primary shadow-soft"
                                 : "border-border bg-background hover:border-primary/40",
@@ -247,9 +281,11 @@ function FootPage() {
                                   <button
                                     key={opt.key}
                                     type="button"
-                                    onClick={() => togglePick(key)}
+                                    disabled={alreadyPicked}
+                                    onClick={() => togglePick(m.id, key)}
                                     className={cn(
                                       "rounded-lg border-2 px-2 py-1.5 text-center text-[11px] transition",
+                                      alreadyPicked ? "cursor-not-allowed border-border bg-background/50" :
                                       active
                                         ? "border-primary bg-primary/10 text-primary"
                                         : "border-border bg-background hover:border-primary/40",

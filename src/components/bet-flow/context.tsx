@@ -5,9 +5,12 @@ import { useI18n } from "@/lib/i18n";
 import { useTickets, type TicketLeg } from "@/lib/tickets";
 import { regions, paymentMethods, type GameId } from "@/lib/mock-data";
 import { useAccount } from "@/lib/account";
+import { useAuth } from "@/lib/auth";
 import { detectOperator, mockAccountHolder } from "@/lib/schedule";
 import { useDrafts } from "@/lib/drafts";
 import { beginPayment, checkDuplicate, confirmPayment, failPayment, paymentKey } from "@/lib/payments";
+import { supabase } from "@/integrations/supabase/client";
+import { fixtureOdds1x2 } from "@/lib/foot-fixtures";
 
 export interface BetFlowConfig {
   gameId: GameId;
@@ -44,6 +47,7 @@ function useProviderValue(cfg: BetFlowConfig) {
   const { addTicket } = useTickets();
   const { addDraft } = useDrafts();
   const { account } = useAccount();
+  const { session } = useAuth();
 
   const accountComplete = !!(account && account.phone && account.region);
   const [expressMode, setExpressMode] = useState(accountComplete);
@@ -146,6 +150,36 @@ function useProviderValue(cfg: BetFlowConfig) {
         drawName,
         legs: allLegs,
       });
+
+      if (first.gameId === "foot" && session) {
+        // Un pick = un match (tous marchés confondus). La contrainte UNIQUE
+        // (user_id, fixture_id) en base fait respecter "une seule fois par
+        // match, pour toujours" même en cas de double-soumission/course.
+        const pickKeys = first.picks as string[];
+        const fixtureIds = Array.from(new Set(pickKeys.map((k) => k.split(":")[0])));
+        const rows = pickKeys.map((k) => {
+          const [fixtureId, marketId, selection] = k.split(":");
+          const odds = marketId === "1x2" ? fixtureOdds1x2(fixtureId)[selection as "1" | "X" | "2"] : 1;
+          return {
+            user_id: session.userId,
+            fixture_id: fixtureId,
+            ticket_id: ticket.id,
+            market_id: marketId,
+            selection,
+            odds,
+            status: "pending" as const,
+          };
+        });
+        const { error: pickErr } = await supabase.from("foot_picks").insert(rows);
+        if (pickErr) {
+          // Contrainte UNIQUE violée = l'utilisateur a déjà parié sur un de ces
+          // matchs entre-temps (double onglet, etc.). Le ticket est déjà créé
+          // et payé ; on informe sans bloquer le paiement déjà confirmé.
+          toast.error("Un des matchs sélectionnés a déjà été parié entre-temps.");
+        }
+        void fixtureIds;
+      }
+
       await confirmPayment(intent.txRef, ticket);
       toast.success("Paiement confirmé, ticket enregistré ✓");
       navigate({ to: "/ticket/$id", params: { id: ticket.id } });

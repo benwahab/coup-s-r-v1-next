@@ -1,4 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { supabaseAdmin as SupabaseAdminInstance } from "@/integrations/supabase/client.server";
+
+type SupabaseAdmin = typeof SupabaseAdminInstance;
 
 /**
  * Championnats prioritaires au démarrage (quota gratuit API-Football :
@@ -95,5 +98,73 @@ export const syncFootFixtures = createServerFn({ method: "POST" }).handler(async
     }
   }
 
-  return { synced: true as const, upserted };
+  const settled = await settleFinishedFixtures(supabaseAdmin);
+
+  return { synced: true as const, upserted, settled };
 });
+
+/**
+ * Règle automatiquement les paris 1X2 des rencontres terminées.
+ * - Marché 1x2 uniquement (les autres marchés restent réglés manuellement
+ *   par un admin, faute de données statistiques suffisantes côté API
+ *   gratuite pour les calculer automatiquement — décision validée avec Ben).
+ * - Dès qu'une jambe d'un ticket combiné est perdante, tout le ticket passe
+ *   immédiatement à 'losing', même si d'autres matchs du combiné sont
+ *   encore en cours.
+ */
+async function settleFinishedFixtures(supabaseAdmin: SupabaseAdmin) {
+  const { data: finishedFixtures } = await supabaseAdmin
+    .from("foot_fixtures")
+    .select("id, home_score, away_score")
+    .eq("status", "finished")
+    .not("home_score", "is", null)
+    .not("away_score", "is", null);
+  if (!finishedFixtures || finishedFixtures.length === 0) return 0;
+
+  const { data: pendingPicks } = await supabaseAdmin
+    .from("foot_picks")
+    .select("id, fixture_id, ticket_id, selection, market_id")
+    .eq("status", "pending")
+    .eq("market_id", "1x2")
+    .in("fixture_id", finishedFixtures.map((f) => f.id));
+  if (!pendingPicks || pendingPicks.length === 0) return 0;
+
+  const fixtureById = new Map(finishedFixtures.map((f) => [f.id, f]));
+  let settledCount = 0;
+  const affectedTicketIds = new Set<string>();
+
+  for (const pick of pendingPicks) {
+    const fx = fixtureById.get(pick.fixture_id);
+    if (!fx || fx.home_score === null || fx.away_score === null) continue;
+    const result = fx.home_score > fx.away_score ? "1" : fx.home_score < fx.away_score ? "2" : "X";
+    const won = pick.selection === result;
+    await supabaseAdmin.from("foot_picks").update({ status: won ? "winning" : "losing", settled_at: new Date().toISOString() }).eq("id", pick.id);
+    settledCount += 1;
+    if (pick.ticket_id) affectedTicketIds.add(pick.ticket_id);
+  }
+
+  // Cascade sur les tickets affectés : perdant immédiat si une jambe perd,
+  // gagnant seulement si toutes les jambes foot 1x2 du ticket sont gagnantes
+  // et qu'aucune autre jambe (PMU/Loto éventuel) n'est encore en attente.
+  for (const ticketId of affectedTicketIds) {
+    const { data: picksForTicket } = await supabaseAdmin.from("foot_picks").select("status").eq("ticket_id", ticketId);
+    if (!picksForTicket) continue;
+    const anyLost = picksForTicket.some((p) => p.status === "losing");
+    const allDone = picksForTicket.every((p) => p.status === "winning" || p.status === "losing");
+    if (anyLost) {
+      await supabaseAdmin.from("tickets").update({ status: "losing" }).eq("id", ticketId).eq("status", "pending");
+    } else if (allDone) {
+      const { data: ticketRow } = await supabaseAdmin.from("tickets").select("legs").eq("id", ticketId).maybeSingle();
+      const legs = (ticketRow?.legs as { gameId: string }[] | null) ?? [];
+      const onlyFootLeg = legs.every((l) => l.gameId === "foot");
+      if (onlyFootLeg) {
+        await supabaseAdmin.from("tickets").update({ status: "winning" }).eq("id", ticketId).eq("status", "pending");
+      }
+      // Ticket mixte (foot + autre jeu) : on laisse l'admin trancher le
+      // statut global, la partie foot est réglée mais l'autre jambe ne l'est
+      // peut-être pas encore.
+    }
+  }
+
+  return settledCount;
+}
