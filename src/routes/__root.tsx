@@ -90,10 +90,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "LoNaNi — Loterie Nationale du Niger en ligne" },
+      { title: "Coup Sûr — Jouez en ligne au Niger" },
       { name: "description", content: "Jouez au PMU, Loto Balsa et Pari Foot en ligne au Niger. Paiement par Airtel Money, Moov Money, Zamani Cash et Nita. Reçu numérique sécurisé avec QR Code." },
-      { name: "author", content: "Loterie Nationale du Niger" },
-      { property: "og:title", content: "LoNaNi — Jouez en ligne au Niger" },
+      { name: "author", content: "Coup Sûr" },
+      { property: "og:title", content: "Coup Sûr — Jouez en ligne au Niger" },
       { property: "og:description", content: "PMU, Loto Balsa, Pari Foot. Paiement mobile, reçu QR Code, notifications de gain par SMS." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -103,6 +103,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
+      ...(import.meta.env.VITE_SUPABASE_URL
+        ? [
+            { rel: "preconnect", href: import.meta.env.VITE_SUPABASE_URL },
+            { rel: "dns-prefetch", href: import.meta.env.VITE_SUPABASE_URL },
+          ]
+        : []),
     ],
   }),
   shellComponent: RootShell,
