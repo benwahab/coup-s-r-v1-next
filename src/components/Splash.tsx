@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=320&quality=92&url";
 
-const SEEN_KEY = "lonani.splash.seen";
+const SEEN_KEY = "coupsur.splash.seen";
 
 export function Splash() {
   const { t } = useI18n();
@@ -47,15 +48,11 @@ export function Splash() {
       <div className="relative flex flex-col items-center gap-4 px-6 text-center animate-scale-in">
         <div className="relative">
           <div className="absolute inset-0 rounded-3xl bg-gold-gradient blur-2xl opacity-60 animate-pulse" />
-          <div className="relative grid h-28 w-28 sm:h-36 sm:w-36 place-items-center rounded-3xl bg-gold-gradient text-[var(--gold-foreground)] font-display text-6xl sm:text-7xl font-extrabold shadow-gold">
-            L
-          </div>
-        </div>
-        <div className="font-display text-3xl sm:text-5xl font-extrabold text-white tracking-tight animate-fade-in">
-          LoNaNi
-        </div>
-        <div className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.3em] text-white/70 animate-fade-in">
-          🇳🇪 Loterie Nationale du Niger
+          <img
+            src={logoCoupSur}
+            alt="Coup Sûr"
+            className="relative h-28 w-28 sm:h-36 sm:w-36 object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+          />
         </div>
         <div className="mt-4 flex gap-1.5">
           {[0, 1, 2].map((i) => (
