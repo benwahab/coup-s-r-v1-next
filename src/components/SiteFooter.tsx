@@ -32,7 +32,7 @@ export function SiteFooter() {
     { id: "contact", label: t("shell.footer.contact"), icon: Mail, content: (
       <ul className="space-y-2 text-sm text-white/80">
         <li className="flex items-start gap-2"><Phone className="h-4 w-4 mt-0.5 text-gold" /> +227 20 73 00 00</li>
-        <li className="flex items-start gap-2"><Mail className="h-4 w-4 mt-0.5 text-gold" /> contact@lonani.ne</li>
+        <li className="flex items-start gap-2"><Mail className="h-4 w-4 mt-0.5 text-gold" /> contact@coupsur.ne</li>
         <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 text-gold" /> Avenue de la Liberté, Niamey, Niger</li>
       </ul>
     ) },
@@ -58,7 +58,7 @@ export function SiteFooter() {
         <ul className="space-y-1.5">
           <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-gold" /> {t("shell.footer.freeCall")}</li>
           <li className="flex items-center gap-2"><MessageCircle className="h-4 w-4 text-gold" /> {t("shell.footer.whatsapp")}</li>
-          <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-gold" /> support@lonani.ne</li>
+          <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-gold" /> support@coupsur.ne</li>
         </ul>
       </div>
     ) },

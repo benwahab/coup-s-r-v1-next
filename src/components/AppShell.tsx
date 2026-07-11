@@ -18,6 +18,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const onAuth = pathname.startsWith("/auth");
   const onCompte = pathname.startsWith("/compte");
+  const onAdmin = pathname.startsWith("/admin");
   const showGlobalBackdrop = !onAuth && !onCompte;
 
   const navItems: { to: string; label: string; icon: typeof Home; exact?: boolean }[] = [
@@ -105,7 +106,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className={cn("flex-1", showGlobalBackdrop && "pb-24")}>{children}</main>
 
-      {!onCompte && <SiteFooter />}
+      {!onCompte && !onAdmin && <SiteFooter />}
 
       {/* Mobile bottom nav — masquée sur /auth et /compte */}
       {showGlobalBackdrop && (
