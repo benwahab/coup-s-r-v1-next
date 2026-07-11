@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Goal, Trophy, X, ChevronDown, ChevronUp, Lock } from "lucide-react";
+import { Goal, Trophy, X, ChevronDown, ChevronUp, Lock, Sparkles, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
 import { PageHeader } from "@/components/AppShell";
 import { useFootFixtures } from "@/lib/foot-fixtures";
+import { analyzeFootMatch, type FootAnalysis } from "@/lib/ai-foot.functions";
 import { marketsForMatch, oddForPick, labelForPick } from "@/lib/foot-markets";
 import { cn } from "@/lib/utils";
 import { z } from "zod";
@@ -58,6 +59,18 @@ function FootPage() {
   const [league, setLeague] = useState<string>("all");
   const [openMatch, setOpenMatch] = useState<string | null>(null);
   const [mode, setMode] = useState<"combi" | "simple">("combi");
+  const [aiAnalyses, setAiAnalyses] = useState<Record<string, FootAnalysis | "loading" | "error">>({});
+
+  const loadAnalysis = async (fixtureId: string) => {
+    if (aiAnalyses[fixtureId] && aiAnalyses[fixtureId] !== "error") return;
+    setAiAnalyses((s) => ({ ...s, [fixtureId]: "loading" }));
+    try {
+      const res = await analyzeFootMatch({ data: { fixtureId } });
+      setAiAnalyses((s) => ({ ...s, [fixtureId]: res.analysis }));
+    } catch {
+      setAiAnalyses((s) => ({ ...s, [fixtureId]: "error" }));
+    }
+  };
 
   const togglePick = (matchId: string, key: string) => {
     if (pickedFixtureIds.has(matchId)) return; // déjà parié sur ce match, pour toujours
@@ -302,6 +315,55 @@ function FootPage() {
                         ))}
                       </div>
                     )}
+
+                    {/* Analyse IA */}
+                    <div className="mt-2">
+                      {!aiAnalyses[m.id] && (
+                        <button
+                          type="button"
+                          onClick={() => loadAnalysis(m.id)}
+                          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/10"
+                        >
+                          <Sparkles className="h-3.5 w-3.5" /> Voir l'analyse IA
+                        </button>
+                      )}
+                      {aiAnalyses[m.id] === "loading" && (
+                        <div className="flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 py-2 text-xs font-semibold text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Analyse en cours…
+                        </div>
+                      )}
+                      {aiAnalyses[m.id] === "error" && (
+                        <div className="flex items-center justify-between gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs font-semibold text-destructive">
+                          <span>Analyse indisponible pour l'instant.</span>
+                          <button type="button" onClick={() => loadAnalysis(m.id)} className="underline">Réessayer</button>
+                        </div>
+                      )}
+                      {aiAnalyses[m.id] && typeof aiAnalyses[m.id] === "object" && (() => {
+                        const a = aiAnalyses[m.id] as FootAnalysis;
+                        return (
+                          <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-primary">
+                              <Sparkles className="h-3 w-3" /> Analyse IA
+                            </div>
+                            <p className="text-xs text-foreground">{a.summary}</p>
+                            <div className="grid grid-cols-2 gap-2 text-[11px]">
+                              <div><span className="font-bold">{m.home}</span> — {a.homeStrength}</div>
+                              <div><span className="font-bold">{m.away}</span> — {a.awayStrength}</div>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground">{a.headToHead}</p>
+                            <ul className="list-disc space-y-0.5 pl-4 text-[11px]">
+                              {a.keyFactors.map((f, i) => <li key={i}>{f}</li>)}
+                            </ul>
+                            <div className="rounded-xl bg-card px-3 py-2 text-xs">
+                              <span className="font-bold">Prédiction : {a.prediction.outcome}</span>{" "}
+                              <span className="text-muted-foreground">(confiance {a.prediction.confidence})</span>
+                              <p className="mt-0.5 text-muted-foreground">{a.prediction.rationale}</p>
+                            </div>
+                            <p className="text-[10px] italic text-muted-foreground">{a.dataLimitations}</p>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </li>
                 );
               })}

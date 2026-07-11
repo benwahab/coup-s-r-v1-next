@@ -214,6 +214,35 @@ export type Database = {
         }
         Relationships: []
       }
+      foot_ai_analyses: {
+        Row: {
+          analysis: Json
+          created_at: string
+          fixture_id: string
+          model_used: string
+        }
+        Insert: {
+          analysis: Json
+          created_at?: string
+          fixture_id: string
+          model_used: string
+        }
+        Update: {
+          analysis?: Json
+          created_at?: string
+          fixture_id?: string
+          model_used?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "foot_ai_analyses_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: true
+            referencedRelation: "foot_fixtures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       foot_fixtures: {
         Row: {
           away_score: number | null
