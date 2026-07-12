@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 
 const FootAnalysisOut = z.object({
@@ -26,6 +27,7 @@ const AI_MODEL = "google/gemini-3-5-flash";
  * rester dans le budget IA et le quota de l'API de données sportives.
  */
 export const analyzeFootMatch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data: { fixtureId: string }) => z.object({ fixtureId: z.string().uuid() }).parse(data))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
