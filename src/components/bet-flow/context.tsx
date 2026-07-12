@@ -152,24 +152,27 @@ function useProviderValue(cfg: BetFlowConfig) {
       });
 
       if (first.gameId === "foot" && session) {
-        // Un pick = un match (tous marchés confondus). La contrainte UNIQUE
+        // Une ligne par MATCH (pas par marché) : un ticket peut parier sur
+        // plusieurs marchés d'un même match (ex: 1X2 + plus de 2.5 buts sur
+        // Arsenal-Chelsea) en une seule soumission. La contrainte UNIQUE
         // (user_id, fixture_id) en base fait respecter "une seule fois par
-        // match, pour toujours" même en cas de double-soumission/course.
+        // match, pour toujours" au niveau du match entier, pas du marché.
         const pickKeys = first.picks as string[];
-        const fixtureIds = Array.from(new Set(pickKeys.map((k) => k.split(":")[0])));
-        const rows = pickKeys.map((k) => {
+        const byFixture = new Map<string, { marketId: string; selection: string; odds: number; status: "pending" }[]>();
+        for (const k of pickKeys) {
           const [fixtureId, marketId, selection] = k.split(":");
           const odds = marketId === "1x2" ? fixtureOdds1x2(fixtureId)[selection as "1" | "X" | "2"] : 1;
-          return {
-            user_id: session.userId,
-            fixture_id: fixtureId,
-            ticket_id: ticket.id,
-            market_id: marketId,
-            selection,
-            odds,
-            status: "pending" as const,
-          };
-        });
+          const list = byFixture.get(fixtureId) ?? [];
+          list.push({ marketId, selection, odds, status: "pending" });
+          byFixture.set(fixtureId, list);
+        }
+        const rows = Array.from(byFixture.entries()).map(([fixtureId, picks]) => ({
+          user_id: session.userId,
+          fixture_id: fixtureId,
+          ticket_id: ticket.id,
+          picks,
+          status: "pending" as const,
+        }));
         const { error: pickErr } = await supabase.from("foot_picks").insert(rows);
         if (pickErr) {
           // Contrainte UNIQUE violée = l'utilisateur a déjà parié sur un de ces
@@ -177,7 +180,6 @@ function useProviderValue(cfg: BetFlowConfig) {
           // et payé ; on informe sans bloquer le paiement déjà confirmé.
           toast.error("Un des matchs sélectionnés a déjà été parié entre-temps.");
         }
-        void fixtureIds;
       }
 
       await confirmPayment(intent.txRef, ticket);

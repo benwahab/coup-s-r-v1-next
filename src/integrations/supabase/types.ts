@@ -314,9 +314,7 @@ export type Database = {
           created_at: string
           fixture_id: string
           id: string
-          market_id: string
-          odds: number
-          selection: string
+          picks: Json
           settled_at: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           ticket_id: string | null
@@ -326,9 +324,7 @@ export type Database = {
           created_at?: string
           fixture_id: string
           id?: string
-          market_id?: string
-          odds: number
-          selection: string
+          picks: Json
           settled_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           ticket_id?: string | null
@@ -338,9 +334,7 @@ export type Database = {
           created_at?: string
           fixture_id?: string
           id?: string
-          market_id?: string
-          odds?: number
-          selection?: string
+          picks?: Json
           settled_at?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           ticket_id?: string | null
