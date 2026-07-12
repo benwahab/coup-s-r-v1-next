@@ -51,6 +51,14 @@ function useProviderValue(cfg: BetFlowConfig) {
 
   const accountComplete = !!(account && account.phone && account.region);
   const [expressMode, setExpressMode] = useState(accountComplete);
+  useEffect(() => {
+    // `account` se charge de façon asynchrone après le montage (localStorage/
+    // Supabase) : au tout premier rendu il vaut encore `null`, donc l'état
+    // initial de expressMode se figeait sur `false` même pour un profil déjà
+    // complet, forçant le parcours complet à 5 étapes au lieu du raccourci
+    // à 3 étapes. On le resynchronise dès que l'info est disponible.
+    if (accountComplete) setExpressMode(true);
+  }, [accountComplete]);
   const [step, setStep] = useState(1);
   const [stake, setStake] = useState(lockedStake ?? defaultStake);
   const [phone, setPhone] = useState(account?.phone ?? "");
