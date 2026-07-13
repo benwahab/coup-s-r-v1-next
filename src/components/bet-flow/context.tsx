@@ -76,11 +76,12 @@ function useProviderValue(cfg: BetFlowConfig) {
     if (lockedStake != null) setStake(lockedStake);
   }, [lockedStake]);
 
-  // 1 = sélection ; 2 = mise ; 3 = validation ; 4 = numéro/opérateur/région ; 5 = paiement
-  const visibleSteps = useMemo(() => {
-    if (expressMode && accountComplete) return skipStake ? [1, 3, 5] : [1, 3, 5];
-    return skipStake ? [1, 3, 4, 5] : [1, 2, 3, 4, 5];
-  }, [skipStake, expressMode, accountComplete]);
+  // 1 = sélection ; 3 = validation ; 5 = paiement. Toujours 3 étapes : comme
+  // un compte (téléphone + région) est désormais obligatoire avant de pouvoir
+  // se connecter, ces infos sont toujours déjà connues au moment de parier —
+  // les anciennes étapes 2 (mise seule) et 4 (ressaisie identité) sont donc
+  // supprimées définitivement, pas seulement sautées conditionnellement.
+  const visibleSteps = useMemo(() => [1, 3, 5], []);
   const totalSteps = visibleSteps.length;
   const stepIndex = Math.max(1, visibleSteps.indexOf(step) + 1);
   const goNextFrom = (s: number) => {
