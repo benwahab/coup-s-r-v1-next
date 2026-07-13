@@ -61,8 +61,7 @@ export function useFootFixtures() {
       const { data: fixtures } = await supabase
         .from("foot_fixtures")
         .select("id, external_id, league_name, home_team, away_team, kickoff_at, status, home_score, away_score")
-        .in("status", ["scheduled", "live"])
-        .gt("kickoff_at", nowIso)
+        .or(`status.eq.live,and(status.eq.scheduled,kickoff_at.gt.${nowIso})`)
         .order("kickoff_at", { ascending: true })
         .limit(200);
       setRows(fixtures ?? []);
