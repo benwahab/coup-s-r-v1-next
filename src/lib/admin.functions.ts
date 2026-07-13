@@ -15,6 +15,13 @@ async function assertAdmin(supabase: SB, userId: string) {
   if (data !== true) throw new Error("Forbidden: admin role required");
 }
 
+/** Seul un super-admin peut gérer les autres admins (donner/retirer l'accès). */
+async function assertSuperAdmin(supabase: SB, userId: string) {
+  const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "super_admin" });
+  if (error) throw new Error("role_check_failed");
+  if (data !== true) throw new Error("Forbidden: super_admin role required");
+}
+
 /** Retourne `true` si l'utilisateur courant a le rôle admin. */
 export const checkIsAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -25,6 +32,19 @@ export const checkIsAdmin = createServerFn({ method: "POST" })
     });
     if (error) return { isAdmin: false };
     return { isAdmin: data === true };
+  });
+
+/** Retourne `true` si l'utilisateur courant a le rôle super_admin (seul
+ *  niveau autorisé à gérer les autres admins). */
+export const checkIsSuperAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "super_admin",
+    });
+    if (error) return { isSuperAdmin: false };
+    return { isSuperAdmin: data === true };
   });
 
 /** Liste des tickets (tous joueurs) — admin uniquement. */
@@ -150,7 +170,7 @@ export const adminListAllPayments = createServerFn({ method: "POST" })
 export const adminListAdmins = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context.supabase as SB, context.userId);
+    await assertSuperAdmin(context.supabase as SB, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: roles, error } = await supabaseAdmin
       .from("user_roles")
@@ -182,7 +202,7 @@ export const adminGrantRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ phone: z.string().regex(/^\d{8}$/) }).parse(data))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase as SB, context.userId);
+    await assertSuperAdmin(context.supabase as SB, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: profile, error: e1 } = await supabaseAdmin
       .from("profiles")
@@ -207,7 +227,7 @@ export const adminRevokeRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ userId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase as SB, context.userId);
+    await assertSuperAdmin(context.supabase as SB, context.userId);
     if (data.userId === context.userId) return { ok: false as const, reason: "cannot_self_revoke" as const };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId).eq("role", "admin");

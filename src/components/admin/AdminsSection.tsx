@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, ShieldMinus, ShieldPlus, Loader2 } from "lucide-react";
-import { adminListAdmins, adminGrantRole, adminRevokeRole } from "@/lib/admin.functions";
+import { adminListAdmins, adminGrantRole, adminRevokeRole, checkIsSuperAdmin } from "@/lib/admin.functions";
 
 interface AdminRow {
   userId: string;
@@ -11,6 +11,7 @@ interface AdminRow {
 }
 
 export function AdminsSection() {
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean | null>(null);
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [phone, setPhone] = useState("");
@@ -20,6 +21,9 @@ export function AdminsSection() {
   const load = async () => {
     setLoading(true);
     try {
+      const { isSuperAdmin: ok } = await checkIsSuperAdmin();
+      setIsSuperAdmin(ok);
+      if (!ok) return;
       const { admins: rows } = await adminListAdmins();
       setAdmins(rows);
     } catch {
@@ -67,6 +71,22 @@ export function AdminsSection() {
       setBusy(false);
     }
   };
+
+  if (isSuperAdmin === null) {
+    return <section className="h-24 animate-pulse rounded-3xl border border-border bg-card" aria-hidden />;
+  }
+
+  if (!isSuperAdmin) {
+    return (
+      <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+          <h2 className="font-display text-lg font-bold text-muted-foreground">Gestion des administrateurs</h2>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">Réservé aux super-administrateurs.</p>
+      </section>
+    );
+  }
 
   return (
     <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
