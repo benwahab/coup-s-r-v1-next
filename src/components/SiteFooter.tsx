@@ -66,40 +66,52 @@ export function SiteFooter() {
 
   return (
     <footer className="mt-8 border-t border-white/10 bg-hero text-white">
-      <div className="mx-auto max-w-6xl px-4 py-6">
-        {/* -18 badge mis en évidence */}
-        <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
-          <div className="inline-flex items-center gap-2 rounded-full border-2 border-red-500 bg-red-500/15 px-4 py-2 font-display text-base font-extrabold text-red-300 shadow-[0_0_24px_oklch(0.6_0.2_25_/_0.4)]">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-red-500 font-display text-base font-black text-white">-18</span>
-            <span className="uppercase tracking-widest text-xs sm:text-sm">{t("shell.footer.minorsWarning")}</span>
+      <div className="mx-auto max-w-6xl px-4 py-8">
+        {/* -18 badge */}
+        <div className="mb-7 flex flex-wrap items-center justify-center gap-3">
+          <div className="inline-flex items-center gap-2.5 rounded-full border border-red-500/50 bg-red-500/10 px-4 py-1.5 backdrop-blur">
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-red-500 font-display text-xs font-black text-white">-18</span>
+            <span className="text-[11px] font-bold uppercase tracking-widest text-red-300">{t("shell.footer.minorsWarning")}</span>
           </div>
         </div>
 
-        {/* Accordéon */}
-        <ul className="divide-y divide-white/10 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur">
+        {/* Cartes d'informations */}
+        <ul className="grid gap-2.5 sm:grid-cols-2">
           {sections.map((s) => {
             const active = open === s.id;
             return (
-              <li key={s.id}>
+              <li
+                key={s.id}
+                className={`overflow-hidden rounded-2xl border bg-white/[0.03] backdrop-blur transition-colors ${active ? "border-gold/40 bg-white/[0.06]" : "border-white/10 hover:border-white/20"}`}
+              >
                 <button
                   onClick={() => setOpen(active ? null : s.id)}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-white/[0.04]"
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left"
                   aria-expanded={active}
                 >
                   <span className="flex items-center gap-3">
-                    <s.icon className="h-4 w-4 text-gold" />
-                    <span className="font-semibold text-sm">{s.label}</span>
+                    <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl transition-colors ${active ? "bg-gold/20 text-gold" : "bg-white/[0.06] text-white/70"}`}>
+                      <s.icon className="h-4 w-4" />
+                    </span>
+                    <span className="font-display text-sm font-bold">{s.label}</span>
                   </span>
-                  <ChevronDown className={`h-4 w-4 text-white/60 transition-transform ${active ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`h-4 w-4 shrink-0 text-white/50 transition-transform duration-300 ${active ? "rotate-180 text-gold" : ""}`} />
                 </button>
-                {active && <div className="px-4 pb-5 pt-1 animate-fade-in">{s.content}</div>}
+                <div
+                  className="grid transition-[grid-template-rows] duration-300 ease-out"
+                  style={{ gridTemplateRows: active ? "1fr" : "0fr" }}
+                >
+                  <div className="overflow-hidden">
+                    <div className="border-t border-white/10 px-4 pb-4 pt-3">{s.content}</div>
+                  </div>
+                </div>
               </li>
             );
           })}
         </ul>
 
         {/* Réseaux sociaux */}
-        <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+        <div className="mt-7 flex flex-col items-center gap-4 border-t border-white/10 pt-6 sm:flex-row sm:justify-between">
           <div className="flex items-center gap-2">
             {socials.map((s) => (
               <a
@@ -108,29 +120,30 @@ export function SiteFooter() {
                 target="_blank"
                 rel="noreferrer"
                 aria-label={s.label}
-                className="grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-white/5 text-white/80 transition hover:border-gold/50 hover:bg-gold/10 hover:text-gold"
+                className="grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/5 text-white/70 transition hover:-translate-y-0.5 hover:border-gold/50 hover:bg-gold/10 hover:text-gold"
               >
                 <s.icon className="h-4 w-4" />
               </a>
             ))}
           </div>
-          <div className="text-[11px] text-white/50 text-center">
+          <div className="text-[11px] text-white/45">
             {t("shell.footer.copyright", { year: new Date().getFullYear() })}
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-white/50">
-          <Link to="/" className="hover:text-gold">{t("home")}</Link>
-          <span>·</span>
-          <Link to="/resultats" className="hover:text-gold">{t("results")}</Link>
-          <span>·</span>
-          <Link to="/mes-tickets" className="hover:text-gold">{t("myTickets")}</Link>
-          <span>·</span>
-          <Link to="/auth" className="hover:text-gold">{t("shell.login")}</Link>
-          <span>·</span>
-          <Link to="/conditions" className="hover:text-gold">{t("shell.footer.terms")}</Link>
-          <span>·</span>
-          <Link to="/confidentialite" className="hover:text-gold">{t("shell.footer.privacyPolicy")}</Link>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-1 gap-y-1.5 text-[11px]">
+          {[
+            { to: "/" as const, label: t("home") },
+            { to: "/resultats" as const, label: t("results") },
+            { to: "/mes-tickets" as const, label: t("myTickets") },
+            { to: "/auth" as const, label: t("shell.login") },
+            { to: "/conditions" as const, label: t("shell.footer.terms") },
+            { to: "/confidentialite" as const, label: t("shell.footer.privacyPolicy") },
+          ].map((l) => (
+            <Link key={l.to} to={l.to} className="rounded-full px-2.5 py-1 text-white/55 transition hover:bg-white/5 hover:text-gold">
+              {l.label}
+            </Link>
+          ))}
         </div>
       </div>
     </footer>
