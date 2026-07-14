@@ -203,11 +203,12 @@ export const adminGrantRole = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => z.object({ phone: z.string().regex(/^\d{8}$/) }).parse(data))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.supabase as SB, context.userId);
+    const { toE164Phone } = await import("./otp.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: profile, error: e1 } = await supabaseAdmin
       .from("profiles")
       .select("id")
-      .eq("phone", data.phone)
+      .eq("phone", toE164Phone(data.phone))
       .maybeSingle();
     if (e1) throw new Error(e1.message);
     if (!profile) return { ok: false as const, reason: "no_account" as const };
