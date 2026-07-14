@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Activity, Clock, Download, LifeBuoy, ListChecks, LogIn, Send, TrendingUp, Trophy, Users, Zap } from "lucide-react";
+import { Activity, Clock, Download, LifeBuoy, ListChecks, LogIn, Send, Settings, TrendingUp, Trophy, Users, Zap } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { Kpi, QuickAction } from "../shared";
 import type { ChartColors } from "@/hooks/use-theme-chart-colors";
@@ -116,6 +116,7 @@ export function DashboardTab(p: Props) {
           <div className="grid gap-2">
             <QuickAction onClick={() => p.setTab("transactions")} icon={ListChecks} label="Voir toutes les transactions" hint={`${p.allRowsCount} enregistrements`} />
             <QuickAction onClick={() => p.setTab("ops")} icon={Send} label="Encaissements en attente" hint={`${p.cashoutRequestsCount} demande(s)`} tone="gold" />
+            <QuickAction onClick={() => p.setTab("ops")} icon={Settings} label="Paramètres" hint="SMS, encaissements, administrateurs" />
             <QuickAction onClick={() => p.setTab("logs")} icon={LogIn} label="Journal des connexions" hint={`${p.authLogCount} événements`} />
             <QuickAction onClick={() => p.setTab("claims")} icon={LifeBuoy} label="Ouvrir une réclamation" hint="Recherche par numéro" />
             <QuickAction onClick={() => p.exportCsv("all")} icon={Download} label="Exporter toutes les données" hint={`${p.csvFrom} → ${p.csvTo}`} />
