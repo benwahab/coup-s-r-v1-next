@@ -23,7 +23,7 @@ export function OpsTab(p: Props) {
       <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
         <div className="flex items-center gap-2">
           <Settings className="h-4 w-4 text-primary" />
-          <h2 className="font-display text-lg font-bold">Paramètres</h2>
+          <h2 className="font-display text-lg font-bold">{t("admin.ops.title")}</h2>
         </div>
         <div className="mt-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
           <div className="flex items-start gap-3">
@@ -43,9 +43,9 @@ export function OpsTab(p: Props) {
           <input type="date" value={p.csvFrom} onChange={(e) => p.setCsvFrom(e.target.value)} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]" />
           <input type="date" value={p.csvTo} onChange={(e) => p.setCsvTo(e.target.value)} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]" />
           <select value={p.csvScope} onChange={(e) => p.setCsvScope(e.target.value as "all" | "winners" | "cashout")} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]">
-            <option value="all">Tous</option>
-            <option value="winners">Gagnants</option>
-            <option value="cashout">Encaissés</option>
+            <option value="all">{t("admin.ops.scopeAll")}</option>
+            <option value="winners">{t("admin.ops.scopeWinners")}</option>
+            <option value="cashout">{t("admin.ops.scopeCashedOut")}</option>
           </select>
           <button onClick={() => p.exportCsv()} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/40">
             <Download className="h-3.5 w-3.5" /> {t("exportCsv")}
@@ -90,11 +90,11 @@ export function OpsTab(p: Props) {
           <div className="flex items-center justify-between border-b border-border px-5 py-3">
             <div className="flex items-center gap-2">
               <MessageCircle className="h-4 w-4 text-primary" />
-              <h2 className="font-display text-lg font-bold">{t("sendSms")} — log auto</h2>
+              <h2 className="font-display text-lg font-bold">{t("sendSms")} — {t("admin.ops.autoLog")}</h2>
             </div>
           </div>
           {p.sentLog.length === 0 ? (
-            <p className="px-5 py-8 text-center text-sm text-muted-foreground">Aucun SMS envoyé.</p>
+            <p className="px-5 py-8 text-center text-sm text-muted-foreground">{t("admin.ops.noSmsSent")}</p>
           ) : (
             <ul className="divide-y divide-border">
               {p.sentLog.slice(0, 8).map((s) => (

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Activity, Clock, Download, LifeBuoy, ListChecks, LogIn, Send, Settings, TrendingUp, Trophy, Users, Zap } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 import { Kpi, QuickAction } from "../shared";
 import type { ChartColors } from "@/hooks/use-theme-chart-colors";
 
@@ -34,19 +35,20 @@ interface Props {
 }
 
 export function DashboardTab(p: Props) {
+  const { t } = useI18n();
   return (
     <div className="space-y-5">
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi icon={TrendingUp} label="Chiffre d'affaires" value={`${formatFcfa(p.totalStaked)} FCFA`} delta={p.weekGrowth} sub="vs 7j précédents" />
-        <Kpi icon={Zap} label="Ventes du jour" value={`${formatFcfa(p.todayStake)} FCFA`} delta={p.growth} sub="vs hier" />
-        <Kpi icon={Users} label="Joueurs inscrits" value={String(p.activePlayers)} sub={`+${p.ticketsCount} tickets live`} />
-        <Kpi icon={Trophy} label="Gagnants" value={String(p.winnersCount)} accent sub={`${formatFcfa(p.totalPayout)} FCFA versés`} />
+        <Kpi icon={TrendingUp} label={t("admin.dash.revenue")} value={`${formatFcfa(p.totalStaked)} FCFA`} delta={p.weekGrowth} sub={t("admin.dash.vs7d")} />
+        <Kpi icon={Zap} label={t("admin.dash.todaySales")} value={`${formatFcfa(p.todayStake)} FCFA`} delta={p.growth} sub={t("admin.dash.vsYesterday")} />
+        <Kpi icon={Users} label={t("admin.dash.registeredPlayers")} value={String(p.activePlayers)} sub={t("admin.dash.liveTickets", { count: p.ticketsCount })} />
+        <Kpi icon={Trophy} label={t("admin.dash.winners")} value={String(p.winnersCount)} accent sub={t("admin.dash.paidOut", { amount: formatFcfa(p.totalPayout) })} />
       </section>
 
       <section>
         <div className="mb-2 flex items-center gap-2">
           <Trophy className="h-4 w-4 text-primary" />
-          <h2 className="font-display text-base font-bold">Mises par jeu</h2>
+          <h2 className="font-display text-base font-bold">{t("admin.dash.stakesByGame")}</h2>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           {p.byGameData.map((g) => (
@@ -59,7 +61,7 @@ export function DashboardTab(p: Props) {
                 <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-secondary-foreground">{g.pct}%</span>
               </div>
               <div className="mt-2 font-display text-xl font-bold tabular-nums">{formatFcfa(g.value)} FCFA</div>
-              <div className="mt-1 text-[11px] text-muted-foreground">{g.count} ticket{g.count > 1 ? "s" : ""}</div>
+              <div className="mt-1 text-[11px] text-muted-foreground">{t("admin.dash.ticketCount", { count: g.count })}</div>
             </div>
           ))}
         </div>
@@ -81,12 +83,12 @@ export function DashboardTab(p: Props) {
           <div className="flex items-center justify-between border-b border-border px-5 py-3">
             <div className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-primary" />
-              <h2 className="font-display text-lg font-bold">Activité en temps réel</h2>
+              <h2 className="font-display text-lg font-bold">{t("admin.dash.liveActivity")}</h2>
             </div>
             <span className="inline-flex items-center gap-1.5 text-[11px] text-success"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> live</span>
           </div>
           {p.activityFeed.length === 0 ? (
-            <p className="px-5 py-10 text-center text-sm text-muted-foreground">En attente d'activité…</p>
+            <p className="px-5 py-10 text-center text-sm text-muted-foreground">{t("admin.dash.waitingActivity")}</p>
           ) : (
             <ul className="divide-y divide-border max-h-[380px] overflow-y-auto">
               {p.activityFeed.map((it, i) => (
@@ -111,15 +113,15 @@ export function DashboardTab(p: Props) {
         <div className="rounded-3xl border border-border bg-card p-5 shadow-soft">
           <div className="flex items-center gap-2 mb-3">
             <Zap className="h-4 w-4 text-gold" />
-            <h2 className="font-display text-lg font-bold">Actions rapides</h2>
+            <h2 className="font-display text-lg font-bold">{t("admin.dash.quickActions")}</h2>
           </div>
           <div className="grid gap-2">
-            <QuickAction onClick={() => p.setTab("transactions")} icon={ListChecks} label="Voir toutes les transactions" hint={`${p.allRowsCount} enregistrements`} />
-            <QuickAction onClick={() => p.setTab("ops")} icon={Send} label="Encaissements en attente" hint={`${p.cashoutRequestsCount} demande(s)`} tone="gold" />
-            <QuickAction onClick={() => p.setTab("admins")} icon={Settings} label="Paramètres" hint="Gestion des administrateurs" />
-            <QuickAction onClick={() => p.setTab("logs")} icon={LogIn} label="Journal des connexions" hint={`${p.authLogCount} événements`} />
-            <QuickAction onClick={() => p.setTab("claims")} icon={LifeBuoy} label="Ouvrir une réclamation" hint="Recherche par numéro" />
-            <QuickAction onClick={() => p.exportCsv("all")} icon={Download} label="Exporter toutes les données" hint={`${p.csvFrom} → ${p.csvTo}`} />
+            <QuickAction onClick={() => p.setTab("transactions")} icon={ListChecks} label={t("admin.dash.viewAllTransactions")} hint={t("admin.dash.records", { count: p.allRowsCount })} />
+            <QuickAction onClick={() => p.setTab("ops")} icon={Send} label={t("cashoutRequests")} hint={t("admin.dash.requests", { count: p.cashoutRequestsCount })} tone="gold" />
+            <QuickAction onClick={() => p.setTab("admins")} icon={Settings} label={t("admin.ops.title")} hint={t("admin.admins.title")} />
+            <QuickAction onClick={() => p.setTab("logs")} icon={LogIn} label={t("admin.dash.connectionLog")} hint={t("admin.dash.events", { count: p.authLogCount })} />
+            <QuickAction onClick={() => p.setTab("claims")} icon={LifeBuoy} label={t("admin.dash.openClaim")} hint={t("admin.dash.searchByNumber")} />
+            <QuickAction onClick={() => p.exportCsv("all")} icon={Download} label={t("admin.dash.exportAll")} hint={`${p.csvFrom} → ${p.csvTo}`} />
           </div>
         </div>
       </section>
