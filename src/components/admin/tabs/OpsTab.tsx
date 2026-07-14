@@ -3,7 +3,6 @@ import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import type { Ticket } from "@/lib/tickets";
 import type { SmsEntry } from "@/lib/sms";
-import { AdminsSection } from "../AdminsSection";
 
 interface Props {
   autoSms: boolean; setAutoSms: (fn: (v: boolean) => boolean) => void;
@@ -111,8 +110,6 @@ export function OpsTab(p: Props) {
           )}
         </section>
       </div>
-
-      <AdminsSection />
     </div>
   );
 }

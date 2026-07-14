@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { ShieldCheck, Sparkles, BarChart3, ListChecks, Users, MapPin, Circle, Send, LogIn, LifeBuoy, type LucideIcon } from "lucide-react";
+import { ShieldCheck, Sparkles, BarChart3, ListChecks, Users, MapPin, Circle, Send, LogIn, LifeBuoy, Settings, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useTickets, type Ticket } from "@/lib/tickets";
@@ -23,6 +23,7 @@ import { BallsTab } from "@/components/admin/tabs/BallsTab";
 import { OpsTab } from "@/components/admin/tabs/OpsTab";
 import { LogsTab } from "@/components/admin/tabs/LogsTab";
 import { ClaimsTab } from "@/components/admin/tabs/ClaimsTab";
+import { AdminsSection } from "@/components/admin/AdminsSection";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -35,7 +36,7 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-type Tab = "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "logs" | "claims";
+type Tab = "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "logs" | "claims" | "admins";
 
 function AdminPage() {
   const { t } = useI18n();
@@ -279,6 +280,7 @@ function AdminPage() {
     { id: "regions", label: t("regions"), icon: MapPin },
     { id: "balls", label: t("ballsStats"), icon: Circle },
     { id: "ops", label: "SMS & Encaissements", icon: Send },
+    { id: "admins", label: "Paramètres", icon: Settings },
     { id: "logs", label: "Journal connexions", icon: LogIn },
     { id: "claims", label: "Réclamations", icon: LifeBuoy },
   ];
@@ -404,6 +406,7 @@ function AdminPage() {
                 approveCashout={approveCashout} sentLog={sentLog}
               />
             )}
+            {tab === "admins" && <AdminsSection />}
             {tab === "logs" && (
               <LogsTab filteredLog={filteredLog}
                 logPhone={logPhone} setLogPhone={setLogPhone}

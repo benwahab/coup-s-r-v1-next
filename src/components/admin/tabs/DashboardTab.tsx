@@ -29,7 +29,7 @@ interface Props {
   authLogCount: number;
   csvFrom: string;
   csvTo: string;
-  setTab: (t: "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "logs" | "claims") => void;
+  setTab: (t: "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "logs" | "claims" | "admins") => void;
   exportCsv: (scope?: "all" | "winners" | "cashout") => void;
 }
 
@@ -116,7 +116,7 @@ export function DashboardTab(p: Props) {
           <div className="grid gap-2">
             <QuickAction onClick={() => p.setTab("transactions")} icon={ListChecks} label="Voir toutes les transactions" hint={`${p.allRowsCount} enregistrements`} />
             <QuickAction onClick={() => p.setTab("ops")} icon={Send} label="Encaissements en attente" hint={`${p.cashoutRequestsCount} demande(s)`} tone="gold" />
-            <QuickAction onClick={() => p.setTab("ops")} icon={Settings} label="Paramètres" hint="SMS, encaissements, administrateurs" />
+            <QuickAction onClick={() => p.setTab("admins")} icon={Settings} label="Paramètres" hint="Gestion des administrateurs" />
             <QuickAction onClick={() => p.setTab("logs")} icon={LogIn} label="Journal des connexions" hint={`${p.authLogCount} événements`} />
             <QuickAction onClick={() => p.setTab("claims")} icon={LifeBuoy} label="Ouvrir une réclamation" hint="Recherche par numéro" />
             <QuickAction onClick={() => p.exportCsv("all")} icon={Download} label="Exporter toutes les données" hint={`${p.csvFrom} → ${p.csvTo}`} />
