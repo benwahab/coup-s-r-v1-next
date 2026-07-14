@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { SiteFooter } from "@/components/SiteFooter";
 import { cn } from "@/lib/utils";
+import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=96&quality=90&url";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useI18n();
@@ -40,8 +41,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <Link to="/" className="flex items-center gap-2 min-w-0">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-hero text-white font-display font-bold shadow-gold">
-              L
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-hero shadow-gold overflow-hidden">
+              <img src={logoCoupSur} alt="" className="h-8 w-8 object-contain" />
             </div>
             <div className="min-w-0">
               <div className="font-display text-lg font-bold leading-none truncate">{t("appName")}</div>

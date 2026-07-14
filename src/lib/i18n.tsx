@@ -9,8 +9,8 @@ export type Lang = "fr" | "en" | "ha";
 
 const dict = {
   fr: {
-    appName: "LoNaNi",
-    tagline: "Loterie Nationale du Niger",
+    appName: "Coup Sûr",
+    tagline: "PMU · Loto Balsa · Pari Foot",
     play: "Jouer",
     games: "Jeux",
     results: "Résultats",
@@ -382,8 +382,8 @@ const dict = {
     "shell.verify.notLocal": "Ticket non trouvé localement (achat depuis un autre appareil).",
   },
   en: {
-    appName: "LoNaNi",
-    tagline: "National Lottery of Niger",
+    appName: "Coup Sûr",
+    tagline: "Horse Racing · Lottery · Football Bets",
     play: "Play",
     games: "Games",
     results: "Results",
@@ -756,8 +756,8 @@ const dict = {
   // locuteur natif avant activation dans le sélecteur de langue. En attendant,
   // ce dictionnaire est chargé mais non exposé côté UI.
   ha: {
-    appName: "LoNaNi",
-    tagline: "Cakuwar ƙasar Nijar",
+    appName: "Coup Sûr",
+    tagline: "PMU · Loto Balsa · Caca ƙwallo",
     play: "Yin wasa",
     games: "Wasanni",
     results: "Sakamako",
