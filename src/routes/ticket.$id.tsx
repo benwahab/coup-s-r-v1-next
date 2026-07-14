@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n";
 import { useTickets } from "@/lib/tickets";
 import { signTicketToken } from "@/lib/ticket-token.functions";
 import { cn } from "@/lib/utils";
+import { WinConfetti } from "@/components/WinConfetti";
 
 export const Route = createFileRoute("/ticket/$id")({
   head: () => ({ meta: [{ title: "Reçu de ticket — LoNaNi" }] }),
@@ -47,10 +48,11 @@ function TicketPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 print:p-0">
+      {isWin && <WinConfetti />}
       <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-elevated print:shadow-none print:border-0">
         <div className="relative bg-hero px-6 py-6 text-white">
           <div className="text-xs uppercase tracking-widest text-white/70">{t("receipt")} • {ticket.gameName}</div>
-          <div className="font-display text-2xl font-bold">LoNaNi — Loterie Nationale du Niger</div>
+          <div className="font-display text-2xl font-bold">Coup Sûr</div>
           {ticket.drawName && (
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-gold/20 px-2.5 py-0.5 text-xs font-bold text-gold">
               {ticket.drawName}
@@ -63,12 +65,16 @@ function TicketPage() {
         </div>
 
         {isWin && (
-          <div className="flex items-center gap-3 border-b border-border bg-success/10 px-6 py-4 text-success">
-            <Trophy className="h-5 w-5" />
-            <div>
-              <div className="font-bold">{t("winNotice")}</div>
-              {ticket.prize && <div className="text-sm">{t("prizeAmount")} : {ticket.prize.toLocaleString()} {t("fcfa")}{legs.length > 1 ? ` · ${winningLegs}/${legs.length} ${t("winningLegs")}` : ""}</div>}
+          <div className="relative flex items-center gap-3 overflow-hidden border-b border-success/30 bg-gradient-to-r from-success/15 via-success/10 to-success/15 px-6 py-4 text-success">
+            <span className="cs-win-shine absolute inset-0" aria-hidden />
+            <div className="cs-win-trophy relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-success/20">
+              <Trophy className="h-5 w-5" />
             </div>
+            <div className="relative">
+              <div className="font-display text-base font-extrabold">{t("winNotice")} 🎉</div>
+              {ticket.prize && <div className="text-sm">{t("prizeAmount")} : <span className="font-bold tabular-nums">{ticket.prize.toLocaleString()} {t("fcfa")}</span>{legs.length > 1 ? ` · ${winningLegs}/${legs.length} ${t("winningLegs")}` : ""}</div>}
+            </div>
+            <style>{WIN_BANNER_CSS}</style>
           </div>
         )}
 
@@ -149,3 +155,25 @@ function StatusBadge({ status }: { status: string }) {
   };
   return <span className={cn("inline-flex rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider", map[status])}>{status}</span>;
 }
+
+const WIN_BANNER_CSS = `
+@keyframes cs-win-trophy-bounce {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.12) rotate(-8deg); }
+  50% { transform: scale(1) rotate(0deg); }
+  75% { transform: scale(1.08) rotate(6deg); }
+}
+@keyframes cs-win-shine-sweep {
+  0% { transform: translateX(-120%) skewX(-20deg); }
+  100% { transform: translateX(220%) skewX(-20deg); }
+}
+.cs-win-trophy { animation: cs-win-trophy-bounce 1.8s ease-in-out 300ms 2; }
+.cs-win-shine {
+  background: linear-gradient(100deg, transparent, oklch(1 0 0 / 0.35) 45%, transparent 70%);
+  width: 40%;
+  animation: cs-win-shine-sweep 1.4s ease-out 500ms 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cs-win-trophy, .cs-win-shine { animation: none !important; }
+}
+`;
