@@ -1,22 +1,24 @@
 import { MapPin } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 import type { RegionStat } from "@/lib/mock-stats";
 
 export function RegionsTab({ regionStats, maxRegion }: { regionStats: RegionStat[]; maxRegion: number }) {
+  const { t } = useI18n();
   return (
     <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
       <div className="flex items-center gap-2">
         <MapPin className="h-4 w-4 text-primary" />
-        <h2 className="font-display text-lg font-bold">Tendance par région</h2>
+        <h2 className="font-display text-lg font-bold">{t("admin.regions.title")}</h2>
       </div>
-      <p className="text-xs text-muted-foreground">Montant misé, gains versés et évolution sur 7 jours.</p>
+      <p className="text-xs text-muted-foreground">{t("admin.regions.subtitle")}</p>
       <ul className="mt-4 space-y-3">
         {regionStats.map((r) => {
           const pct = (r.staked / maxRegion) * 100;
           return (
             <li key={r.region}>
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="font-bold">{r.region} <span className="ml-1 text-xs font-normal text-muted-foreground">· {r.players} joueurs · {r.tickets} tickets</span></span>
+                <span className="font-bold">{r.region} <span className="ml-1 text-xs font-normal text-muted-foreground">· {t("admin.regions.playersTickets", { players: r.players, tickets: r.tickets })}</span></span>
                 <span className="tabular-nums">
                   <span className="font-display font-bold">{formatFcfa(r.staked)}</span>
                   <span className="ml-2 text-xs text-success">+{formatFcfa(r.paid)}</span>

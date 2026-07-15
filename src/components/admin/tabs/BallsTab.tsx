@@ -18,9 +18,9 @@ export function BallsTab({ ballStats, maxBall, selectedBall, setSelectedBall, se
       <div className="rounded-3xl border border-border bg-card p-5 shadow-soft">
         <div className="flex items-center gap-2">
           <Dices className="h-4 w-4 text-primary" />
-          <h2 className="font-display text-lg font-bold">Boules — fréquence de jeu</h2>
+          <h2 className="font-display text-lg font-bold">{t("admin.balls.title")}</h2>
         </div>
-        <p className="text-xs text-muted-foreground">Cliquez une boule pour voir la répartition seule / combinaison et ses paires fréquentes.</p>
+        <p className="text-xs text-muted-foreground">{t("admin.balls.subtitle")}</p>
         <div className="mt-4 grid grid-cols-9 gap-1.5 sm:grid-cols-10">
           {ballStats.map((b) => {
             const intensity = b.total / maxBall;
@@ -53,12 +53,12 @@ export function BallsTab({ ballStats, maxBall, selectedBall, setSelectedBall, se
                 <div className="bg-primary" style={{ width: `${(selBallStat.combo / Math.max(1, selBallStat.total)) * 100}%` }} />
               </div>
               <div className="mt-1 flex justify-between text-[11px] tabular-nums">
-                <span className="text-gold">Seule : {selBallStat.solo}</span>
-                <span className="text-primary">Combinée : {selBallStat.combo}</span>
+                <span className="text-gold">{t("admin.balls.solo")} : {selBallStat.solo}</span>
+                <span className="text-primary">{t("admin.balls.combo")} : {selBallStat.combo}</span>
               </div>
             </div>
             <div className="mt-4">
-              <div className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Top paires</div>
+              <div className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">{t("admin.balls.topPairs")}</div>
               <ul className="space-y-1.5">
                 {selBallStat.topPairs.map((p) => (
                   <li key={p.ball} className="flex items-center justify-between text-sm">
@@ -70,7 +70,7 @@ export function BallsTab({ ballStats, maxBall, selectedBall, setSelectedBall, se
             </div>
           </>
         ) : (
-          <p className="text-sm text-muted-foreground">Sélectionnez une boule pour afficher ses statistiques détaillées.</p>
+          <p className="text-sm text-muted-foreground">{t("admin.balls.selectPrompt")}</p>
         )}
       </div>
     </section>

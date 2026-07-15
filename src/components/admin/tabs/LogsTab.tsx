@@ -1,5 +1,6 @@
 import { Download, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 import type { AuthEvent, AuthEventKind } from "@/lib/auth-logs";
 
 interface Props {
@@ -11,43 +12,44 @@ interface Props {
 }
 
 export function LogsTab(p: Props) {
+  const { t } = useI18n();
   return (
     <section className="rounded-3xl border border-border bg-card shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
         <div className="flex items-center gap-2">
           <LogIn className="h-4 w-4 text-primary" />
-          <h2 className="font-display text-lg font-bold">Journal des connexions</h2>
+          <h2 className="font-display text-lg font-bold">{t("admin.logs.title")}</h2>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <input value={p.logPhone} onChange={(e) => p.setLogPhone(e.target.value)} placeholder="Filtrer numéro" className="rounded-full border border-border bg-background px-3 py-1 text-[11px]" />
-          <input value={p.logIp} onChange={(e) => p.setLogIp(e.target.value)} placeholder="Filtrer IP" className="rounded-full border border-border bg-background px-3 py-1 text-[11px]" />
+          <input value={p.logPhone} onChange={(e) => p.setLogPhone(e.target.value)} placeholder={t("admin.logs.filterPhone")} className="rounded-full border border-border bg-background px-3 py-1 text-[11px]" />
+          <input value={p.logIp} onChange={(e) => p.setLogIp(e.target.value)} placeholder={t("admin.logs.filterIp")} className="rounded-full border border-border bg-background px-3 py-1 text-[11px]" />
           <select value={p.logKind} onChange={(e) => p.setLogKind(e.target.value as AuthEventKind | "all")} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]">
-            <option value="all">Tous</option>
-            <option value="otp-request">OTP demandé</option>
-            <option value="verify-ok">Vérification OK</option>
-            <option value="verify-fail">Vérification échec</option>
-            <option value="locked">Verrouillage</option>
-            <option value="rate-limited">Rate limit</option>
-            <option value="logout">Déconnexion</option>
-            <option value="session-expired">Session expirée</option>
+            <option value="all">{t("admin.ops.scopeAll")}</option>
+            <option value="otp-request">{t("admin.logs.otpRequest")}</option>
+            <option value="verify-ok">{t("admin.logs.verifyOk")}</option>
+            <option value="verify-fail">{t("admin.logs.verifyFail")}</option>
+            <option value="locked">{t("admin.logs.locked")}</option>
+            <option value="rate-limited">{t("admin.logs.rateLimited")}</option>
+            <option value="logout">{t("admin.logs.logout")}</option>
+            <option value="session-expired">{t("admin.logs.sessionExpired")}</option>
           </select>
           <button onClick={p.exportLogsCsv} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/40">
-            <Download className="h-3.5 w-3.5" /> Export CSV
+            <Download className="h-3.5 w-3.5" /> {t("admin.logs.exportCsv")}
           </button>
         </div>
       </div>
       {p.filteredLog.length === 0 ? (
-        <p className="px-5 py-10 text-center text-sm text-muted-foreground">Aucun événement.</p>
+        <p className="px-5 py-10 text-center text-sm text-muted-foreground">{t("admin.claims.noEvent")}</p>
       ) : (
         <div className="max-h-[520px] overflow-y-auto">
           <table className="w-full text-xs">
             <thead className="sticky top-0 bg-secondary/60 backdrop-blur text-[10px] uppercase tracking-widest text-muted-foreground">
               <tr>
-                <th className="px-3 py-2 text-left">Horodatage</th>
-                <th className="px-3 py-2 text-left">Numéro</th>
+                <th className="px-3 py-2 text-left">{t("admin.logs.timestamp")}</th>
+                <th className="px-3 py-2 text-left">{t("admin.logs.number")}</th>
                 <th className="px-3 py-2 text-left">IP</th>
-                <th className="px-3 py-2 text-left">Événement</th>
-                <th className="px-3 py-2 text-left">Note</th>
+                <th className="px-3 py-2 text-left">{t("admin.logs.event")}</th>
+                <th className="px-3 py-2 text-left">{t("admin.logs.note")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

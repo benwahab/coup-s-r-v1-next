@@ -23,9 +23,9 @@ export function PlayersTab(p: Props) {
           <h2 className="font-display text-lg font-bold min-w-0 truncate">{t("players")}</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <input value={p.searchPlayer} onChange={(e) => p.setSearchPlayer(e.target.value)} placeholder="Rechercher…" className="rounded-full border border-border bg-background px-3 py-1.5 text-xs" />
+          <input value={p.searchPlayer} onChange={(e) => p.setSearchPlayer(e.target.value)} placeholder={t("admin.players.search")} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs" />
           <select value={p.filterRegion} onChange={(e) => p.setFilterRegion(e.target.value)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs">
-            <option value="all">Toutes régions</option>
+            <option value="all">{t("admin.players.allRegions")}</option>
             {p.regionStats.map((r) => <option key={r.region} value={r.region}>{r.region}</option>)}
           </select>
         </div>
@@ -33,7 +33,7 @@ export function PlayersTab(p: Props) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-secondary/40 text-[11px] uppercase tracking-widest text-muted-foreground">
-            <tr><th className="px-4 py-2 text-left">Joueur</th><th className="px-4 py-2 text-left">Région</th><th className="px-4 py-2 text-right">Tickets</th><th className="px-4 py-2 text-right">Misé</th><th className="px-4 py-2 text-right">Gagné</th></tr>
+            <tr><th className="px-4 py-2 text-left">{t("admin.players.player")}</th><th className="px-4 py-2 text-left">{t("region")}</th><th className="px-4 py-2 text-right">{t("myTickets")}</th><th className="px-4 py-2 text-right">{t("admin.players.staked")}</th><th className="px-4 py-2 text-right">{t("admin.players.won")}</th></tr>
           </thead>
           <tbody className="divide-y divide-border">
             {p.filteredPlayers.map((row) => (

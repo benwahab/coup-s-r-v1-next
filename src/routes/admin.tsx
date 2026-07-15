@@ -257,13 +257,13 @@ function AdminPage() {
     );
     const header = ["id", "date", "jeu", "telephone", "region", "selections", "mise_fcfa", "statut", "paiement", "gain_fcfa"];
     const csvBody = rows.map((r) => [r.id, r.date, r.game, r.phone, r.region, `"${r.picks.replace(/"/g, "''")}"`, r.stake, r.status, r.payment, r.prize].join(","));
-    downloadCsv([header.join(","), ...csvBody].join("\n"), `lonani-${scope}-${from}_${to}.csv`);
+    downloadCsv([header.join(","), ...csvBody].join("\n"), `coupsur-${scope}-${from}_${to}.csv`);
   };
 
   const exportTransactionsCsv = () => {
     const header = ["id", "date", "jeu", "telephone", "region", "mise", "statut", "gain", "source"];
     const body = filteredRows.map(r => [r.id, r.date, r.game, r.phone, r.region, r.stake, r.status, r.prize, r.kind].join(","));
-    downloadCsv([header.join(","), ...body].join("\n"), `lonani-transactions-${todayIso}.csv`);
+    downloadCsv([header.join(","), ...body].join("\n"), `coupsur-transactions-${todayIso}.csv`);
   };
 
   void updateLegStatus;
@@ -274,15 +274,15 @@ function AdminPage() {
   };
 
   const nav: { id: Tab; label: string; icon: LucideIcon }[] = [
-    { id: "dashboard", label: "Tableau de bord", icon: BarChart3 },
-    { id: "transactions", label: "Transactions", icon: ListChecks },
+    { id: "dashboard", label: t("admin.nav.dashboard"), icon: BarChart3 },
+    { id: "transactions", label: t("admin.tx.title"), icon: ListChecks },
     { id: "players", label: t("players"), icon: Users },
     { id: "regions", label: t("regions"), icon: MapPin },
     { id: "balls", label: t("ballsStats"), icon: Circle },
-    { id: "ops", label: "SMS & Encaissements", icon: Send },
-    { id: "admins", label: "Paramètres", icon: Settings },
-    { id: "logs", label: "Journal connexions", icon: LogIn },
-    { id: "claims", label: "Réclamations", icon: LifeBuoy },
+    { id: "ops", label: t("admin.nav.ops"), icon: Send },
+    { id: "admins", label: t("admin.ops.title"), icon: Settings },
+    { id: "logs", label: t("admin.nav.logs"), icon: LogIn },
+    { id: "claims", label: t("admin.nav.claims"), icon: LifeBuoy },
   ];
 
   // Logs filters
@@ -298,7 +298,7 @@ function AdminPage() {
   const exportLogsCsv = () => {
     const header = ["horodatage", "telephone", "ip", "evenement", "note"];
     const body = filteredLog.map((e) => [new Date(e.at).toISOString(), e.phone, e.ip, e.kind, `"${(e.note ?? "").replace(/"/g, "''")}"`].join(","));
-    downloadCsv([header.join(","), ...body].join("\n"), "lonani-auth-logs.csv");
+    downloadCsv([header.join(","), ...body].join("\n"), "coupsur-auth-logs.csv");
   };
 
   // Claims
@@ -321,12 +321,12 @@ function AdminPage() {
       <div className="min-h-[60vh] grid place-items-center px-4">
         <div className="max-w-md rounded-3xl border border-destructive/30 bg-destructive/5 p-8 text-center">
           <ShieldCheck className="mx-auto h-10 w-10 text-destructive" />
-          <h1 className="mt-3 font-display text-xl font-extrabold">Accès refusé</h1>
+          <h1 className="mt-3 font-display text-xl font-extrabold">{t("admin.denied.title")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Cette zone est réservée aux administrateurs. Contactez le service technique si vous devez y accéder.
+            {t("admin.denied.message")}
           </p>
           <Link to="/" className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground">
-            Retour à l'accueil
+            {t("admin.denied.backHome")}
           </Link>
         </div>
       </div>
@@ -335,7 +335,7 @@ function AdminPage() {
 
   return (
     <>
-      <PageHeader title={t("dashboard")} subtitle="Panneau administrateur" icon={<ShieldCheck className="h-5 w-5" />} />
+      <PageHeader title={t("dashboard")} subtitle={t("admin.nav.subtitle")} icon={<ShieldCheck className="h-5 w-5" />} />
       <div className="mx-auto max-w-7xl px-3 py-4 sm:px-4 lg:px-6">
         <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-6">
           <aside className="lg:sticky lg:top-4 lg:self-start">
