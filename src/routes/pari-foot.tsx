@@ -287,18 +287,18 @@ function FootPage() {
                           onClick={() => loadAnalysis(m.id, m.home, m.away, lg?.name ?? "Football")}
                           className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/10"
                         >
-                          <Sparkles className="h-3.5 w-3.5" /> Voir l'analyse IA
+                          <Sparkles className="h-3.5 w-3.5" /> {t("pariFoot.viewAiAnalysis")}
                         </button>
                       )}
                       {aiAnalyses[m.id] === "loading" && (
                         <div className="flex items-center justify-center gap-2 rounded-xl border border-border bg-secondary/30 px-3 py-2 text-xs font-semibold text-muted-foreground">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Analyse en cours…
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("pariFoot.analyzing")}
                         </div>
                       )}
                       {aiAnalyses[m.id] === "error" && (
                         <div className="flex items-center justify-between gap-2 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs font-semibold text-destructive">
-                          <span>Analyse indisponible pour l'instant.</span>
-                          <button type="button" onClick={() => loadAnalysis(m.id, m.home, m.away, lg?.name ?? "Football")} className="underline">Réessayer</button>
+                          <span>{t("pariFoot.analysisUnavailable")}</span>
+                          <button type="button" onClick={() => loadAnalysis(m.id, m.home, m.away, lg?.name ?? "Football")} className="underline">{t("pariFoot.retry")}</button>
                         </div>
                       )}
                       {aiAnalyses[m.id] && typeof aiAnalyses[m.id] === "object" && (() => {
@@ -306,7 +306,7 @@ function FootPage() {
                         return (
                           <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-3">
                             <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-primary">
-                              <Sparkles className="h-3 w-3" /> Analyse IA
+                              <Sparkles className="h-3 w-3" /> {t("pariFoot.aiAnalysis")}
                             </div>
                             <p className="text-xs text-foreground">{a.summary}</p>
                             <div className="grid grid-cols-2 gap-2 text-[11px]">
@@ -318,8 +318,8 @@ function FootPage() {
                               {a.keyFactors.map((f, i) => <li key={i}>{f}</li>)}
                             </ul>
                             <div className="rounded-xl bg-card px-3 py-2 text-xs">
-                              <span className="font-bold">Prédiction : {a.prediction.outcome}</span>{" "}
-                              <span className="text-muted-foreground">(confiance {a.prediction.confidence})</span>
+                              <span className="font-bold">{t("pariFoot.prediction")} : {a.prediction.outcome}</span>{" "}
+                              <span className="text-muted-foreground">({t("pariFoot.confidence")} {a.prediction.confidence})</span>
                               <p className="mt-0.5 text-muted-foreground">{a.prediction.rationale}</p>
                             </div>
                             <p className="text-[10px] italic text-muted-foreground">{a.dataLimitations}</p>

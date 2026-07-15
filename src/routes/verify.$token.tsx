@@ -3,14 +3,16 @@ import { useEffect, useState } from "react";
 import { Check, Home, ShieldCheck, ShieldX, Trophy } from "lucide-react";
 import { useTickets } from "@/lib/tickets";
 import { verifyTicketToken } from "@/lib/ticket-token.functions";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/verify/$token")({
-  head: () => ({ meta: [{ title: "Vérification de ticket — LoNaNi" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Vérification de ticket — Coup Sûr" }, { name: "robots", content: "noindex" }] }),
   component: VerifyPage,
 });
 
 function VerifyPage() {
+  const { t } = useI18n();
   const { token } = useParams({ from: "/verify/$token" });
   const { getTicket } = useTickets();
   const [state, setState] = useState<"loading" | "valid" | "invalid">("loading");
@@ -21,7 +23,7 @@ function VerifyPage() {
 
   useEffect(() => {
     verifyTicketToken({ data: { token } }).then((r) => {
-      if (!r.valid) { setState("invalid"); setReason(r.reason || "Token invalide"); return; }
+      if (!r.valid) { setState("invalid"); setReason(r.reason || t("verify.invalidToken")); return; }
       setTicketId(r.ticketId!); setLegId(r.legId); setTs(r.ts);
       setState("valid");
     });
@@ -39,22 +41,22 @@ function VerifyPage() {
           {state === "valid" ? <ShieldCheck className="h-8 w-8 text-success" /> : state === "invalid" ? <ShieldX className="h-8 w-8 text-destructive" /> : <ShieldCheck className="h-8 w-8 text-muted-foreground animate-pulse" />}
         </div>
         <h1 className="font-display text-2xl font-extrabold">
-          {state === "loading" ? "Vérification…" : state === "valid" ? "Ticket authentique" : "Ticket non valide"}
+          {state === "loading" ? t("verify.verifying") : state === "valid" ? t("verify.authentic") : t("verify.invalid")}
         </h1>
         {state === "invalid" && <p className="mt-2 text-sm text-muted-foreground">{reason}</p>}
         {state === "valid" && (
           <>
-            <p className="mt-1 text-xs text-muted-foreground">Signé le {ts ? new Date(ts).toLocaleString() : "—"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("verify.signedOn", { date: ts ? new Date(ts).toLocaleString() : "—" })}</p>
             <div className="mt-4 rounded-2xl border border-border bg-card p-4 text-left">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">N° de ticket</div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("verify.ticketNumber")}</div>
               <div className="font-mono text-sm font-bold">{ticketId}</div>
               {ticket ? (
                 <>
                   <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                    <div><div className="text-[10px] uppercase text-muted-foreground">Jeu</div><div className="font-bold">{leg?.gameName ?? ticket.gameName}</div></div>
-                    <div><div className="text-[10px] uppercase text-muted-foreground">Tirage</div><div className="font-bold">{leg?.drawName ?? ticket.drawName ?? "—"}</div></div>
-                    <div><div className="text-[10px] uppercase text-muted-foreground">Mise</div><div className="font-display font-extrabold tabular-nums">{(leg?.stake ?? ticket.stake).toLocaleString()} FCFA</div></div>
-                    <div><div className="text-[10px] uppercase text-muted-foreground">Statut</div>
+                    <div><div className="text-[10px] uppercase text-muted-foreground">{t("verify.game")}</div><div className="font-bold">{leg?.gameName ?? ticket.gameName}</div></div>
+                    <div><div className="text-[10px] uppercase text-muted-foreground">{t("verify.draw")}</div><div className="font-bold">{leg?.drawName ?? ticket.drawName ?? "—"}</div></div>
+                    <div><div className="text-[10px] uppercase text-muted-foreground">{t("verify.stake")}</div><div className="font-display font-extrabold tabular-nums">{(leg?.stake ?? ticket.stake).toLocaleString()} FCFA</div></div>
+                    <div><div className="text-[10px] uppercase text-muted-foreground">{t("verify.status")}</div>
                       <div className={cn("inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
                         (leg?.status ?? ticket.status) === "winning" || (leg?.status ?? ticket.status) === "paid" ? "bg-success/20 text-success" :
                         (leg?.status ?? ticket.status) === "losing" ? "bg-muted text-muted-foreground" : "bg-secondary text-secondary-foreground")}>
@@ -65,23 +67,23 @@ function VerifyPage() {
                   {(leg?.status === "winning" || leg?.status === "paid" || ticket.status === "winning" || ticket.status === "paid") && (
                     <div className="mt-3 flex items-center gap-2 rounded-xl bg-success/10 px-3 py-2 text-success">
                       <Trophy className="h-4 w-4" />
-                      <span className="text-sm font-bold">Gain : {(leg?.prize ?? ticket.prize ?? 0).toLocaleString()} FCFA</span>
+                      <span className="text-sm font-bold">{t("verify.prizeAmount", { amount: (leg?.prize ?? ticket.prize ?? 0).toLocaleString() })}</span>
                     </div>
                   )}
                   <div className="mt-3">
                     <Link to="/ticket/$id" params={{ id: ticketId }} className="inline-flex items-center gap-1.5 text-xs font-bold text-primary underline">
-                      <Check className="h-3.5 w-3.5" /> Voir le reçu complet
+                      <Check className="h-3.5 w-3.5" /> {t("verify.viewFullReceipt")}
                     </Link>
                   </div>
                 </>
               ) : (
-                <p className="mt-3 text-xs text-muted-foreground">Ticket non trouvé localement (achat depuis un autre appareil).</p>
+                <p className="mt-3 text-xs text-muted-foreground">{t("verify.notFoundLocally")}</p>
               )}
             </div>
           </>
         )}
         <Link to="/" className="mt-6 inline-flex items-center justify-center gap-1.5 text-sm font-bold text-muted-foreground">
-          <Home className="h-4 w-4" /> Accueil
+          <Home className="h-4 w-4" /> {t("home")}
         </Link>
       </div>
     </div>

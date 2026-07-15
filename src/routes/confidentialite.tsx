@@ -1,22 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { PRIVACY_VERSION, PRIVACY_DATE } from "@/lib/legal";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/confidentialite")({
   head: () => ({
     meta: [
-      { title: "Politique de confidentialité — LoNaNi" },
-      { name: "description", content: "Politique de confidentialité LoNaNi (Coup Sûr) : données collectées, finalités, durée de conservation, droits des utilisateurs." },
+      { title: "Politique de confidentialité — Coup Sûr" },
+      { name: "description", content: "Politique de confidentialité Coup Sûr : données collectées, finalités, durée de conservation, droits des utilisateurs." },
     ],
   }),
   component: PrivacyPage,
 });
 
 function PrivacyPage() {
+  const { t } = useI18n();
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       <Link to="/" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
-        <ArrowLeft className="h-4 w-4" /> Retour
+        <ArrowLeft className="h-4 w-4" /> {t("back")}
       </Link>
       <div className="rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-soft">
         <div className="flex items-center gap-3">
@@ -24,42 +26,35 @@ function PrivacyPage() {
             <ShieldCheck className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="font-display text-2xl font-extrabold">Politique de confidentialité</h1>
-            <p className="text-xs text-muted-foreground">Version {PRIVACY_VERSION} · en vigueur le {PRIVACY_DATE}</p>
+            <h1 className="font-display text-2xl font-extrabold">{t("privacy.pageTitle")}</h1>
+            <p className="text-xs text-muted-foreground">{t("terms.versionInfo", { version: PRIVACY_VERSION, date: PRIVACY_DATE })}</p>
           </div>
         </div>
 
         <div className="mt-6 space-y-5 text-sm leading-relaxed text-foreground/90">
           <section>
-            <h2 className="font-display text-lg font-bold text-foreground">1. Données collectées</h2>
-            <p>Nom, prénom, région, numéro de téléphone, historique de mises et de gains,
-              adresse IP au moment de l'inscription et de la connexion.</p>
+            <h2 className="font-display text-lg font-bold text-foreground">{t("privacy.s1Title")}</h2>
+            <p>{t("privacy.s1Body")}</p>
           </section>
           <section>
-            <h2 className="font-display text-lg font-bold text-foreground">2. Finalités</h2>
-            <p>Gestion du compte joueur, exécution des transactions, versement des gains,
-              lutte contre la fraude et respect des obligations légales.</p>
+            <h2 className="font-display text-lg font-bold text-foreground">{t("privacy.s2Title")}</h2>
+            <p>{t("privacy.s2Body")}</p>
           </section>
           <section>
-            <h2 className="font-display text-lg font-bold text-foreground">3. Base légale</h2>
-            <p>Exécution du contrat, obligation légale, intérêt légitime (sécurité et
-              anti-fraude), consentement pour les communications non essentielles.</p>
+            <h2 className="font-display text-lg font-bold text-foreground">{t("privacy.s3Title")}</h2>
+            <p>{t("privacy.s3Body")}</p>
           </section>
           <section>
-            <h2 className="font-display text-lg font-bold text-foreground">4. Conservation</h2>
-            <p>Les données de compte sont conservées pendant la durée d'utilisation puis
-              archivées selon les obligations légales. Après suppression de compte, un délai
-              de rétractation de 30 jours s'applique avant effacement définitif.</p>
+            <h2 className="font-display text-lg font-bold text-foreground">{t("privacy.s4Title")}</h2>
+            <p>{t("privacy.s4Body")}</p>
           </section>
           <section>
-            <h2 className="font-display text-lg font-bold text-foreground">5. Vos droits</h2>
-            <p>Accès, rectification, suppression, opposition et portabilité de vos données.
-              Contact : privacy@lonani.ne.</p>
+            <h2 className="font-display text-lg font-bold text-foreground">{t("privacy.s5Title")}</h2>
+            <p>{t("privacy.s5Body")}</p>
           </section>
           <section>
-            <h2 className="font-display text-lg font-bold text-foreground">6. Sécurité</h2>
-            <p>Chiffrement des reçus (HMAC-SHA256), rate limiting, journalisation des accès,
-              hébergement sécurisé. Aucun mot de passe Mobile Money n'est conservé.</p>
+            <h2 className="font-display text-lg font-bold text-foreground">{t("privacy.s6Title")}</h2>
+            <p>{t("privacy.s6Body")}</p>
           </section>
         </div>
       </div>

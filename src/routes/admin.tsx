@@ -29,7 +29,7 @@ export const Route = createFileRoute("/admin")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Admin — LoNaNi" },
+      { title: "Admin — Coup Sûr" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),

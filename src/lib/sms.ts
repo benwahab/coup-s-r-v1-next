@@ -28,7 +28,7 @@ export async function sendWinSms(ticket: Ticket, leg?: TicketLeg): Promise<SmsEn
   const { token } = await signTicketToken({ data: { ticketId: ticket.id, legId: leg?.legId } });
   const drawLabel = leg?.drawName ?? ticket.drawName ?? ticket.gameName;
   const prize = leg?.prize ?? ticket.prize ?? 0;
-  const body = `LoNaNi: BRAVO! Ticket #${ticket.id}${leg ? ` (${leg.gameName})` : ""} — Tirage ${drawLabel} — Gain ${prize.toLocaleString()} FCFA. Reçu: ${origin}/verify/${token}`;
+  const body = `Coup Sûr: BRAVO! Ticket #${ticket.id}${leg ? ` (${leg.gameName})` : ""} — Tirage ${drawLabel} — Gain ${prize.toLocaleString()} FCFA. Reçu: ${origin}/verify/${token}`;
   const entry: SmsEntry = {
     id: leg ? `${ticket.id}#${leg.legId}` : ticket.id,
     phone: ticket.phone,
@@ -43,7 +43,7 @@ export async function sendWinSms(ticket: Ticket, leg?: TicketLeg): Promise<SmsEn
     fetch("/api/public/sms", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ to: ticket.phone, text: body }) }).catch(() => undefined);
   }
   // eslint-disable-next-line no-console
-  console.info("[LoNaNi SMS]", body);
+  console.info("[Coup Sûr SMS]", body);
   return entry;
 }
 

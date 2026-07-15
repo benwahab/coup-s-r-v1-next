@@ -21,9 +21,9 @@ const OG_IMAGE_URL = absoluteOgUrl(ogImage.url);
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "LoNaNi — Loterie Nationale du Niger en ligne" },
+      { title: "Coup Sûr — Jouez en ligne au Niger" },
       { name: "description", content: "Jouez au PMU, Loto Balsa et Pari Foot depuis votre téléphone. Paiement mobile, reçu QR Code, notification de gain par SMS." },
-      { property: "og:title", content: "LoNaNi — Loterie Nationale du Niger" },
+      { property: "og:title", content: "Coup Sûr — Jouez en ligne au Niger" },
       { property: "og:description", content: "PMU, Loto Balsa, Pari Foot. Jouez en 3 clics depuis Niamey ou partout au Niger." },
       { property: "og:image", content: OG_IMAGE_URL },
       { property: "og:image:width", content: "1254" },

@@ -13,7 +13,7 @@ export async function downloadTicketPdf(t: Ticket) {
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
-  doc.text("LoNaNi — Loterie Nationale du Niger", 24, 32);
+  doc.text("Coup Sûr", 24, 32);
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
   doc.text(`Reçu officiel • ${t.gameName}`, 24, 52);

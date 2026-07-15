@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { WinConfetti } from "@/components/WinConfetti";
 
 export const Route = createFileRoute("/ticket/$id")({
-  head: () => ({ meta: [{ title: "Reçu de ticket — LoNaNi" }] }),
+  head: () => ({ meta: [{ title: "Reçu de ticket — Coup Sûr" }] }),
   component: TicketPage,
 });
 
