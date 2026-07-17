@@ -107,7 +107,7 @@ export function detectOperator(phone: string): { id: string; name: string; color
   if (["9"].includes(first)) return { id: "airtel", name: "Airtel Money", color: "#E40000" };
   if (["8"].includes(first)) return { id: "moov", name: "Moov Flooz", color: "#005EB8" };
   if (["7"].includes(first)) return { id: "zamani", name: "Zamani Cash", color: "#1A6B5E" };
-  if (["6"].includes(first)) return { id: "nita", name: "Nita", color: "#FFB300" };
+  if (["6"].includes(first)) return { id: "mynita", name: "MyNita", color: "#7C3AED" };
   if (["5"].includes(first)) return { id: "amanata", name: "Amanata", color: "#0F766E" };
   if (["4"].includes(first)) return { id: "mynita", name: "MyNita", color: "#7C3AED" };
   return { id: "airtel", name: "Airtel Money", color: "#E40000" };

@@ -126,8 +126,8 @@ function Index() {
             Jouez. Gagnez. <span className="bg-gradient-to-r from-[oklch(0.82_0.20_150)] to-[oklch(0.86_0.16_88)] bg-clip-text text-transparent">Encaissez.</span>
           </h1>
           <p className="mt-4 max-w-xl text-base sm:text-lg text-white/75">
-            PMU quotidien à 15h, Loto Balsa du vendredi (1 à 5 boules sur 90) et Pari Foot.
-            Paiement Airtel, Moov, Zamani, Nita, Amanata, MyNita. Reçu QR sécurisé, SMS gagnant automatique.
+            PMU, Loto Balsa et Pari Foot disponibles H24, 7j/7. Tirage quotidien à 15h30.
+            Paiement Airtel Money, Moov Flooz, Zamani Cash, Amanata, MyNita. Reçu QR sécurisé, SMS gagnant automatique.
           </p>
 
           {/* Jackpot principal — PMU */}
