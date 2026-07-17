@@ -62,14 +62,14 @@ function useCountdown(target: Date) {
  * SSR hydration mismatch: the server may render one stage and the client
  * another because minutes pass between renders.
  */
-function useLiveStage(openHour: number, closeHour: number, drawHour: number) {
+function useLiveStage(openHour: number, closeHour: number, drawHour: number, drawMinute = 0) {
   const [stage, setStage] = useState<ReturnType<typeof nextDailyEvent> | null>(null);
   useEffect(() => {
-    const compute = () => setStage(nextDailyEvent(openHour, closeHour, drawHour));
+    const compute = () => setStage(nextDailyEvent(openHour, closeHour, drawHour, new Date(), drawMinute));
     compute();
     const id = setInterval(compute, 1000);
     return () => clearInterval(id);
-  }, [openHour, closeHour, drawHour]);
+  }, [openHour, closeHour, drawHour, drawMinute]);
   return stage;
 }
 
@@ -77,8 +77,8 @@ function Index() {
   const { t } = useI18n();
   const lastLoto = recentResults.find((r) => r.gameId === "loto");
   const lastPmu = recentResults.find((r) => r.gameId === "pmu");
-  const pmuEvt = useLiveStage(drawSchedule.pmu.openHour, drawSchedule.pmu.closeHour, drawSchedule.pmu.drawHour);
-  const lotoEvt = useLiveStage(drawSchedule.loto.openHour, drawSchedule.loto.closeHour, drawSchedule.loto.drawHour);
+  const pmuEvt = useLiveStage(drawSchedule.pmu.openHour, drawSchedule.pmu.closeHour, drawSchedule.pmu.drawHour, drawSchedule.pmu.drawMinute);
+  const lotoEvt = useLiveStage(drawSchedule.loto.openHour, drawSchedule.loto.closeHour, drawSchedule.loto.drawHour, drawSchedule.loto.drawMinute);
   const pmuCd = useCountdown(pmuEvt?.target ?? new Date(0));
   const lotoCd = useCountdown(lotoEvt?.target ?? new Date(0));
   const lotoDrawName = drawNameForDate();
@@ -147,7 +147,7 @@ function Index() {
                 {[
                   { l: t("openAt"), v: formatHour(drawSchedule.pmu.openHour) },
                   { l: t("closeAt"), v: formatHour(drawSchedule.pmu.closeHour) },
-                  { l: t("drawAt"), v: formatHour(drawSchedule.pmu.drawHour) },
+                  { l: t("drawAt"), v: formatHour(drawSchedule.pmu.drawHour, drawSchedule.pmu.drawMinute) },
                 ].map((b, i) => (
                   <div key={i} className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1.5 text-center">
                     <div className="text-[9px] uppercase tracking-widest text-white/55">{b.l}</div>
@@ -220,7 +220,7 @@ function Index() {
                 {[
                   { l: t("openAt"), v: formatHour(drawSchedule.loto.openHour) },
                   { l: t("closeAt"), v: formatHour(drawSchedule.loto.closeHour) },
-                  { l: t("drawAt"), v: formatHour(drawSchedule.loto.drawHour) },
+                  { l: t("drawAt"), v: formatHour(drawSchedule.loto.drawHour, drawSchedule.loto.drawMinute) },
                 ].map((b, i) => (
                   <div key={i} className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-center">
                     <div className="text-[9px] uppercase tracking-widest text-white/55">{b.l}</div>

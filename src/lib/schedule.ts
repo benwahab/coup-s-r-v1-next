@@ -65,11 +65,11 @@ export interface NextEvent { stage: DrawStage; target: Date; }
  *  Supporte le cycle traversant minuit (ex : ouverture 16h, fermeture 15h le
  *  lendemain, tirage peu après la fermeture). Dans ce cas, l'ordre chronologique
  *  des jalons dans une même journée Niger est : fermeture → tirage → ouverture. */
-export function nextDailyEvent(openHour: number, closeHour: number, drawHour: number, now: Date = new Date()): NextEvent {
+export function nextDailyEvent(openHour: number, closeHour: number, drawHour: number, now: Date = new Date(), drawMinute = 0): NextEvent {
   const p = nigerParts(now);
   const open = nigerInstant(p.year, p.month, p.day, openHour);
   const close = nigerInstant(p.year, p.month, p.day, closeHour);
-  const draw = nigerInstant(p.year, p.month, p.day, drawHour);
+  const draw = nigerInstant(p.year, p.month, p.day, drawHour, drawMinute);
 
   if (openHour > closeHour) {
     // Cycle traversant minuit : fermeture → tirage → ouverture, dans cet ordre.

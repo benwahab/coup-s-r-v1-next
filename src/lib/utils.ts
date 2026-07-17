@@ -17,9 +17,9 @@ export function formatFcfa(n: number): string {
   return n.toLocaleString("fr-FR").replace(/\u202f/g, " ");
 }
 
-/** Formatte une heure entière (0–23) en "HH:00". */
-export function formatHour(h: number): string {
-  return `${String(h).padStart(2, "0")}:00`;
+/** Formatte une heure (0–23) et des minutes en "HH:MM". */
+export function formatHour(h: number, m = 0): string {
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
 /** Hash de chaîne déterministe (FNV-1a 32-bit) — pour PRNG seedé. */

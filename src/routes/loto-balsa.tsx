@@ -128,7 +128,7 @@ function LotoPage() {
             {[
               { l: t("openAt"), v: formatHour(drawSchedule.loto.openHour) },
               { l: t("closeAt"), v: formatHour(drawSchedule.loto.closeHour) },
-              { l: t("drawAt"), v: formatHour(drawSchedule.loto.drawHour) },
+              { l: t("drawAt"), v: formatHour(drawSchedule.loto.drawHour, drawSchedule.loto.drawMinute) },
             ].map((b, i) => (
               <div key={i} className="rounded-lg border border-border bg-background/40 px-3 py-1.5 text-center">
                 <div className="text-[9px] uppercase tracking-widest text-muted-foreground">{b.l}</div>

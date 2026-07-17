@@ -144,8 +144,8 @@ export const games = [
 
 /** Calendrier officiel des tirages. Cycle quotidien : ouverture 16h00, fermeture 15h00 le lendemain. */
 export const drawSchedule = {
-  pmu: { openHour: 16, closeHour: 15, drawHour: 15, daily: true, label: "Quinté du jour — 15h00" },
-  loto: { openHour: 16, closeHour: 15, drawHour: 15, daily: true, label: "Tirage quotidien — 15h00" },
+  pmu: { openHour: 16, closeHour: 15, drawHour: 15, drawMinute: 30, daily: true, label: "Quinté du jour — 15h30" },
+  loto: { openHour: 16, closeHour: 15, drawHour: 15, drawMinute: 30, daily: true, label: "Tirage quotidien — 15h30" },
 } as const;
 
 /** Régions du Niger. */
