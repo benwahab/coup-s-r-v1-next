@@ -46,8 +46,8 @@ export function StepStake() {
             type="number"
             min={minStake}
             max={maxStake}
-            value={stake}
-            onChange={(e) => setStake(Math.max(0, Math.min(maxStake, Number(e.target.value) || 0)))}
+            value={stake === 0 ? "" : stake}
+            onChange={(e) => setStake(e.target.value === "" ? 0 : Math.max(0, Math.min(maxStake, Number(e.target.value) || 0)))}
             className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-lg font-bold tabular-nums focus:border-primary outline-none"
           />
           {stake > 0 && stake < minStake && <p className="mt-1 text-xs text-destructive">{t("minStake")}</p>}

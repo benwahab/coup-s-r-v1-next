@@ -34,11 +34,16 @@ export const Route = createFileRoute("/pmu")({
   component: PmuPage,
 });
 
+const STAKE_CHIPS = [300, 500, 1000, 2000, 5000, 10_000];
+const MIN_STAKE = 300;
+const MAX_STAKE = 100_000;
+
 function PmuPage() {
   const { t } = useI18n();
   const [betId, setBetId] = useState<PmuBetId>("tierce_d");
   const [picks, setPicks] = useState<number[]>([]);
   const [cart, setCart] = useState<TicketLeg[]>([]);
+  const [unitStake, setUnitStake] = useState(MIN_STAKE);
   const bet = findBet(betId);
   const partants = useMemo(() => horses.filter((h) => h.status === "partant"), []);
   const nonPartants = useMemo(() => horses.filter((h) => h.status === "non-partant"), []);
@@ -55,11 +60,11 @@ function PmuPage() {
   };
 
   const combos = bet.combos(picks.length);
-  const totalStake = combos * bet.baseStake;
+  const totalStake = combos * unitStake;
   const picksLabel = picks.length
     ? `[${bet.short}] ${picks.map((n, i) => `${bet.ordered ? `${i + 1}. ` : ""}${n}. ${horses.find((h) => h.number === n)?.name ?? ""}`).join(" • ")}`
     : `[${bet.short}] —`;
-  const currentValid = picks.length >= bet.minPicks && picks.length <= bet.maxPicks;
+  const currentValid = picks.length >= bet.minPicks && picks.length <= bet.maxPicks && unitStake >= MIN_STAKE;
   const canContinue = currentValid || cart.length > 0;
 
   const drawDateIso = useMemo(() => new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), []);
@@ -101,8 +106,8 @@ function PmuPage() {
         canContinue={canContinue}
         odds={bet.odds}
         lockedStake={effectiveLegs.length ? undefined : totalStake}
-        defaultStake={bet.baseStake}
-        minStake={bet.baseStake}
+        defaultStake={unitStake}
+        minStake={MIN_STAKE}
         gameOpen={isGameOpen(drawSchedule.pmu.openHour, drawSchedule.pmu.closeHour)}
         openHour={drawSchedule.pmu.openHour}
         renderSelection={
@@ -193,6 +198,28 @@ function PmuPage() {
                 </div>
               </>
             )}
+
+            {/* Mise unitaire : chips + input libre 300–100 000 */}
+            <div className="mt-5 rounded-2xl border border-primary/30 bg-primary/5 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("game.unitStake")} ({t("fcfa")})</span>
+                <span className="text-[10px] text-muted-foreground">min {MIN_STAKE.toLocaleString()} · max {MAX_STAKE.toLocaleString()}</span>
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+                {STAKE_CHIPS.map((v) => (
+                  <button key={v} type="button" onClick={() => setUnitStake(v)} className={cn(
+                    "rounded-xl border-2 px-2 py-2 text-xs font-bold tabular-nums transition",
+                    unitStake === v ? "border-primary bg-primary/15 text-primary" : "border-border bg-card hover:border-primary/40",
+                  )}>{v.toLocaleString()}</button>
+                ))}
+              </div>
+              <input
+                type="number" min={MIN_STAKE} max={MAX_STAKE} value={unitStake === 0 ? "" : unitStake}
+                onChange={(e) => setUnitStake(e.target.value === "" ? 0 : Math.max(0, Math.min(MAX_STAKE, Number(e.target.value) || 0)))}
+                className="mt-2 w-full rounded-xl border border-input bg-background px-3 py-2 font-display font-bold tabular-nums focus:border-primary outline-none"
+              />
+              {unitStake > 0 && unitStake < MIN_STAKE && <p className="mt-1 text-[11px] text-destructive">{t("minStake")}</p>}
+            </div>
 
             {/* Récap dynamique */}
             <div className="mt-5 rounded-2xl border border-gold/30 bg-gold/5 p-4">

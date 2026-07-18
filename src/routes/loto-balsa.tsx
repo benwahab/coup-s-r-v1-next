@@ -236,8 +236,8 @@ function LotoPage() {
                 ))}
               </div>
               <input
-                type="number" min={MIN_STAKE} max={MAX_STAKE} value={stake}
-                onChange={(e) => setStake(Math.max(0, Math.min(MAX_STAKE, Number(e.target.value) || 0)))}
+                type="number" min={MIN_STAKE} max={MAX_STAKE} value={stake === 0 ? "" : stake}
+                onChange={(e) => setStake(e.target.value === "" ? 0 : Math.max(0, Math.min(MAX_STAKE, Number(e.target.value) || 0)))}
                 className="mt-2 w-full rounded-xl border border-input bg-background px-3 py-2 font-display font-bold tabular-nums focus:border-primary outline-none"
               />
               {stake > 0 && stake < MIN_STAKE && <p className="mt-1 text-[11px] text-destructive">{t("minStake")}</p>}
