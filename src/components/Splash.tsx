@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=320&quality=92&url";
+import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=480&quality=92&url";
 
 const SEEN_KEY = "coupsur.splash.seen";
 
@@ -17,10 +17,9 @@ export function Splash() {
       sessionStorage.setItem(SEEN_KEY, "1");
     } catch { /* ignore */ }
     setShow(true);
-    // Bloque au maximum 1,8s au tout premier chargement de la session
-    // (légèrement rallongé pour laisser le temps à l'animation du logo).
-    const t1 = setTimeout(() => setLeaving(true), 1350);
-    const t2 = setTimeout(() => setShow(false), 1800);
+    // Reste affiché au moins 5s au tout premier chargement de la session.
+    const t1 = setTimeout(() => setLeaving(true), 4700);
+    const t2 = setTimeout(() => setShow(false), 5200);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
@@ -53,7 +52,7 @@ export function Splash() {
             <img
               src={logoCoupSur}
               alt="Coup Sûr"
-              className="relative h-28 w-28 sm:h-36 sm:w-36 object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+              className="relative h-40 w-40 sm:h-52 sm:w-52 object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
             />
             <span className="cs-splash-shine" aria-hidden />
           </div>
