@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/AppShell";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/mes-tickets")({
-  head: () => ({ meta: [{ title: "Mes tickets — Coup Sûr" }] }),
+  head: () => ({ meta: [{ title: "Mes tickets — Coup Sûr" }, { name: "robots", content: "noindex, follow" }] }),
   component: TicketsPage,
 });
 

@@ -8,7 +8,7 @@ import { coldNumbers, expertTips, footMatches, hotNumbers, horses, lotoSuggestio
 import { analyzePmu, analyzeLoto } from "@/lib/ai-pronos.functions";
 import { cn } from "@/lib/utils";
 import ogAsset from "@/assets/og-pronostics.jpg.asset.json";
-import { absoluteOgUrl } from "@/lib/og";
+import { SITE_ORIGIN, absoluteOgUrl } from "@/lib/og";
 
 const OG = absoluteOgUrl(ogAsset.url);
 
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/pronostics")({
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:image", content: OG },
     ],
-    links: [{ rel: "canonical", href: "/pronostics" }],
+    links: [{ rel: "canonical", href: `${SITE_ORIGIN}/pronostics` }],
   }),
   component: Pronos,
 });

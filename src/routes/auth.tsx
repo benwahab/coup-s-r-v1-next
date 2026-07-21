@@ -18,6 +18,7 @@ export const Route = createFileRoute("/auth")({
     meta: [
       { title: "Connexion — Coup Sûr" },
       { name: "description", content: "Connectez-vous à Coup Sûr avec votre numéro de téléphone et un code OTP envoyé par SMS." },
+      { name: "robots", content: "noindex, follow" },
     ],
   }),
   component: AuthPage,

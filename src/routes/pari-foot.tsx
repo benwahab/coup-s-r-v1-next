@@ -10,7 +10,7 @@ import { marketsForMatch, oddForPick, labelForPick } from "@/lib/foot-markets";
 import { cn } from "@/lib/utils";
 import { z } from "zod";
 import ogAsset from "@/assets/og-foot.jpg.asset.json";
-import { absoluteOgUrl } from "@/lib/og";
+import { SITE_ORIGIN, absoluteOgUrl } from "@/lib/og";
 
 const OG = absoluteOgUrl(ogAsset.url);
 
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/pari-foot")({
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:image", content: OG },
     ],
-    links: [{ rel: "canonical", href: "/pari-foot" }],
+    links: [{ rel: "canonical", href: `${SITE_ORIGIN}/pari-foot` }],
   }),
   component: FootPage,
 });

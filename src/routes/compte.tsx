@@ -20,7 +20,7 @@ const AccountSchema = z.object({
 type FieldErrors = Partial<Record<"firstName" | "lastName" | "region" | "phone" | "consented", string>>;
 
 export const Route = createFileRoute("/compte")({
-  head: () => ({ meta: [{ title: "Mon compte — Coup Sûr" }] }),
+  head: () => ({ meta: [{ title: "Mon compte — Coup Sûr" }, { name: "robots", content: "noindex, follow" }] }),
   component: ComptePage,
 });
 

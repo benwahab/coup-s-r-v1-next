@@ -10,7 +10,7 @@ import { pmuBets, findBet, type PmuBetId } from "@/lib/pmu-bets";
 import type { TicketLeg } from "@/lib/tickets";
 import { cn } from "@/lib/utils";
 import ogAsset from "@/assets/og-pmu.jpg.asset.json";
-import { absoluteOgUrl } from "@/lib/og";
+import { SITE_ORIGIN, absoluteOgUrl } from "@/lib/og";
 
 const OG = absoluteOgUrl(ogAsset.url);
 
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/pmu")({
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:image", content: OG },
     ],
-    links: [{ rel: "canonical", href: "/pmu" }],
+    links: [{ rel: "canonical", href: `${SITE_ORIGIN}/pmu` }],
   }),
   component: PmuPage,
 });

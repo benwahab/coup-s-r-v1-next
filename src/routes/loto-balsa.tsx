@@ -9,7 +9,7 @@ import { lotoMultipliers, drawSchedule } from "@/lib/mock-data";
 import { drawNameForDate, nigerDateLabel, isGameOpen } from "@/lib/schedule";
 import type { TicketLeg } from "@/lib/tickets";
 import ogAsset from "@/assets/og-loto.jpg.asset.json";
-import { absoluteOgUrl } from "@/lib/og";
+import { SITE_ORIGIN, absoluteOgUrl } from "@/lib/og";
 
 const OG = absoluteOgUrl(ogAsset.url);
 
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/loto-balsa")({
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:image", content: OG },
     ],
-    links: [{ rel: "canonical", href: "/loto-balsa" }],
+    links: [{ rel: "canonical", href: `${SITE_ORIGIN}/loto-balsa` }],
   }),
   component: LotoPage,
 });

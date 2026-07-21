@@ -34,6 +34,7 @@ export const Route = createFileRoute("/")({
       { name: "twitter:image:alt", content: "Coup Sûr — Loterie Nationale du Niger" },
     ],
     links: [
+      { rel: "canonical", href: SITE_ORIGIN },
       // Précharge le hero (LCP de la home) au format WebP — variante réellement utilisée par la majorité des navigateurs.
       { rel: "preload", as: "image", href: heroWebp, type: "image/webp", fetchpriority: "high" },
     ],

@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/AppShell";
 import { coldNumbers, footMatches, hotNumbers, recentResults } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
 import ogAsset from "@/assets/og-resultats.jpg.asset.json";
-import { absoluteOgUrl } from "@/lib/og";
+import { SITE_ORIGIN, absoluteOgUrl } from "@/lib/og";
 
 const OG = absoluteOgUrl(ogAsset.url);
 
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/resultats")({
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:image", content: OG },
     ],
-    links: [{ rel: "canonical", href: "/resultats" }],
+    links: [{ rel: "canonical", href: `${SITE_ORIGIN}/resultats` }],
   }),
   component: ResultsPage,
 });
