@@ -14,6 +14,12 @@ import { SITE_ORIGIN, absoluteOgUrl } from "@/lib/og";
 
 const OG = absoluteOgUrl(ogAsset.url);
 
+// Mise : même structure (chips + saisie libre) que PMU/Loto Balsa, mais avec
+// un minimum abaissé à 100 FCFA, spécifique à Pari Foot.
+const STAKE_CHIPS = [100, 300, 500, 1000, 2000, 5000, 10_000];
+const MIN_STAKE = 100;
+const MAX_STAKE = 100_000;
+
 /** Validation client des paris foot : au moins 1 sélection, format `matchId:market:option`. */
 const PickKeySchema = z.string().regex(/^[^:]+:[^:]+:[^:]+$/, "Format de sélection invalide.");
 const FootBetSchema = z.object({
@@ -48,6 +54,7 @@ function FootPage() {
   const [league, setLeague] = useState<string>("all");
   const [openMatch, setOpenMatch] = useState<string | null>(null);
   const [mode, setMode] = useState<"combi" | "simple">("combi");
+  const [stake, setStake] = useState(MIN_STAKE);
   const [aiAnalyses, setAiAnalyses] = useState<Record<string, FootAnalysis | "loading" | "error">>({});
 
   const loadAnalysis = async (matchId: string, homeTeam: string, awayTeam: string, leagueName: string) => {
@@ -70,6 +77,7 @@ function FootPage() {
   const list = Object.keys(picks);
   const validation = FootBetSchema.safeParse({ picks: list, mode });
   const validationError = validation.success ? null : validation.error.issues[0]?.message ?? null;
+  const stakeValid = stake >= MIN_STAKE && stake <= MAX_STAKE;
   const picksLabel = list.length
     ? list.map((k) => {
         const [mid] = k.split(":");
@@ -126,10 +134,14 @@ function FootPage() {
         drawDate={new Date(Date.now() + 1000 * 60 * 60 * 36).toISOString()}
         selection={list}
         picksLabel={`[${mode === "combi" ? t("game.combined") : t("game.simple")}] ${picksLabel} | ${t("odds")} ×${totalOdds.toFixed(2)}`}
-        canContinue={validation.success}
+        canContinue={validation.success && stakeValid}
         gameOpen={true}
         openHour={0}
         odds={totalOdds}
+        lockedStake={stake}
+        defaultStake={stake}
+        minStake={MIN_STAKE}
+        maxStake={MAX_STAKE}
         renderSelection={
           <div>
             {validationError && list.length === 0 && (
@@ -331,6 +343,44 @@ function FootPage() {
                 );
               })}
             </ul>
+
+            {/* Mise : chips + saisie libre 100–100 000 */}
+            <div className="mt-5 rounded-2xl border border-primary/30 bg-primary/5 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("game.unitStake")} ({t("fcfa")})</span>
+                <span className="text-[10px] text-muted-foreground">min {MIN_STAKE.toLocaleString()} · max {MAX_STAKE.toLocaleString()}</span>
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+                {STAKE_CHIPS.map((v) => (
+                  <button key={v} type="button" onClick={() => setStake(v)} className={cn(
+                    "rounded-xl border-2 px-2 py-2 text-xs font-bold tabular-nums transition",
+                    stake === v ? "border-primary bg-primary/15 text-primary" : "border-border bg-card hover:border-primary/40",
+                  )}>{v.toLocaleString()}</button>
+                ))}
+              </div>
+              <input
+                type="number" min={MIN_STAKE} max={MAX_STAKE} value={stake === 0 ? "" : stake}
+                onChange={(e) => setStake(e.target.value === "" ? 0 : Math.max(0, Math.min(MAX_STAKE, Number(e.target.value) || 0)))}
+                className="mt-2 w-full rounded-xl border border-input bg-background px-3 py-2 font-display font-bold tabular-nums focus:border-primary outline-none"
+              />
+              {stake > 0 && stake < MIN_STAKE && <p className="mt-1 text-[11px] text-destructive">{t("minStakeAmount", { min: MIN_STAKE.toLocaleString() })}</p>}
+            </div>
+
+            {/* Récap dynamique */}
+            {list.length > 0 && (
+              <div className="mt-5 rounded-2xl border border-gold/30 bg-gold/5 p-4">
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("totalStake")}</div>
+                    <div className="font-display text-xl font-extrabold tabular-nums text-gold">{stake.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("potentialWin")}</div>
+                    <div className="font-display text-xl font-extrabold tabular-nums text-success">{Math.round(stake * totalOdds).toLocaleString()}</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         }
       />
