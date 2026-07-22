@@ -25,6 +25,7 @@ interface Session { phone: string; startedAt: number; lastActivity: number; user
 
 interface Ctx extends AuthState {
   authed: boolean;
+  authChecked: boolean;
   session: Session | null;
   sessionRemainingMs: () => number;
   touchSession: () => void;
@@ -62,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { account } = useAccount();
   const [state, setState] = useState<AuthState>(defaultState);
   const [session, setSession] = useState<Session | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [, force] = useState(0);
 
   useEffect(() => {
@@ -75,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const startedAt = u.last_sign_in_at ? new Date(u.last_sign_in_at).getTime() : Date.now();
         setSession({ phone: stripPrefix(u.phone), startedAt, lastActivity: Date.now(), userId: u.id });
       }
+      setAuthChecked(true);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
       if (!sess?.user) { setSession(null); return; }
@@ -211,6 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         ...state,
         authed: !!session,
+        authChecked,
         session,
         sessionRemainingMs,
         touchSession,

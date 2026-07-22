@@ -1,5 +1,5 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, type ReactNode } from "react";
 import { Home, Trophy, Sparkles, Ticket as TicketIcon, ShieldCheck, Globe2, UserCircle2, LogIn, LogOut } from "lucide-react";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
@@ -12,7 +12,7 @@ import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=96&quality=90&
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useI18n();
   const { account } = useAccount();
-  const { authed, remainingLockMs, isPermanent, logout, session } = useAuth();
+  const { authed, authChecked, remainingLockMs, isPermanent, logout, session } = useAuth();
   const isAdmin = useIsAdmin();
   const lockMs = remainingLockMs();
   const locked = isPermanent() || lockMs > 0;
@@ -21,6 +21,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   const onCompte = pathname.startsWith("/compte");
   const onAdmin = pathname.startsWith("/admin");
   const showGlobalBackdrop = !onAuth && !onCompte;
+
+  // Garde global : toute page (hors /auth et /compte, seul point d'entrée pour
+  // créer un compte) exige une session active. Redirige sinon vers /auth.
+  const navigate = useNavigate();
+  const publicRoute = onAuth || onCompte;
+  const blocked = authChecked && !authed && !publicRoute;
+  const pending = !authChecked && !publicRoute;
+  useEffect(() => {
+    if (blocked) navigate({ to: "/auth", replace: true });
+  }, [blocked, navigate]);
+
+  if (pending || blocked) return null;
 
   const navItems: { to: string; label: string; icon: typeof Home; exact?: boolean }[] = [
     { to: "/", label: t("home"), icon: Home, exact: true },
@@ -107,7 +119,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className={cn("flex-1", showGlobalBackdrop && "pb-24")}>{children}</main>
 
-      {!onCompte && !onAdmin && <SiteFooter />}
+      {onAuth && <SiteFooter />}
 
       {/* Mobile bottom nav — masquée sur /auth et /compte */}
       {showGlobalBackdrop && (
