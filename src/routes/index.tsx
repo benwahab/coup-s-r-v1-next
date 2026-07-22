@@ -146,9 +146,9 @@ function Index() {
 
               <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
                 {[
-                  { l: t("openAt"), v: formatHour(drawSchedule.pmu.openHour) },
                   { l: t("closeAt"), v: formatHour(drawSchedule.pmu.closeHour) },
                   { l: t("drawAt"), v: formatHour(drawSchedule.pmu.drawHour, drawSchedule.pmu.drawMinute) },
+                  { l: t("openAt"), v: formatHour(drawSchedule.pmu.openHour) },
                 ].map((b, i) => (
                   <div key={i} className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1.5 text-center">
                     <div className="text-[9px] uppercase tracking-widest text-white/55">{b.l}</div>
@@ -219,9 +219,9 @@ function Index() {
 
               <div className="mt-3 grid grid-cols-3 gap-1.5 text-[11px]">
                 {[
-                  { l: t("openAt"), v: formatHour(drawSchedule.loto.openHour) },
                   { l: t("closeAt"), v: formatHour(drawSchedule.loto.closeHour) },
                   { l: t("drawAt"), v: formatHour(drawSchedule.loto.drawHour, drawSchedule.loto.drawMinute) },
+                  { l: t("openAt"), v: formatHour(drawSchedule.loto.openHour) },
                 ].map((b, i) => (
                   <div key={i} className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-center">
                     <div className="text-[9px] uppercase tracking-widest text-white/55">{b.l}</div>
