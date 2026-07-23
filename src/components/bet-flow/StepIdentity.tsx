@@ -8,8 +8,8 @@ import { Card, Footer } from "./atoms";
 export function StepIdentity() {
   const { t } = useI18n();
   const {
-    account, phone, setPhone, region, setRegion, simpleMode, setSimpleMode,
-    paymentId, setPaymentId, operatorAuto, phoneOk,
+    account, phone, region, setRegion, simpleMode, setSimpleMode,
+    paymentId, setPaymentId, phoneOk,
     goBackFrom, goNextFrom,
   } = useBetFlow();
 
@@ -22,24 +22,13 @@ export function StepIdentity() {
         </button>
       </div>
       <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("phone")} *</span>
-        <input
-          type="tel" inputMode="tel" autoComplete="tel" pattern="[0-9+ ]*"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="+227 90 00 00 00"
-          className={cn("mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 focus:border-primary outline-none", simpleMode ? "text-2xl font-extrabold tracking-wider" : "text-base")}
-        />
+        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("phone")}</span>
+        <div className={cn("mt-1 w-full rounded-2xl border border-input bg-muted/40 px-4 py-3 text-muted-foreground", simpleMode ? "text-2xl font-extrabold tracking-wider" : "text-base")}>
+          +227 {phone}
+        </div>
       </label>
       <div className="mt-5">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("bet.paymentMode")} *</span>
-          {operatorAuto && (
-            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
-              {t("bet.detectedName", { name: operatorAuto.name })}
-            </span>
-          )}
-        </div>
+        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("bet.paymentMode")} *</span>
         <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {paymentMethods.map((p) => {
             const sel = p.id === paymentId;

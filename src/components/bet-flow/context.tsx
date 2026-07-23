@@ -6,7 +6,7 @@ import { useTickets, type TicketLeg } from "@/lib/tickets";
 import { regions, paymentMethods, type GameId } from "@/lib/mock-data";
 import { useAccount } from "@/lib/account";
 import { useAuth } from "@/lib/auth";
-import { detectOperator, mockAccountHolder } from "@/lib/schedule";
+import { mockAccountHolder } from "@/lib/schedule";
 import { useDrafts } from "@/lib/drafts";
 import { beginPayment, checkDuplicate, confirmPayment, failPayment, paymentKey } from "@/lib/payments";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,7 +68,7 @@ function useProviderValue(cfg: BetFlowConfig) {
   const [mmError, setMmError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
   const [simpleMode, setSimpleMode] = useState(true);
-  const [paymentId, setPaymentId] = useState<string>("airtel");
+  const [paymentId, setPaymentId] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [duplicateMsg, setDuplicateMsg] = useState<string | null>(null);
 
@@ -76,12 +76,10 @@ function useProviderValue(cfg: BetFlowConfig) {
     if (lockedStake != null) setStake(lockedStake);
   }, [lockedStake]);
 
-  // 1 = sélection ; 3 = validation ; 5 = paiement. Toujours 3 étapes : comme
-  // un compte (téléphone + région) est désormais obligatoire avant de pouvoir
-  // se connecter, ces infos sont toujours déjà connues au moment de parier —
-  // les anciennes étapes 2 (mise seule) et 4 (ressaisie identité) sont donc
-  // supprimées définitivement, pas seulement sautées conditionnellement.
-  const visibleSteps = useMemo(() => [1, 3, 5], []);
+  // 1 = sélection ; 3 = validation ; 4 = choix de l'opérateur de paiement
+  // (numéro non modifiable, plus de détection auto : l'utilisateur doit
+  // toujours choisir lui-même) ; 5 = paiement.
+  const visibleSteps = useMemo(() => [1, 3, 4, 5], []);
   const totalSteps = visibleSteps.length;
   const stepIndex = Math.max(1, visibleSteps.indexOf(step) + 1);
   const goNextFrom = (s: number) => {
@@ -95,10 +93,6 @@ function useProviderValue(cfg: BetFlowConfig) {
   };
 
   const phoneOk = /^[+\d][\d\s]{6,}$/.test(phone);
-  const operatorAuto = phone ? detectOperator(phone) : null;
-  useEffect(() => {
-    if (operatorAuto) setPaymentId(operatorAuto.id);
-  }, [operatorAuto?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const selectedPayment = paymentMethods.find((p) => p.id === paymentId) ?? paymentMethods[0];
   const holder = phone ? mockAccountHolder(phone) : "";
 
@@ -239,7 +233,7 @@ function useProviderValue(cfg: BetFlowConfig) {
     saving, duplicateMsg,
     // derived
     visibleSteps, totalSteps, stepIndex, goNextFrom, goBackFrom,
-    phoneOk, operatorAuto, selectedPayment, holder, allLegs, totalStake, potentialWin,
+    phoneOk, selectedPayment, holder, allLegs, totalStake, potentialWin,
     // actions
     finish, saveDraft,
   };

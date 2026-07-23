@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { UserCircle2, Save, Trash2, X, AlertTriangle, RotateCcw, Clock } from "lucide-react";
+import { UserCircle2, Save, Trash2, X, AlertTriangle, RotateCcw, Clock, Smartphone } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -37,6 +37,8 @@ function ComptePage() {
   const [checking, setChecking] = useState(false);
   const [consented, setConsented] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [mmInfoOpen, setMmInfoOpen] = useState(false);
+  const [mmInfoSeen, setMmInfoSeen] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [legalOpen, setLegalOpen] = useState<null | "terms" | "privacy">(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -168,6 +170,7 @@ function ComptePage() {
             label={`${t("phone")} (8 chiffres)`}
             value={phone}
             onChange={(v) => { setPhoneError(null); setFieldErrors((s) => ({ ...s, phone: undefined })); setPhone(v.replace(/\D/g, "").slice(0, 8)); }}
+            onFocus={() => { if (!mmInfoSeen) { setMmInfoOpen(true); setMmInfoSeen(true); } }}
             placeholder="99294949"
             type="tel"
             error={fieldErrors.phone}
@@ -247,6 +250,8 @@ function ComptePage() {
         />
       )}
 
+      {mmInfoOpen && <MobileMoneyInfoModal onClose={() => setMmInfoOpen(false)} />}
+
       <Drawer open={legalOpen !== null} onOpenChange={(o) => !o && setLegalOpen(null)}>
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader>
@@ -269,7 +274,7 @@ function ComptePage() {
   );
 }
 
-function Field({ label, value, onChange, placeholder, type = "text", error }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; error?: string }) {
+function Field({ label, value, onChange, placeholder, type = "text", error, onFocus }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; error?: string; onFocus?: () => void }) {
   return (
     <label className="block min-w-0">
       <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">{label}</span>
@@ -277,12 +282,43 @@ function Field({ label, value, onChange, placeholder, type = "text", error }: { 
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={onFocus}
         placeholder={placeholder}
         aria-invalid={!!error}
         className={`mt-1 w-full rounded-2xl border bg-white/10 px-3.5 py-2.5 text-sm text-white placeholder-white/30 focus:bg-white/15 outline-none ${error ? "border-red-400/70 focus:border-red-400" : "border-white/15 focus:border-[#00C896]"}`}
       />
       {error && <p className="mt-1 text-xs font-semibold text-red-300">{error}</p>}
     </label>
+  );
+}
+
+function MobileMoneyInfoModal({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-0 sm:p-4" role="dialog" aria-modal="true">
+      <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl border border-border bg-card shadow-elevated overflow-hidden">
+        <div className="flex items-start justify-between gap-3 border-b border-border/60 bg-gradient-to-br from-primary/15 to-transparent p-5">
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/20 text-primary">
+              <Smartphone className="h-5 w-5" />
+            </div>
+            <h3 className="font-display text-base font-extrabold">{t("account.mmInfoTitle")}</h3>
+          </div>
+          <button onClick={onClose} aria-label={t("account.close")} className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <p className="text-sm text-foreground/90">{t("account.mmInfoDesc")}</p>
+          <button
+            onClick={onClose}
+            className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-extrabold uppercase tracking-wide text-primary-foreground hover:brightness-110"
+          >
+            {t("account.mmInfoAck")}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
