@@ -60,7 +60,7 @@ function save(s: AuthState) {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { account } = useAccount();
+  const { account, saveAccount } = useAccount();
   const [state, setState] = useState<AuthState>(defaultState);
   const [session, setSession] = useState<Session | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -173,6 +173,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logAuthEvent("verify-fail", phone, `set_session: ${error.message}`);
         return { ok: false, reason: "wrong-code" };
       }
+      // Nouvel appareil : le compte local (localStorage) peut être vide alors
+      // que le profil existe côté serveur. On le recharge pour réafficher
+      // nom/région correctement au lieu de laisser un compte local incomplet.
+      if (res.profile) {
+        saveAccount({
+          firstName: res.profile.firstName ?? account?.firstName ?? "",
+          lastName: res.profile.lastName ?? account?.lastName ?? "",
+          region: res.profile.region ?? account?.region ?? "",
+          phone,
+          userId: res.userId,
+        });
+      }
       const fresh = { ...defaultState, lockCount: state.lockCount };
       setState(fresh); save(fresh);
       logAuthEvent("verify-ok", phone);
@@ -202,7 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       reason: "wrong-code",
       remaining: typeof res.remaining === "number" ? res.remaining : 3 - failed,
     };
-  }, [state, account]);
+  }, [state, account, saveAccount]);
 
   const resetLock = useCallback(() => {
     const fresh = defaultState;

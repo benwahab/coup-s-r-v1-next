@@ -5,6 +5,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { useAccount } from "@/lib/account";
+import { checkPhoneAccount } from "@/lib/account.functions";
 import { useI18n } from "@/lib/i18n";
 import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
 import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=160&quality=90&url";
@@ -85,10 +86,21 @@ function AuthPage() {
     const parsed = PhoneSchema.safeParse(phone);
     if (!parsed.success) { setError(parsed.error.issues[0].message); return; }
 
-    // Aucun compte pour ce numéro : on ne génère aucun OTP, on invite à en créer un.
+    // Aucun compte pour ce numéro sur CET appareil : avant de conclure qu'il
+    // n'existe pas du tout, on vérifie côté serveur (l'utilisateur peut avoir
+    // créé son compte sur un autre téléphone — le registre local ne le sait pas).
     if (isPhoneAvailable(phone).ok) {
-      setNoAccountOpen(true);
-      return;
+      setSending(true);
+      let existsOnServer = false;
+      try {
+        const check = await checkPhoneAccount({ data: { phone } });
+        existsOnServer = check.exists;
+      } catch { /* pas de réponse serveur : on retombe sur "aucun compte" */ }
+      setSending(false);
+      if (!existsOnServer) {
+        setNoAccountOpen(true);
+        return;
+      }
     }
 
     setSending(true);

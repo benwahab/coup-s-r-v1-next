@@ -203,6 +203,14 @@ export const verifyOtp = createServerFn({ method: "POST" })
         .upsert({ id: sess.session.user.id, ...patch }, { onConflict: "id" });
     }
 
+    // Récupère le profil existant (utile côté client pour réafficher nom/région
+    // sur un nouvel appareil, où le compte local est encore vide).
+    const { data: profileRow } = await supabaseAdmin
+      .from("profiles")
+      .select("first_name, last_name, region")
+      .eq("id", sess.session.user.id)
+      .maybeSingle();
+
     return {
       ok: true as const,
       session: {
@@ -211,5 +219,12 @@ export const verifyOtp = createServerFn({ method: "POST" })
       },
       userId: sess.session.user.id,
       phone: phoneE164,
+      profile: profileRow
+        ? {
+            firstName: profileRow.first_name ?? undefined,
+            lastName: profileRow.last_name ?? undefined,
+            region: profileRow.region ?? undefined,
+          }
+        : null,
     };
   });

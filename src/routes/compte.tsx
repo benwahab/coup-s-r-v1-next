@@ -5,6 +5,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
+import { checkPhoneAccount } from "@/lib/account.functions";
 import { regions } from "@/lib/mock-data";
 import { TERMS_VERSION, PRIVACY_VERSION, mockIp, makeUserId } from "@/lib/legal";
 import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
@@ -33,6 +34,7 @@ function ComptePage() {
   const [region, setRegion] = useState<string>(account?.region ?? regions[0]);
   const [phone, setPhone] = useState(account?.phone ?? "");
   const [saved, setSaved] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [consented, setConsented] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
@@ -66,7 +68,7 @@ function ComptePage() {
     setTimeout(() => navigate({ to: isNewAccount ? "/auth" : "/" }), 700);
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPhoneError(null);
     setFieldErrors({});
@@ -93,9 +95,27 @@ function ComptePage() {
       }
       return;
     }
+    // Registre local vide = nouvel appareil, pas forcément un nouveau compte :
+    // on vérifie côté serveur avant de laisser créer, pour ne pas écraser un
+    // compte déjà existant sur un autre téléphone.
+    if (!account?.userId) {
+      setChecking(true);
+      let existsOnServer = false;
+      try {
+        const check = await checkPhoneAccount({ data: { phone } });
+        existsOnServer = check.exists;
+      } catch { /* pas de réponse serveur : le serveur retranchera de toute façon à l'étape OTP */ }
+      setChecking(false);
+      if (existsOnServer) {
+        const msg = t("account.phoneTaken");
+        setPhoneError(msg); toast.error(msg);
+        return;
+      }
+    }
     persist();
     toast.success(t("account.savedToast"));
   };
+
 
   return (
     <>
@@ -189,7 +209,7 @@ function ComptePage() {
 
           <button
             type="submit"
-            disabled={!ok}
+            disabled={!ok || checking}
             className="cs-cta"
           >
             <Save className="h-4 w-4" /> {t("saveAccount")}
