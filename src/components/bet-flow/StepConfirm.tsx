@@ -1,4 +1,7 @@
+import { Check, Smartphone } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { regions, paymentMethods } from "@/lib/mock-data";
+import { cn } from "@/lib/utils";
 import { useBetFlow } from "./context";
 import { Card, Footer } from "./atoms";
 
@@ -6,6 +9,7 @@ export function StepConfirm() {
   const { t } = useI18n();
   const {
     gameName, drawName, allLegs, odds, totalStake, potentialWin, validated, setValidated,
+    phone, region, setRegion, paymentId, setPaymentId,
     goBackFrom, goNextFrom,
   } = useBetFlow();
 
@@ -44,11 +48,50 @@ export function StepConfirm() {
           <div className="mt-1 text-[11px] text-muted-foreground text-right">{t("bet.globalOdds", { odds: odds.toFixed(2) })}</div>
         )}
       </div>
+
+      <label className="block mt-4">
+        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("phone")}</span>
+        <div className="mt-1 w-full rounded-2xl border border-input bg-muted/40 px-4 py-3 text-base text-muted-foreground">+227 {phone}</div>
+      </label>
+
+      <div className="mt-4">
+        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("bet.paymentMode")} *</span>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {paymentMethods.map((p) => {
+            const sel = p.id === paymentId;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setPaymentId(p.id)}
+                className={cn(
+                  "flex min-h-14 items-center gap-2 rounded-2xl border-2 px-3 py-3 text-left font-semibold transition",
+                  sel ? "border-primary bg-primary/10 shadow-soft" : "border-border bg-card hover:border-primary/40",
+                )}
+              >
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-white" style={{ backgroundColor: p.color }}>
+                  <Smartphone className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 truncate text-sm">{p.name}</span>
+                {sel && <Check className="ml-auto h-4 w-4 text-primary" />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <label className="block mt-4">
+        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("region")} *</span>
+        <select value={region} onChange={(e) => setRegion(e.target.value)} className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-base focus:border-primary outline-none">
+          {regions.map((r) => <option key={r} value={r}>{r}</option>)}
+        </select>
+      </label>
+
       <label className="mt-4 flex items-start gap-2.5 cursor-pointer">
         <input type="checkbox" checked={validated} onChange={(e) => setValidated(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
         <span className="text-sm">{t("validateSelection")}</span>
       </label>
-      <Footer onBack={() => goBackFrom(3)} onNext={() => goNextFrom(3)} disabled={!validated} />
+      <Footer onBack={() => goBackFrom(3)} onNext={() => goNextFrom(3)} disabled={!validated || !paymentId || !region} />
     </Card>
   );
 }

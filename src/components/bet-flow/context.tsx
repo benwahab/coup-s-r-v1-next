@@ -79,7 +79,7 @@ function useProviderValue(cfg: BetFlowConfig) {
   // 1 = sélection ; 3 = validation ; 4 = choix de l'opérateur de paiement
   // (numéro non modifiable, plus de détection auto : l'utilisateur doit
   // toujours choisir lui-même) ; 5 = paiement.
-  const visibleSteps = useMemo(() => [1, 3, 4, 5], []);
+  const visibleSteps = useMemo(() => [1, 3, 5], []);
   const totalSteps = visibleSteps.length;
   const stepIndex = Math.max(1, visibleSteps.indexOf(step) + 1);
   const goNextFrom = (s: number) => {

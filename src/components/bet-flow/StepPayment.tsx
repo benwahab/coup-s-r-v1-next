@@ -15,7 +15,6 @@ export function StepPayment() {
   return (
     <Card title={t("payment")}>
       <div className="-mt-2 mb-3 flex flex-wrap items-center gap-3 text-[11px]">
-        <button type="button" onClick={() => setStep(4)} className="font-bold text-primary underline">{t("bet.editPhoneOperator")}</button>
         <button type="button" onClick={() => setStep(3)} className="font-bold text-primary underline">{t("bet.editSelection")}</button>
       </div>
       <div className="rounded-2xl border border-border bg-secondary/40 p-4">
@@ -29,7 +28,7 @@ export function StepPayment() {
             <div className="text-sm font-bold truncate">{holder}</div>
             <div className="text-xs text-muted-foreground truncate">+227 {phone} · {region}</div>
           </div>
-          <button type="button" onClick={() => setStep(4)} className="text-xs font-bold text-primary underline">{t("changeNumber")}</button>
+          <button type="button" onClick={() => setStep(3)} className="text-xs font-bold text-primary underline">{t("changeNumber")}</button>
         </div>
         <label className="mt-3 flex items-start gap-2.5 cursor-pointer rounded-xl bg-card/70 px-3 py-2">
           <input type="checkbox" checked={validated} onChange={(e) => setValidated(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
@@ -79,7 +78,7 @@ export function StepPayment() {
           <div className="min-w-0">
             <div className="font-bold">{mmError}</div>
             {mmError === t("insufficientFunds") && (
-              <button type="button" onClick={() => setStep(4)} className="mt-1 text-xs font-bold underline">{t("changeNumber")}</button>
+              <button type="button" onClick={() => setStep(3)} className="mt-1 text-xs font-bold underline">{t("changeNumber")}</button>
             )}
           </div>
         </div>

@@ -355,7 +355,7 @@ const dict = {
     verifyTicket: "Vérification de ticket",
     authentic: "Ticket authentique",
     notAuthentic: "Ticket non valide",
-    // ── bet-flow (StepStake / StepIdentity / StepPayment / StepConfirm) ──
+    // ── bet-flow (StepStake / StepPayment / StepConfirm) ──
     "bet.stakeAutoCalculated": "Mise calculée automatiquement selon votre pari · {amount} {fcfa}",
     "bet.stakePerGrid": "Mises définies par grille — {count} grilles · Mise totale : {total} {fcfa}",
     "bet.otherAmount": "Autre montant ({fcfa}) — min {min} · max {max}",
