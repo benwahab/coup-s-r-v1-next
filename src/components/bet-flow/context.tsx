@@ -5,12 +5,10 @@ import { useI18n } from "@/lib/i18n";
 import { useTickets, type TicketLeg } from "@/lib/tickets";
 import { regions, paymentMethods, type GameId } from "@/lib/mock-data";
 import { useAccount } from "@/lib/account";
-import { useAuth } from "@/lib/auth";
 import { mockAccountHolder } from "@/lib/schedule";
 import { useDrafts } from "@/lib/drafts";
 import { beginPayment, checkDuplicate, confirmPayment, failPayment, paymentKey } from "@/lib/payments";
 import { createTicketAfterPayment } from "@/lib/tickets.functions";
-import { fixtureOdds1x2 } from "@/lib/foot-fixtures";
 
 export interface BetFlowConfig {
   gameId: GameId;
@@ -46,7 +44,6 @@ function useProviderValue(cfg: BetFlowConfig) {
   const navigate = useNavigate();
   const { addDraft } = useDrafts();
   const { account } = useAccount();
-  const { session } = useAuth();
 
   const accountComplete = !!(account && account.phone && account.region);
   const [expressMode, setExpressMode] = useState(accountComplete);
