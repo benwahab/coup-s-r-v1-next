@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { mockAccountHolder } from "@/lib/schedule";
 import { useDrafts } from "@/lib/drafts";
 import { beginPayment, checkDuplicate, confirmPayment, failPayment, paymentKey } from "@/lib/payments";
+import { createTicketAfterPayment } from "@/lib/tickets.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { fixtureOdds1x2 } from "@/lib/foot-fixtures";
 
@@ -44,7 +45,6 @@ function useProviderValue(cfg: BetFlowConfig) {
 
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { addTicket } = useTickets();
   const { addDraft } = useDrafts();
   const { account } = useAccount();
   const { session } = useAuth();
@@ -52,11 +52,6 @@ function useProviderValue(cfg: BetFlowConfig) {
   const accountComplete = !!(account && account.phone && account.region);
   const [expressMode, setExpressMode] = useState(accountComplete);
   useEffect(() => {
-    // `account` se charge de façon asynchrone après le montage (localStorage/
-    // Supabase) : au tout premier rendu il vaut encore `null`, donc l'état
-    // initial de expressMode se figeait sur `false` même pour un profil déjà
-    // complet, forçant le parcours complet à 5 étapes au lieu du raccourci
-    // à 3 étapes. On le resynchronise dès que l'info est disponible.
     if (accountComplete) setExpressMode(true);
   }, [accountComplete]);
   const [step, setStep] = useState(1);
@@ -142,17 +137,32 @@ function useProviderValue(cfg: BetFlowConfig) {
         toast.error(t("insufficientFunds"));
         return;
       }
+
+      // Demo payment confirmation happens before ticket creation. The ticket
+      // itself is then created only by a server function that re-checks the
+      // authenticated user, payment ownership/state, amount and game.
+      await confirmPayment(intent.txRef);
+
       const first = allLegs[0];
-      const ticket = await addTicket({
-        gameId: first.gameId, gameName: first.gameName,
-        firstName: account?.firstName, lastName: account?.lastName, phone, region,
-        picks: first.picks, picksLabel: allLegs.map(l => l.picksLabel).join(" | "),
-        stake: totalStake,
-        payment: `${selectedPayment.name} · ${intent.txRef}`,
-        drawDate: first.drawDate,
-        drawName,
-        legs: allLegs,
+      const ticketRes = await createTicketAfterPayment({
+        data: {
+          paymentReference: intent.txRef,
+          gameId: first.gameId,
+          gameName: first.gameName,
+          firstName: account?.firstName,
+          lastName: account?.lastName,
+          phone,
+          region,
+          picks: first.picks,
+          picksLabel: allLegs.map(l => l.picksLabel).join(" | "),
+          stake: totalStake,
+          payment: `${selectedPayment.name} · ${intent.txRef}`,
+          drawDate: first.drawDate,
+          drawName,
+          legs: allLegs,
+        },
       });
+      const ticket = ticketRes.ticket;
 
       if (first.gameId === "foot" && session) {
         // Une ligne par MATCH (pas par marché) : un ticket peut parier sur
@@ -187,17 +197,14 @@ function useProviderValue(cfg: BetFlowConfig) {
           }));
           const { error: pickErr } = await supabase.from("foot_picks").insert(rows);
           if (pickErr) {
-            // Contrainte UNIQUE violée = l'utilisateur a déjà parié sur un de ces
-            // matchs entre-temps (double onglet, etc.). Le ticket est déjà créé
-            // et payé ; on informe sans bloquer le paiement déjà confirmé.
             toast.error("Un des matchs sélectionnés a déjà été parié entre-temps.");
           }
         }
       }
 
-      await confirmPayment(intent.txRef, ticket);
       toast.success("Paiement confirmé, ticket enregistré ✓");
-      navigate({ to: "/ticket/$id", params: { id: ticket.id } });
+      setPaying(false);
+      navigate({ to: "/ticket/$id", params: { id: ticket.code } });
     } catch (e) {
       setPaying(false);
       const msg = e instanceof Error ? e.message : "Erreur réseau — réessayez.";
@@ -222,19 +229,15 @@ function useProviderValue(cfg: BetFlowConfig) {
   };
 
   return {
-    // cfg
     gameId, gameName, drawDate, selection, picksLabel, canContinue, renderSelection,
     legs, drawName, minStake, maxStake, odds, lockedStake, skipStake, gameOpen, openHour,
-    // state
     account, accountComplete, expressMode, setExpressMode,
     step, setStep, stake, setStake, phone, setPhone, region, setRegion,
     validated, setValidated, mmPwd, setMmPwd, mmError, setMmError,
     paying, simpleMode, setSimpleMode, paymentId, setPaymentId,
     saving, duplicateMsg,
-    // derived
     visibleSteps, totalSteps, stepIndex, goNextFrom, goBackFrom,
     phoneOk, selectedPayment, holder, allLegs, totalStake, potentialWin,
-    // actions
     finish, saveDraft,
   };
 }
