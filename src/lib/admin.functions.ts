@@ -68,8 +68,14 @@ export const adminUpdateTicketStatus = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: Database["public"]["Tables"]["tickets"]["Update"] = { status: data.status };
     if (data.prize !== undefined) patch.prize = data.prize;
-    const { error } = await supabaseAdmin.from("tickets").update(patch).eq("code", data.code);
+    const { data: updatedTicket, error } = await supabaseAdmin
+      .from("tickets")
+      .update(patch)
+      .eq("code", data.code)
+      .select("id")
+      .maybeSingle();
     if (error) throw new Error(error.message);
+    if (!updatedTicket) throw new Error("ticket_not_found");
     await writeAuditLog(supabaseAdmin, {
       userId: context.userId,
       action: "admin.ticket.status_updated",
@@ -99,6 +105,8 @@ export const adminUpdateTicketLegStatus = createServerFn({ method: "POST" })
     if (e1) throw new Error(e1.message);
     if (!row) throw new Error("ticket_not_found");
     const legs = Array.isArray(row.legs) ? (row.legs as Array<Record<string, unknown>>) : [];
+    const targetExists = legs.some((l) => l.legId === data.legId);
+    if (!targetExists) throw new Error("ticket_leg_not_found");
     const nextLegs = legs.map((l) =>
       l.legId === data.legId
         ? { ...l, status: data.status, ...(data.prize !== undefined ? { prize: data.prize } : {}) }
@@ -113,11 +121,14 @@ export const adminUpdateTicketLegStatus = createServerFn({ method: "POST" })
       (s, l) => s + (typeof l.prize === "number" ? l.prize : 0),
       0,
     );
-    const { error: e2 } = await supabaseAdmin
+    const { data: updatedTicket, error: e2 } = await supabaseAdmin
       .from("tickets")
       .update({ legs: nextLegs as unknown as Database["public"]["Tables"]["tickets"]["Update"]["legs"], status: global, prize: totalPrize || null })
-      .eq("id", row.id);
+      .eq("id", row.id)
+      .select("id")
+      .maybeSingle();
     if (e2) throw new Error(e2.message);
+    if (!updatedTicket) throw new Error("ticket_not_found");
     await writeAuditLog(supabaseAdmin, {
       userId: context.userId,
       action: "admin.ticket.leg_updated",
@@ -267,8 +278,15 @@ export const adminRevokeRole = createServerFn({ method: "POST" })
     await assertSuperAdmin(context.supabase as SB, context.userId);
     if (data.userId === context.userId) return { ok: false as const, reason: "cannot_self_revoke" as const };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId).eq("role", "admin");
+    const { data: revoked, error } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.userId)
+      .eq("role", "admin")
+      .select("id")
+      .maybeSingle();
     if (error) throw new Error(error.message);
+    if (!revoked) return { ok: false as const, reason: "role_not_found" as const };
     await writeAuditLog(supabaseAdmin, {
       userId: context.userId,
       action: "admin.role.revoked",
