@@ -6,6 +6,7 @@ import {
   adminUpdateTicketStatus,
   adminUpdateTicketLegStatus,
 } from "./admin.functions";
+import { createTicketAfterPayment } from "./tickets.functions";
 import type { Database } from "@/integrations/supabase/types";
 
 export type TicketStatus = "pending" | "losing" | "winning" | "paid";
@@ -33,15 +34,14 @@ export interface Ticket {
   phone: string;
   email?: string;
   region?: string;
-  picks: (string | number)[];           // numbers, horse numbers, or "m1:1" pairs
-  picksLabel: string;                    // human readable
+  picks: (string | number)[];
+  picksLabel: string;
   stake: number;
   payment: string;
   createdAt: string;
   drawDate: string;
   status: TicketStatus;
   prize?: number;
-  /** Présent si le reçu groupe plusieurs grilles/jeux. Sinon le ticket = 1 leg implicite. */
   legs?: TicketLeg[];
   drawName?: string;
 }
@@ -51,7 +51,7 @@ interface Ctx {
   loading: boolean;
   error: string | null;
   refresh: () => void;
-  addTicket: (t: Omit<Ticket, "id" | "createdAt" | "status">) => Promise<Ticket>;
+  addTicket: (t: Omit<Ticket, "id" | "createdAt" | "status"> & { paymentReference: string }) => Promise<Ticket>;
   getTicket: (id: string) => Ticket | undefined;
   updateStatus: (id: string, status: TicketStatus, prize?: number) => Promise<void>;
   updateLegStatus: (ticketId: string, legId: string, status: TicketStatus, prize?: number) => Promise<void>;
@@ -59,21 +59,9 @@ interface Ctx {
 
 const TicketsCtx = createContext<Ctx | null>(null);
 
-function newId() {
-  const n = Math.floor(Math.random() * 9_000_000) + 1_000_000;
-  return `LNN-${n}`;
-}
-
 type TicketRow = Database["public"]["Tables"]["tickets"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
-function toE164(local: string | undefined): string | null {
-  if (!local) return null;
-  const s = local.replace(/\D/g, "");
-  if (s.length === 8) return `+227${s}`;
-  if (s.startsWith("227")) return `+${s}`;
-  return s.startsWith("+") ? s : `+${s}`;
-}
 function stripPrefix(e164: string | null | undefined): string {
   const s = (e164 ?? "").replace(/\D/g, "");
   if (s.startsWith("227") && s.length === 11) return s.slice(3);
@@ -146,30 +134,25 @@ export function TicketsProvider({ children }: { children: ReactNode }) {
 
   const addTicket: Ctx["addTicket"] = async (t) => {
     if (!session) throw new Error("not_authenticated");
-    const code = newId();
-    const legs = t.legs?.map((l, i) => ({ ...l, legId: l.legId || `${code}-${i}` }));
-    const { data, error } = await supabase
-      .from("tickets")
-      .insert({
-        user_id: session.userId,
-        code,
-        game_id: t.gameId,
-        game_name: t.gameName,
-        picks: t.picks as unknown as Database["public"]["Tables"]["tickets"]["Insert"]["picks"],
-        picks_label: t.picksLabel,
+    const res = await createTicketAfterPayment({
+      data: {
+        paymentReference: t.paymentReference,
+        gameId: t.gameId,
+        gameName: t.gameName,
+        firstName: t.firstName,
+        lastName: t.lastName,
+        phone: t.phone,
+        region: t.region,
+        picks: t.picks,
+        picksLabel: t.picksLabel,
         stake: t.stake,
-        payment_method: t.payment,
-        draw_date: t.drawDate ? t.drawDate.slice(0, 10) : null,
-        draw_name: t.drawName ?? null,
-        status: "pending",
-        legs: (legs ?? []) as unknown as Database["public"]["Tables"]["tickets"]["Insert"]["legs"],
-        phone: toE164(t.phone),
-        region: t.region ?? null,
-      })
-      .select()
-      .single();
-    if (error) throw error;
-    const tk = rowToTicket(data, profile);
+        payment: t.payment,
+        drawDate: t.drawDate,
+        drawName: t.drawName,
+        legs: t.legs,
+      },
+    });
+    const tk = rowToTicket(res.ticket, profile);
     setTickets((prev) => [tk, ...prev]);
     return tk;
   };
