@@ -92,6 +92,10 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     if (payment.ticket_id) throw new Error("payment_already_linked");
     if (payment.amount !== data.stake) throw new Error("payment_amount_mismatch");
     if (payment.game_id !== data.gameId) throw new Error("payment_game_mismatch");
+    if (!["pmu", "loto", "foot"].includes(data.gameId)) throw new Error("invalid_game");
+    const drawDate = data.drawDate ? data.drawDate.slice(0, 10) : "";
+    if (drawDate && !/^\d{4}-\d{2}-\d{2}$/.test(drawDate)) throw new Error("invalid_draw_date");
+    if (drawDate && drawDate < new Date().toISOString().slice(0, 10)) throw new Error("draw_closed");
 
     const code = ticketCodeFromPayment(payment.id);
     const legs = data.legs?.map((leg, index) => ({
@@ -108,7 +112,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
       picks_label: data.picksLabel,
       stake: data.stake,
       payment_method: data.payment,
-      draw_date: data.drawDate ? data.drawDate.slice(0, 10) : null,
+      draw_date: drawDate || null,
       draw_name: data.drawName ?? null,
       status: "pending",
       legs: (legs ?? []) as unknown as Database["public"]["Tables"]["tickets"]["Insert"]["legs"],
