@@ -123,6 +123,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
       ? (data.picks as unknown[]).filter((p): p is string => typeof p === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:[^:]{1,40}:[^:]{1,100}$/i.test(p))
       : [];
     if (data.gameId === "foot" && footPickKeys.length > 0) {
+      const seenMarkets = new Set<string>();
       for (const key of footPickKeys) {
         const parsed = footPickSchema.safeParse(key);
         if (!parsed.success) throw new Error("invalid_foot_pick");
@@ -132,6 +133,9 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
         const optionKey = parts.slice(2).join(":");
         const allowed = FOOT_MARKETS[marketId];
         if (!allowed || !allowed.has(optionKey)) throw new Error("invalid_foot_market_selection");
+        const marketKey = fixtureId + ":" + marketId;
+        if (seenMarkets.has(marketKey)) throw new Error("multiple_selections_same_market");
+        seenMarkets.add(marketKey);
 
         const { data: fixture, error: fixtureError } = await supabaseAdmin
           .from("foot_fixtures")
