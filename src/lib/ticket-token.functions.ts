@@ -34,5 +34,20 @@ export const verifyTicketToken = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => VerifyInput.parse(data))
   .handler(async ({ data }) => {
     const { verifyTicketTokenServer } = await import("./ticket-token.server");
-    return await verifyTicketTokenServer(data.token);
+    const result = await verifyTicketTokenServer(data.token);
+    if (!result.valid || !result.ticketId) return result;
+
+    // Une signature valide prouve l'authenticité du token, mais ne suffit pas :
+    // le ticket peut avoir été supprimé ou invalidé depuis l'émission du reçu.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: ticket, error } = await supabaseAdmin
+      .from("tickets")
+      .select("id, code, status")
+      .eq("code", result.ticketId)
+      .maybeSingle();
+
+    if (error) return { valid: false as const, reason: "Vérification indisponible" };
+    if (!ticket) return { valid: false as const, reason: "Ticket introuvable" };
+
+    return { ...result, ticketStatus: ticket.status };
   });
