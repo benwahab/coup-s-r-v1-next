@@ -44,10 +44,12 @@ function toE164(local: string): string | null {
   return s.startsWith("+") ? s : `+${s}`;
 }
 
-function newTicketCode(): string {
-  const bytes = new Uint32Array(2);
-  crypto.getRandomValues(bytes);
-  return `LNN-${bytes[0].toString(36).toUpperCase()}${bytes[1].toString(36).toUpperCase()}`;
+function ticketCodeFromPayment(paymentId: string): string {
+  // The same payment must always map to the same public ticket code. This
+  // makes concurrent retries fail closed on the database unique constraint
+  // instead of creating two tickets for one confirmed payment.
+  const compact = paymentId.replace(/-/g, "").slice(-12).toUpperCase();
+  return `LNN-${compact}`;
 }
 
 /**
@@ -77,7 +79,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     if (payment.amount !== data.stake) throw new Error("payment_amount_mismatch");
     if (payment.game_id !== data.gameId) throw new Error("payment_game_mismatch");
 
-    const code = newTicketCode();
+    const code = ticketCodeFromPayment(payment.id);
     const legs = data.legs?.map((leg, index) => ({
       ...leg,
       legId: leg.legId || `${code}-${index}`,
@@ -116,11 +118,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
       .eq("status", "confirmed")
       .is("ticket_id", null);
 
-    if (linkError) {
-      // Do not leave a confirmed payment silently pointing nowhere. The
-      // ticket exists and can be recovered/reconciled by an admin.
-      throw new Error(linkError.message);
-    }
+    if (linkError) throw new Error(linkError.message);
 
     return { ticket };
   });
