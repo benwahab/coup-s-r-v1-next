@@ -98,6 +98,11 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     if (drawDate && drawDate < new Date().toISOString().slice(0, 10)) throw new Error("draw_closed");
 
     const code = ticketCodeFromPayment(payment.id);
+    if (data.legs?.length) {
+      if (data.legs.some((leg) => leg.gameId !== data.gameId)) throw new Error("ticket_leg_game_mismatch");
+      const legsStake = data.legs.reduce((sum, leg) => sum + leg.stake, 0);
+      if (legsStake !== data.stake) throw new Error("ticket_leg_stake_mismatch");
+    }
     const legs = data.legs?.map((leg, index) => ({
       ...leg,
       legId: leg.legId || `${code}-${index}`,
