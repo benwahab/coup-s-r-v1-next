@@ -10,7 +10,6 @@ import { mockAccountHolder } from "@/lib/schedule";
 import { useDrafts } from "@/lib/drafts";
 import { beginPayment, checkDuplicate, confirmPayment, failPayment, paymentKey } from "@/lib/payments";
 import { createTicketAfterPayment } from "@/lib/tickets.functions";
-import { supabase } from "@/integrations/supabase/client";
 import { fixtureOdds1x2 } from "@/lib/foot-fixtures";
 
 export interface BetFlowConfig {
@@ -164,43 +163,10 @@ function useProviderValue(cfg: BetFlowConfig) {
       });
       const ticket = ticketRes.ticket;
 
-      if (first.gameId === "foot" && session) {
-        // Une ligne par MATCH (pas par marché) : un ticket peut parier sur
-        // plusieurs marchés d'un même match (ex: 1X2 + plus de 2.5 buts sur
-        // Arsenal-Chelsea) en une seule soumission. La contrainte UNIQUE
-        // (user_id, fixture_id) en base fait respecter "une seule fois par
-        // match, pour toujours" au niveau du match entier, pas du marché.
-        //
-        // Mode démo actuel : les matchs affichés sont fictifs (mock-data),
-        // avec des identifiants simples ("epl1", etc.) et non des UUID de
-        // vraies rencontres synchronisées — on n'essaie donc pas d'écrire
-        // dans foot_picks pour eux (la contrainte de clé étrangère
-        // rejetterait l'insertion). Cette logique se réactivera automatiquement
-        // dès que la page repassera sur de vraies rencontres (UUID valides).
-        const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
-        const pickKeys = (first.picks as string[]).filter((k) => isUuid(k.split(":")[0]));
-        if (pickKeys.length > 0) {
-          const byFixture = new Map<string, { marketId: string; selection: string; odds: number; status: "pending" }[]>();
-          for (const k of pickKeys) {
-            const [fixtureId, marketId, selection] = k.split(":");
-            const odds = marketId === "1x2" ? fixtureOdds1x2(fixtureId)[selection as "1" | "X" | "2"] : 1;
-            const list = byFixture.get(fixtureId) ?? [];
-            list.push({ marketId, selection, odds, status: "pending" });
-            byFixture.set(fixtureId, list);
-          }
-          const rows = Array.from(byFixture.entries()).map(([fixtureId, picksArr]) => ({
-            user_id: session.userId,
-            fixture_id: fixtureId,
-            ticket_id: ticket.id,
-            picks: picksArr,
-            status: "pending" as const,
-          }));
-          const { error: pickErr } = await supabase.from("foot_picks").insert(rows);
-          if (pickErr) {
-            toast.error("Un des matchs sélectionnés a déjà été parié entre-temps.");
-          }
-        }
-      }
+      // Les foot_picks sont désormais créés par createTicketAfterPayment
+      // côté serveur, avec vérification du propriétaire, du match, du marché,
+      // du statut et de l'heure de coup d'envoi.
+
 
       toast.success("Paiement confirmé, ticket enregistré ✓");
       setPaying(false);
