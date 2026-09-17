@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
+import { writeAuditLog } from "./audit.server";
 
 type SB = SupabaseClient<Database>;
 
@@ -69,6 +70,11 @@ export const adminUpdateTicketStatus = createServerFn({ method: "POST" })
     if (data.prize !== undefined) patch.prize = data.prize;
     const { error } = await supabaseAdmin.from("tickets").update(patch).eq("code", data.code);
     if (error) throw new Error(error.message);
+    await writeAuditLog(supabaseAdmin, {
+      userId: context.userId,
+      action: "admin.ticket.status_updated",
+      detail: { code: data.code, status: data.status, prize: data.prize ?? null },
+    });
     return { ok: true as const };
   });
 
@@ -112,6 +118,11 @@ export const adminUpdateTicketLegStatus = createServerFn({ method: "POST" })
       .update({ legs: nextLegs as unknown as Database["public"]["Tables"]["tickets"]["Update"]["legs"], status: global, prize: totalPrize || null })
       .eq("id", row.id);
     if (e2) throw new Error(e2.message);
+    await writeAuditLog(supabaseAdmin, {
+      userId: context.userId,
+      action: "admin.ticket.leg_updated",
+      detail: { code: data.code, legId: data.legId, status: data.status, prize: data.prize ?? null, resultingStatus: global },
+    });
     return { ok: true as const, status: global, prize: totalPrize || null };
   });
 
@@ -169,6 +180,11 @@ export const updateMyPaymentStatus = createServerFn({ method: "POST" })
       .eq("user_id", context.userId)
       .eq("status", "pending");
     if (error) throw new Error(error.message);
+    await writeAuditLog(supabaseAdmin, {
+      userId: context.userId,
+      action: "payment.demo.status_updated",
+      detail: { reference: data.reference, status: data.status, ticketId: ticketId ?? null },
+    });
     return { ok: true as const };
   });
 
@@ -236,6 +252,11 @@ export const adminGrantRole = createServerFn({ method: "POST" })
       .select()
       .maybeSingle();
     if (e2 && !e2.message.includes("duplicate")) throw new Error(e2.message);
+    await writeAuditLog(supabaseAdmin, {
+      userId: context.userId,
+      action: "admin.role.granted",
+      detail: { targetUserId: profile.id, role: "admin" },
+    });
     return { ok: true as const };
   });
 
@@ -248,5 +269,10 @@ export const adminRevokeRole = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId).eq("role", "admin");
     if (error) throw new Error(error.message);
+    await writeAuditLog(supabaseAdmin, {
+      userId: context.userId,
+      action: "admin.role.revoked",
+      detail: { targetUserId: data.userId, role: "admin" },
+    });
     return { ok: true as const };
   });
