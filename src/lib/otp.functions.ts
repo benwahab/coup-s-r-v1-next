@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { writeAuditLog } from "./audit.server";
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const MAX_ATTEMPTS = 3;
@@ -115,6 +116,10 @@ export const verifyOtp = createServerFn({ method: "POST" })
           consumed_at: nextAttempts >= MAX_ATTEMPTS ? nowIso : null,
         })
         .eq("id", otp.id);
+      await writeAuditLog(supabaseAdmin, {
+        action: "auth.otp.failed",
+        detail: { phone: phoneE164, remaining: Math.max(0, MAX_ATTEMPTS - nextAttempts) },
+      });
       return {
         ok: false as const,
         reason: "wrong-code" as const,
@@ -210,6 +215,12 @@ export const verifyOtp = createServerFn({ method: "POST" })
       .select("first_name, last_name, region")
       .eq("id", sess.session.user.id)
       .maybeSingle();
+
+    await writeAuditLog(supabaseAdmin, {
+      userId: sess.session.user.id,
+      action: "auth.otp.verified",
+      detail: { phone: phoneE164 },
+    });
 
     return {
       ok: true as const,
