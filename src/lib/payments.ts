@@ -2,6 +2,7 @@
 // Chaque intention est une ligne : status pending → confirmed | failed.
 
 import { supabase } from "@/integrations/supabase/client";
+import { beginPayment as beginPaymentServer, checkPaymentDuplicate } from "./payment.functions";
 import { updateMyPaymentStatus } from "./admin.functions";
 import type { Ticket } from "./tickets";
 
@@ -40,35 +41,9 @@ export function paymentKey(input: { phone: string; amount: number; gameId: strin
 
 /** Vérifie si un paiement identique est en cours ou a déjà été confirmé dans la fenêtre anti-doublon. */
 export async function checkDuplicate(key: string): Promise<{ duplicate: boolean; intent?: PaymentIntent }> {
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id;
-  if (!userId) return { duplicate: false };
-  const cutoff = new Date(Date.now() - WINDOW_MS).toISOString();
-  const { data } = await supabase
-    .from("payments")
-    .select("payment_key, reference, method, amount, status, created_at")
-    .eq("user_id", userId)
-    .eq("payment_key", key)
-    .or(`status.eq.confirmed,and(status.eq.pending,created_at.gte.${cutoff})`)
-    .order("created_at", { ascending: false })
-    .limit(1);
-  const row = data?.[0];
-  if (!row) return { duplicate: false };
-  return {
-    duplicate: true,
-    intent: {
-      key: row.payment_key ?? key,
-      txRef: row.reference,
-      gameId: "",
-      phone: "",
-      amount: row.amount,
-      createdAt: new Date(row.created_at).getTime(),
-      status: row.status,
-    },
-  };
+  return checkPaymentDuplicate({ data: { key } });
 }
 
-/** Crée une intention de paiement `pending`. À appeler juste avant l'appel à la MM API. */
 export async function beginPayment(input: {
   key: string;
   gameId: string;
@@ -76,34 +51,19 @@ export async function beginPayment(input: {
   amount: number;
   method?: string;
 }): Promise<PaymentIntent> {
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id;
-  if (!userId) throw new Error("not_authenticated");
-  const now = Date.now();
-  const txRef =
-    `TX-${now.toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`.toUpperCase();
-  const { data, error } = await supabase
-    .from("payments")
-    .insert({
-      user_id: userId,
+  const res = await beginPaymentServer({
+    data: {
+      key: input.key,
+      gameId: input.gameId as "pmu" | "loto" | "foot",
+      phone: input.phone,
       amount: input.amount,
       method: input.method ?? "mock",
-      status: "pending",
-      reference: txRef,
-      payment_key: input.key,
-    })
-    .select()
-    .single();
-  if (error) throw error;
-  return {
-    key: input.key,
-    txRef: data.reference,
-    gameId: input.gameId,
-    phone: input.phone,
-    amount: input.amount,
-    createdAt: new Date(data.created_at).getTime(),
-    status: "pending",
-  };
+    },
+  });
+  if (res.duplicate) {
+    throw new Error("duplicate_payment:" + res.intent.txRef);
+  }
+  return res.intent;
 }
 
 /** Marque l'intention comme confirmée (ticket émis). */
