@@ -19,7 +19,7 @@ const ticketLegSchema = z.object({
   prize: z.number().int().min(0).optional(),
 });
 
-const footPickSchema = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:[^:]{1,40}:[^:]{1,100}$/i);
+const footPickSchema = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:[^:]{1,40}:.{1,100}$/i);
 
 const FOOT_MARKETS: Record<string, Set<string>> = {
   "1x2": new Set(["1", "X", "2"]),
@@ -126,7 +126,10 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
       for (const key of footPickKeys) {
         const parsed = footPickSchema.safeParse(key);
         if (!parsed.success) throw new Error("invalid_foot_pick");
-        const [fixtureId, marketId, optionKey] = key.split(":");
+        const parts = key.split(":");
+        const fixtureId = parts[0];
+        const marketId = parts[1];
+        const optionKey = parts.slice(2).join(":");
         const allowed = FOOT_MARKETS[marketId];
         if (!allowed || !allowed.has(optionKey)) throw new Error("invalid_foot_market_selection");
 
@@ -154,7 +157,10 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     if (data.gameId === "foot" && footPickKeys.length > 0) {
       const byFixture = new Map<string, { marketId: string; selection: string; odds: number; status: "pending" }[]>();
       for (const key of footPickKeys) {
-        const [fixtureId, marketId, selection] = key.split(":");
+        const parts = key.split(":");
+        const fixtureId = parts[0];
+        const marketId = parts[1];
+        const selection = parts.slice(2).join(":");
         const list = byFixture.get(fixtureId) ?? [];
         list.push({ marketId, selection, odds: 1, status: "pending" });
         byFixture.set(fixtureId, list);
