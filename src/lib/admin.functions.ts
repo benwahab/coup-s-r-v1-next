@@ -15,14 +15,12 @@ async function assertAdmin(supabase: SB, userId: string) {
   if (data !== true) throw new Error("Forbidden: admin role required");
 }
 
-/** Seul un super-admin peut gérer les autres admins (donner/retirer l'accès). */
 async function assertSuperAdmin(supabase: SB, userId: string) {
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "super_admin" });
   if (error) throw new Error("role_check_failed");
   if (data !== true) throw new Error("Forbidden: super_admin role required");
 }
 
-/** Retourne `true` si l'utilisateur courant a le rôle admin. */
 export const checkIsAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -34,8 +32,6 @@ export const checkIsAdmin = createServerFn({ method: "POST" })
     return { isAdmin: data === true };
   });
 
-/** Retourne `true` si l'utilisateur courant a le rôle super_admin (seul
- *  niveau autorisé à gérer les autres admins). */
 export const checkIsSuperAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -47,7 +43,6 @@ export const checkIsSuperAdmin = createServerFn({ method: "POST" })
     return { isSuperAdmin: data === true };
   });
 
-/** Liste des tickets (tous joueurs) — admin uniquement. */
 export const adminListAllTickets = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -62,13 +57,10 @@ export const adminListAllTickets = createServerFn({ method: "POST" })
     return { tickets: data ?? [] };
   });
 
-/** Met à jour le statut d'un ticket (identifié par son code affiché). */
 export const adminUpdateTicketStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z
-      .object({ code: z.string().min(1), status: TicketStatus, prize: z.number().int().nullable().optional() })
-      .parse(data),
+    z.object({ code: z.string().min(1), status: TicketStatus, prize: z.number().int().nullable().optional() }).parse(data),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase as SB, context.userId);
@@ -80,18 +72,15 @@ export const adminUpdateTicketStatus = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-/** Met à jour le statut d'une jambe. Recalcule le statut global du ticket. */
 export const adminUpdateTicketLegStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z
-      .object({
-        code: z.string().min(1),
-        legId: z.string().min(1),
-        status: TicketStatus,
-        prize: z.number().int().nullable().optional(),
-      })
-      .parse(data),
+    z.object({
+      code: z.string().min(1),
+      legId: z.string().min(1),
+      status: TicketStatus,
+      prize: z.number().int().nullable().optional(),
+    }).parse(data),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase as SB, context.userId);
@@ -126,32 +115,63 @@ export const adminUpdateTicketLegStatus = createServerFn({ method: "POST" })
     return { ok: true as const, status: global, prize: totalPrize || null };
   });
 
-/** L'utilisateur courant confirme ou marque comme échouée sa propre intention. */
+/**
+ * Met à jour uniquement la propre intention de paiement de l'utilisateur.
+ * La transition est volontairement monotone : une intention déjà confirmée
+ * ne peut plus être transformée en échec par le client.
+ *
+ * IMPORTANT : la confirmation financière reste une simulation tant que le
+ * fournisseur Mobile Money n'est pas intégré. En production, cette action
+ * devra être remplacée par une confirmation serveur issue du fournisseur
+ * (webhook/API vérifiée), et jamais par une décision du navigateur.
+ */
 export const updateMyPaymentStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z
-      .object({
-        reference: z.string().min(1),
-        status: z.enum(["confirmed", "failed"]),
-        ticketId: z.string().uuid().optional(),
-      })
-      .parse(data),
+    z.object({
+      reference: z.string().min(1),
+      status: PaymentStatus.refine((s) => s === "confirmed" || s === "failed"),
+      ticketId: z.string().uuid().optional(),
+    }).parse(data),
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: payment, error: lookupError } = await supabaseAdmin
+      .from("payments")
+      .select("id, status, ticket_id, user_id")
+      .eq("reference", data.reference)
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (lookupError) throw new Error(lookupError.message);
+    if (!payment) throw new Error("payment_not_found");
+    if (payment.status !== "pending") {
+      if (payment.status === data.status) return { ok: true as const, unchanged: true as const };
+      throw new Error("invalid_payment_state_transition");
+    }
+
+    let ticketId = data.ticketId;
+    if (ticketId) {
+      const { data: ticket, error: ticketError } = await supabaseAdmin
+        .from("tickets")
+        .select("id, user_id")
+        .eq("id", ticketId)
+        .maybeSingle();
+      if (ticketError) throw new Error(ticketError.message);
+      if (!ticket || ticket.user_id !== context.userId) throw new Error("ticket_not_owned");
+    }
+
     const patch: Database["public"]["Tables"]["payments"]["Update"] = { status: data.status };
-    if (data.ticketId) patch.ticket_id = data.ticketId;
+    if (ticketId) patch.ticket_id = ticketId;
     const { error } = await supabaseAdmin
       .from("payments")
       .update(patch)
-      .eq("reference", data.reference)
-      .eq("user_id", context.userId);
+      .eq("id", payment.id)
+      .eq("user_id", context.userId)
+      .eq("status", "pending");
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
 
-/** Liste des paiements — admin uniquement. */
 export const adminListAllPayments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -166,7 +186,6 @@ export const adminListAllPayments = createServerFn({ method: "POST" })
     return { payments: data ?? [] };
   });
 
-/** Liste des comptes ayant le rôle admin — admin uniquement. */
 export const adminListAdmins = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -197,7 +216,6 @@ export const adminListAdmins = createServerFn({ method: "POST" })
     };
   });
 
-/** Accorde le rôle admin à un compte existant, identifié par son numéro de téléphone. */
 export const adminGrantRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ phone: z.string().regex(/^\d{8}$/) }).parse(data))
@@ -217,13 +235,10 @@ export const adminGrantRole = createServerFn({ method: "POST" })
       .insert({ user_id: profile.id, role: "admin" })
       .select()
       .maybeSingle();
-    // Contrainte UNIQUE(user_id, role) : déjà admin, on considère ça réussi (idempotent).
     if (e2 && !e2.message.includes("duplicate")) throw new Error(e2.message);
     return { ok: true as const };
   });
 
-/** Retire le rôle admin d'un compte. Un admin ne peut pas se retirer lui-même
- *  (garde-fou pour éviter de se verrouiller hors du panneau par erreur). */
 export const adminRevokeRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ userId: z.string().uuid() }).parse(data))
