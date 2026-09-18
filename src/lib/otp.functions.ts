@@ -216,9 +216,17 @@ export const verifyOtp = createServerFn({ method: "POST" })
       if (p.firstName !== undefined) patch.first_name = p.firstName || null;
       if (p.lastName !== undefined) patch.last_name = p.lastName || null;
       if (p.region !== undefined) patch.region = p.region || null;
-      await supabaseAdmin
+      const { error: profileUpsertError } = await supabaseAdmin
         .from("profiles")
         .upsert({ id: sess.session.user.id, ...patch }, { onConflict: "id" });
+      if (profileUpsertError) {
+        await writeAuditLog(supabaseAdmin, {
+          userId: sess.session.user.id,
+          action: "auth.profile_sync.failed",
+          detail: { phone: phoneE164, error: profileUpsertError.message },
+        });
+        throw new Error("profile_sync_failed");
+      }
     }
 
     // Récupère le profil existant (utile côté client pour réafficher nom/région
