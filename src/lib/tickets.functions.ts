@@ -93,6 +93,20 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     if (payment.amount !== data.stake) throw new Error("payment_amount_mismatch");
     if (payment.game_id !== data.gameId) throw new Error("payment_game_mismatch");
     if (!["pmu", "loto", "foot"].includes(data.gameId)) throw new Error("invalid_game");
+
+    // Les données d’identité ne doivent pas être choisies librement par le navigateur.
+    // Le numéro du ticket doit correspondre au profil authentifié.
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("phone")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (profileError) throw new Error("profile_lookup_failed: " + profileError.message);
+    const profilePhone = profile?.phone ? toE164(profile.phone) : null;
+    const submittedPhone = toE164(data.phone);
+    if (!profilePhone || !submittedPhone || profilePhone !== submittedPhone) throw new Error("phone_mismatch");
+    if (data.payment.trim().length === 0) throw new Error("invalid_payment_method");
+    if (data.gameName.trim().length === 0) throw new Error("invalid_game_name");
     const drawDate = data.drawDate ? data.drawDate.slice(0, 10) : "";
     if (drawDate && !/^\d{4}-\d{2}-\d{2}$/.test(drawDate)) throw new Error("invalid_draw_date");
     if (drawDate && drawDate < new Date().toISOString().slice(0, 10)) throw new Error("draw_closed");
@@ -131,6 +145,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     const footPickKeys = data.gameId === "foot"
       ? (data.picks as unknown[]).filter((p): p is string => typeof p === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:[^:]{1,40}:.{1,100}$/i.test(p))
       : [];
+    if (data.gameId === "foot" && footPickKeys.length === 0) throw new Error("missing_foot_picks");
     if (data.gameId === "foot" && footPickKeys.length > 0) {
       const seenMarkets = new Set<string>();
       for (const key of footPickKeys) {
