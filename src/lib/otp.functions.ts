@@ -110,13 +110,19 @@ export const verifyOtp = createServerFn({ method: "POST" })
     const codeHash = await sha256Hex(data.code);
     if (codeHash !== otp.code_hash) {
       const nextAttempts = otp.attempts + 1;
-      await supabaseAdmin
+      const { data: failedAttemptUpdate, error: failedAttemptError } = await supabaseAdmin
         .from("otp_codes")
         .update({
           attempts: nextAttempts,
           consumed_at: nextAttempts >= MAX_ATTEMPTS ? nowIso : null,
         })
-        .eq("id", otp.id);
+        .eq("id", otp.id)
+        .is("consumed_at", null)
+        .eq("attempts", otp.attempts)
+        .select("id")
+        .maybeSingle();
+      if (failedAttemptError) throw new Error(`otp_attempt_update_failed: ${failedAttemptError.message}`);
+      if (!failedAttemptUpdate) return { ok: false as const, reason: "already-used" as const };
       await writeAuditLog(supabaseAdmin, {
         action: "auth.otp.failed",
         detail: { phone: phoneE164, remaining: Math.max(0, MAX_ATTEMPTS - nextAttempts) },
@@ -129,11 +135,16 @@ export const verifyOtp = createServerFn({ method: "POST" })
     }
 
     // Consomme l'OTP.
-    const { error: consumeError } = await supabaseAdmin
+    const { data: consumedOtp, error: consumeError } = await supabaseAdmin
       .from("otp_codes")
       .update({ consumed_at: nowIso })
-      .eq("id", otp.id);
+      .eq("id", otp.id)
+      .is("consumed_at", null)
+      .eq("attempts", otp.attempts)
+      .select("id")
+      .maybeSingle();
     if (consumeError) throw new Error(`otp_consume_failed: ${consumeError.message}`);
+    if (!consumedOtp) return { ok: false as const, reason: "already-used" as const };
 
     // Bootstrap de l'utilisateur Supabase à partir du téléphone.
     // Le provider "phone" n'est pas activé sur ce projet Supabase → on utilise
