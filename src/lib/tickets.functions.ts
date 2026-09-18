@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
+import { horses, lotoMultipliers } from "@/lib/mock-data";
 
 const TicketStatus = z.literal("pending");
 
@@ -111,6 +112,45 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     if (drawDate && drawDate < new Date().toISOString().slice(0, 10)) throw new Error("draw_closed");
 
     const code = ticketCodeFromPayment(payment.id);
+
+    // Integrity checks for the demo game catalog. The browser may submit any
+    // JSON it wants, so PMU/Loto selections are revalidated against the same
+    // canonical definitions used by the UI before a ticket is persisted.
+    const validatePicks = (gameId: string, picks: Array<string | number>) => {
+      const nums = picks.filter((p): p is number => typeof p === "number");
+      if (gameId === "loto") {
+        if (nums.length < 1 || nums.length > 5 || nums.length !== picks.length) {
+          throw new Error("invalid_loto_selection");
+        }
+        const unique = new Set(nums);
+        if (unique.size !== nums.length || nums.some((n) => !Number.isInteger(n) || n < 1 || n > 90)) {
+          throw new Error("invalid_loto_selection");
+        }
+      } else if (gameId === "pmu") {
+        if (nums.length < 1 || nums.length > 8 || nums.length !== picks.length) {
+          throw new Error("invalid_pmu_selection");
+        }
+        const validPartants = new Set(horses.filter((h) => h.status === "partant").map((h) => h.number));
+        const unique = new Set(nums);
+        if (unique.size !== nums.length || nums.some((n) => !Number.isInteger(n) || !validPartants.has(n))) {
+          throw new Error("invalid_pmu_selection");
+        }
+      }
+    };
+
+    validatePicks(data.gameId, data.picks);
+    for (const leg of data.legs ?? []) {
+      if (leg.gameId !== data.gameId) throw new Error("ticket_leg_game_mismatch");
+      validatePicks(leg.gameId, leg.picks);
+      if (leg.stake < 300 || leg.stake > 100_000) throw new Error("invalid_leg_stake");
+    }
+
+    if (data.gameId === "loto") {
+      const count = data.picks.length;
+      const multiplier = lotoMultipliers[count];
+      if (!multiplier) throw new Error("invalid_loto_mode");
+    }
+
     if (data.legs?.length) {
       if (data.legs.some((leg) => leg.gameId !== data.gameId)) throw new Error("ticket_leg_game_mismatch");
       const legsStake = data.legs.reduce((sum, leg) => sum + leg.stake, 0);
