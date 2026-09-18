@@ -96,6 +96,14 @@ export const setUserPassword = createServerFn({ method: "POST" })
       app_metadata: { ...(userData.user.app_metadata ?? {}), password_setup_required: false },
     });
     if (error) throw new Error(`password_update_failed: ${error.message}`);
+
+    // A password reset/setup is a security-sensitive event. Keep the current
+    // verified session, but revoke refresh tokens for other devices/sessions.
+    const { error: revokeError } = await context.supabase.auth.signOut({ scope: "others" });
+    if (revokeError) {
+      await writeAuditLog(supabaseAdmin, { userId, action: "auth.session.revoke_others_failed", detail: { reason: revokeError.message } });
+    }
+
     await writeAuditLog(supabaseAdmin, { userId, action: "auth.password.created", detail: { method: "otp_verified" } });
     return { ok: true as const };
   });
