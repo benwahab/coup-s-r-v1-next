@@ -13,9 +13,9 @@ permissions:
   contents: read
 
 jobs:
-  lint:
+  quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,3 +30,6 @@ jobs:
 
       - name: Lint
         run: bun run lint
+
+      - name: Production build
+        run: bun run build
