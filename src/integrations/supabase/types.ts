@@ -13,7 +13,7 @@ export type Database = {
     PostgrestVersion: "14.5"
   }
   public: {
-    Tables: {
+    Tables: {\n      admin_permissions: {\n        Row: { id: string; user_id: string; permission: string; created_at: string }\n        Insert: { id?: string; user_id: string; permission: string; created_at?: string }\n        Update: { id?: string; user_id?: string; permission?: string; created_at?: string }\n        Relationships: []\n      }
       draw_results: {
         Row: {
           created_at: string
@@ -535,7 +535,7 @@ export type Database = {
         }
         Returns: string
       }
-      has_role: {
+      has_admin_permission: { Args: { _permission: string; _user_id: string }; Returns: boolean }\n      has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
@@ -546,7 +546,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "player" | "super_admin"
       payment_status: "pending" | "confirmed" | "failed"
-      ticket_status: "pending" | "losing" | "winning" | "paid"
+      ticket_status: "pending" | "losing" | "winning" | "paid"\n      admin_permission: "complaints" | "player_activity" | "ball_stats" | "publish_results" | "player_stats" | "region_stats" | "security_logs"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -676,7 +676,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "player", "super_admin"],
       payment_status: ["pending", "confirmed", "failed"],
-      ticket_status: ["pending", "losing", "winning", "paid"],
+      ticket_status: ["pending", "losing", "winning", "paid"],\n      admin_permission: ["complaints", "player_activity", "ball_stats", "publish_results", "player_stats", "region_stats", "security_logs"],
     },
   },
 } as const
