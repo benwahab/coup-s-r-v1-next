@@ -259,8 +259,8 @@ function AuthPage() {
                 {step === "phone" && (
                   <>
                     <div>
-                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">{t("account.step1")}</div>
-                      <p className="mt-0.5 text-[11px] text-white/60">{t("account.smsWillBeSent")}</p>
+                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">Connexion</div>
+                      <p className="mt-0.5 text-[11px] text-white/60">Connectez-vous avec votre numéro et votre mot de passe.</p>
                     </div>
                     <label className="cs-field group block">
                       <span className="cs-field-label">{t("account.phoneLabel")}</span>
@@ -271,7 +271,6 @@ function AuthPage() {
                           type="tel"
                           inputMode="numeric"
                           autoComplete="tel"
-                          pattern="[0-9]*"
                           maxLength={8}
                           value={phone}
                           onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
@@ -281,21 +280,41 @@ function AuthPage() {
                         />
                       </div>
                     </label>
+                    <label className="cs-field group block">
+                      <span className="cs-field-label">Mot de passe</span>
+                      <div className="cs-field-wrap">
+                        <KeyRound className="h-5 w-5 text-white/60 group-focus-within:text-[#00C896] transition-colors" />
+                        <input
+                          type="password"
+                          autoComplete="current-password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Votre mot de passe"
+                          disabled={locked}
+                          className="flex-1 bg-transparent text-sm font-semibold text-white placeholder-white/30 outline-none disabled:opacity-50"
+                        />
+                      </div>
+                    </label>
                     {error && <Alert variant="error">{error}</Alert>}
                     <button
-                      onClick={sendCode}
-                      disabled={locked || sending || phone.length !== 8}
+                      onClick={submitPasswordLogin}
+                      disabled={locked || passwordBusy || phone.length !== 8 || password.length < 8}
                       className={["cs-cta", locked ? "cs-cta-locked" : ""].join(" ")}
                     >
-                      {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
-                      {locked ? t("account.loginBlocked") : t("account.receiveSms")}
-                      {!locked && !sending && <ArrowRight className="h-4 w-4" />}
+                      {passwordBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                      {passwordBusy ? "Connexion..." : "Se connecter"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={sendCode}
+                      disabled={locked || sending || phone.length !== 8}
+                      className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-bold text-white/90 backdrop-blur transition hover:bg-white/10 disabled:opacity-60"
+                    >
+                      <KeyRound className="h-4 w-4" />
+                      Première connexion / mot de passe oublié
                     </button>
                     <p className="text-[11px] text-white/60 text-center">
                       {t("account.noAccount")} <a href="/compte" className="font-bold text-[#00C896] underline-offset-2 hover:underline">{t("createAccount")}</a>
-                    </p>
-                    <p className="text-[11px] text-white/50 text-center">
-                      {t("account.attemptsLeft", { remaining: Math.max(0, 3 - failedAttempts) })}
                     </p>
                   </>
                 )}
@@ -387,6 +406,64 @@ function AuthPage() {
                     </button>
                   </>
                 )}
+                {step === "password-setup" && (
+                  <>
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">Sécurité du compte</div>
+                      <h2 className="font-display text-lg font-extrabold text-white">Choisissez votre mot de passe</h2>
+                      <p className="mt-1 text-xs text-white/60">Votre OTP a été vérifié. Ce mot de passe sera utilisé pour vos prochaines connexions.</p>
+                    </div>
+                    <label className="cs-field group block">
+                      <span className="cs-field-label">Nouveau mot de passe</span>
+                      <div className="cs-field-wrap">
+                        <KeyRound className="h-5 w-5 text-white/60 group-focus-within:text-[#00C896] transition-colors" />
+                        <input
+                          type="password"
+                          autoComplete="new-password"
+                          minLength={8}
+                          maxLength={128}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="8 caractères minimum"
+                          className="flex-1 bg-transparent text-sm font-semibold text-white placeholder-white/30 outline-none"
+                        />
+                      </div>
+                    </label>
+                    <label className="cs-field group block">
+                      <span className="cs-field-label">Confirmer le mot de passe</span>
+                      <div className="cs-field-wrap">
+                        <CheckCircle2 className="h-5 w-5 text-white/60 group-focus-within:text-[#00C896] transition-colors" />
+                        <input
+                          type="password"
+                          autoComplete="new-password"
+                          minLength={8}
+                          maxLength={128}
+                          value={passwordConfirm}
+                          onChange={(e) => setPasswordConfirm(e.target.value)}
+                          placeholder="Retapez votre mot de passe"
+                          className="flex-1 bg-transparent text-sm font-semibold text-white placeholder-white/30 outline-none"
+                        />
+                      </div>
+                    </label>
+                    {error && <Alert variant="error">{error}</Alert>}
+                    {info && !error && <Alert variant="success">{info}</Alert>}
+                    <button
+                      onClick={submitPasswordSetup}
+                      disabled={passwordBusy || password.length < 8 || password !== passwordConfirm}
+                      className="cs-cta"
+                    >
+                      {passwordBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                      {passwordBusy ? "Enregistrement..." : "Créer mon mot de passe"}
+                    </button>
+                    <button
+                      onClick={() => { setStep("phone"); setOtp(""); setPassword(""); setPasswordConfirm(""); setError(null); }}
+                      className="flex min-h-11 w-full items-center justify-center rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-bold text-white/90"
+                    >
+                      Retour à la connexion
+                    </button>
+                  </>
+                )}
+
         <p className="pt-2 text-center text-[11px] text-white/60 leading-relaxed">
           {t("account.termsIntro")}{" "}
           <a href="/conditions" className="font-semibold text-[#00C896] hover:underline">{t("account.termsLink")}</a>{" "}
