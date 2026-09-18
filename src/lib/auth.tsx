@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback((reason: "user" | "expired" = "user") => {
     if (session) logAuthEvent(reason === "expired" ? "session-expired" : "logout", session.phone);
-    void supabase.auth.signOut();
+    void supabase.auth.signOut({ scope: "local" });
     setSession(null);
   }, [session]);
 
