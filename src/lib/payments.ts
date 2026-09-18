@@ -31,12 +31,14 @@ function stripPrefix(e164: string | null | undefined): string {
   return s.slice(-8);
 }
 
-/** Empreinte déterministe du paiement. */
-export function paymentKey(input: { phone: string; amount: number; gameId: string; selection: string }): string {
-  const s = `${input.phone}|${input.amount}|${input.gameId}|${input.selection}`;
-  let h = 0;
-  for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; }
-  return `pk_${(h >>> 0).toString(36)}`;
+/** Empreinte cryptographique déterministe du paiement. */
+export async function paymentKey(input: { phone: string; amount: number; gameId: string; selection: string }): Promise<string> {
+  const normalizedPhone = input.phone.replace(/\D/g, "");
+  const payload = `${normalizedPhone}|${input.amount}|${input.gameId}|${input.selection}`;
+  const bytes = new TextEncoder().encode(payload);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const hex = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+  return `pk_${hex}`;
 }
 
 /** Vérifie si un paiement identique est en cours ou a déjà été confirmé dans la fenêtre anti-doublon. */
