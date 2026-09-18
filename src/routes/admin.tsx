@@ -42,7 +42,9 @@ function AdminPage() {
   const { authed, session } = useAuth();
   const chart = useThemeChartColors();
   const gameColor: Record<string, string> = { pmu: chart.gold, loto: chart.teal, foot: chart.primary };
-  const isAdminResult = useIsAdmin();\n  const [adminPermissions, setAdminPermissions] = useState<AdminPermission[] | "all">([]);\n  const [permissionsReady, setPermissionsReady] = useState(false);
+  const isAdminResult = useIsAdmin();
+  const [adminPermissions, setAdminPermissions] = useState<AdminPermission[] | "all">([]);
+  const [permissionsReady, setPermissionsReady] = useState(false);
   const gate: "checking" | "ok" | "denied" | "anon" =
     !authed || !session
       ? "anon"
@@ -76,7 +78,7 @@ function AdminPage() {
     if (gate !== "ok") return;
     (async () => {
       try {
-        const { payments } = await adminListAllPayments();
+        const { payments } = await adminListPlayerActivities();
         setAllIntents(payments.map((r) => ({
           key: "",
           txRef: r.reference,
@@ -259,13 +261,15 @@ function AdminPage() {
     );
     const header = ["id", "date", "jeu", "telephone", "region", "selections", "mise_fcfa", "statut", "paiement", "gain_fcfa"];
     const csvBody = rows.map((r) => [r.id, r.date, r.game, r.phone, r.region, `"${r.picks.replace(/"/g, "''")}"`, r.stake, r.status, r.payment, r.prize].join(","));
-    downloadCsv([header.join(","), ...csvBody].join("\n"), `coupsur-${scope}-${from}_${to}.csv`);
+    downloadCsv([header.join(","), ...csvBody].join("
+"), `coupsur-${scope}-${from}_${to}.csv`);
   };
 
   const exportTransactionsCsv = () => {
     const header = ["id", "date", "jeu", "telephone", "region", "mise", "statut", "gain", "source"];
     const body = filteredRows.map(r => [r.id, r.date, r.game, r.phone, r.region, r.stake, r.status, r.prize, r.kind].join(","));
-    downloadCsv([header.join(","), ...body].join("\n"), `coupsur-transactions-${todayIso}.csv`);
+    downloadCsv([header.join(","), ...body].join("
+"), `coupsur-transactions-${todayIso}.csv`);
   };
 
 
@@ -295,7 +299,8 @@ function AdminPage() {
   const exportLogsCsv = () => {
     const header = ["horodatage", "telephone", "ip", "evenement", "note"];
     const body = filteredLog.map((e) => [new Date(e.at).toISOString(), e.phone, e.ip, e.kind, `"${(e.note ?? "").replace(/"/g, "''")}"`].join(","));
-    downloadCsv([header.join(","), ...body].join("\n"), "coupsur-auth-logs.csv");
+    downloadCsv([header.join(","), ...body].join("
+"), "coupsur-auth-logs.csv");
   };
 
   if (gate === "checking" || !permissionsReady) return <div className="min-h-[60vh]" aria-hidden />;
