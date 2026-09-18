@@ -247,7 +247,15 @@ export const adminListAdmins = createServerFn({ method: "POST" })
       .eq("role", "admin")
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
-    const permissionRows = userIds.length === 0 ? [] : (await supabaseAdmin.from("admin_permissions").select("user_id, permission").in("user_id", userIds)).data ?? [];
+    let permissionRows: { user_id: string; permission: string }[] = [];
+    if (userIds.length > 0) {
+      const { data: rows, error: permissionError } = await supabaseAdmin
+        .from("admin_permissions")
+        .select("user_id, permission")
+        .in("user_id", userIds);
+      if (permissionError) throw new Error(permissionError.message);
+      permissionRows = rows ?? [];
+    }
     const permissionsByUser = new Map<string, string[]>();
     for (const row of permissionRows) { const list = permissionsByUser.get(row.user_id) ?? []; list.push(row.permission); permissionsByUser.set(row.user_id, list); }
 
