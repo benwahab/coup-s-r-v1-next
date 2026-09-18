@@ -103,7 +103,7 @@ export const changeUserPassword = createServerFn({ method: "POST" })
     const { error: profileFlagError } = await supabaseAdmin
       .from("profiles")
       .update({ password_setup_required: false })
-      .eq("id", userId);
+      .eq("id", context.userId);
     if (profileFlagError) throw new Error("password_setup_state_update_failed");
     if (metaError) throw new Error("password_change_metadata_failed");
 
