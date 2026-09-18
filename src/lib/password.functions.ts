@@ -8,6 +8,9 @@ import { toE164Phone } from "./otp.server";
 const PhoneSchema = z.string().regex(/^\d{8}$/);
 const PasswordSchema = z.string().min(8).max(128);
 
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const MAX_FAILED_LOGINS = 5;
+
 function syntheticEmail(phoneE164: string): string {
   return `phone-${phoneE164.replace(/\D/g, "")}@coup-sur.local`;
 }
@@ -16,6 +19,12 @@ function randomTemporaryPassword(): string {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 async function findUserIdByPhone(phoneE164: string): Promise<string | null> {
@@ -28,6 +37,34 @@ async function findUserIdByPhone(phoneE164: string): Promise<string | null> {
   return data?.id ?? null;
 }
 
+async function passwordLoginRateBlocked(phoneE164: string): Promise<boolean> {
+  const phoneHash = await sha256Hex(phoneE164);
+  const since = new Date(Date.now() - LOGIN_WINDOW_MS).toISOString();
+  const { count, error } = await supabaseAdmin
+    .from("auth_login_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("phone_hash", phoneHash)
+    .eq("success", false)
+    .gte("created_at", since);
+
+  if (error) throw new Error(`login_rate_check_failed: ${error.message}`);
+  return (count ?? 0) >= MAX_FAILED_LOGINS;
+}
+
+async function recordPasswordLoginAttempt(
+  phoneE164: string,
+  success: boolean,
+  userId?: string,
+): Promise<void> {
+  const phoneHash = await sha256Hex(phoneE164);
+  const { error } = await supabaseAdmin.from("auth_login_attempts").insert({
+    phone_hash: phoneHash,
+    success,
+    user_id: userId ?? null,
+  });
+  if (error) throw new Error(`login_attempt_record_failed: ${error.message}`);
+}
+
 export const loginWithPassword = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => z.object({
     phone: PhoneSchema,
@@ -35,6 +72,15 @@ export const loginWithPassword = createServerFn({ method: "POST" })
   }).parse(data))
   .handler(async ({ data }) => {
     const phoneE164 = toE164Phone(data.phone);
+
+    if (await passwordLoginRateBlocked(phoneE164)) {
+      await writeAuditLog(supabaseAdmin, {
+        action: "auth.password.rate_limited",
+        detail: { phone: phoneE164, windowMinutes: 15, maxFailedAttempts: MAX_FAILED_LOGINS },
+      });
+      return { ok: false as const, reason: "rate-limited" as const };
+    }
+
     const email = syntheticEmail(phoneE164);
 
     // The actual password check is delegated to Supabase Auth. We do not
@@ -52,6 +98,7 @@ export const loginWithPassword = createServerFn({ method: "POST" })
     });
 
     if (error || !signed.session) {
+      await recordPasswordLoginAttempt(phoneE164, false);
       await writeAuditLog(supabaseAdmin, {
         action: "auth.password.failed",
         detail: { phone: phoneE164, reason: "invalid_credentials" },
@@ -59,6 +106,7 @@ export const loginWithPassword = createServerFn({ method: "POST" })
       return { ok: false as const, reason: "invalid-credentials" as const };
     }
 
+    await recordPasswordLoginAttempt(phoneE164, true, signed.user?.id);
     await writeAuditLog(supabaseAdmin, {
       userId: signed.user?.id,
       action: "auth.password.login",
