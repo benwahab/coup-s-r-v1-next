@@ -80,6 +80,8 @@ function AdminPage() {
       adminPermissions.includes("region_stats") ? "regions" :
       adminPermissions.includes("ball_stats") ? "balls" :
       adminPermissions.includes("publish_results") ? "results" :
+      adminPermissions.includes("complaints") ? "claims" :
+      adminPermissions.includes("security_logs") ? "logs" :
       "dashboard";
     setTab(first);
   }, [permissionsReady, adminPermissions, tab]);
