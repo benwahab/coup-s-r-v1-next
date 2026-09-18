@@ -69,6 +69,77 @@ type StoredFootPick = {
   status: "pending" | "losing" | "winning" | "paid";
 };
 
+async function assertPublishResultsPermission(supabase: typeof supabaseAdmin, userId: string) {\n  const { data, error } = await supabase.rpc("has_admin_permission", { _user_id: userId, _permission: "publish_results" });\n  if (error) throw new Error("permission_check_failed");\n  if (data !== true) throw new Error("Forbidden: publish_results permission required");\n}mport { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireConfiguredUser } from "@/lib/secure-user.functions";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { writeAuditLog } from "./audit.server";
+import { lotoMultipliers } from "./mock-data";
+
+const drawResultSchema = z.discriminatedUnion("gameId", [
+  z.object({
+    gameId: z.literal("loto"),
+    drawDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    drawName: z.string().max(200).optional(),
+    result: z.object({ numbers: z.array(z.number().int().min(1).max(90)).min(1).max(5) }),
+  }),
+  z.object({
+    gameId: z.literal("pmu"),
+    drawDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    drawName: z.string().max(200).optional(),
+    result: z.object({ horses: z.array(z.number().int().positive()).min(1).max(20) }),
+  }),
+  z.object({
+    gameId: z.literal("foot"),
+    drawDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    drawName: z.string().max(200).optional(),
+    result: z.object({
+      matches: z.array(z.object({
+        matchId: z.string().min(1).max(100),
+        result: z.enum(["1", "X", "2"]),
+        homeGoals: z.number().int().min(0).max(30).optional(),
+        awayGoals: z.number().int().min(0).max(30).optional(),
+        halfTimeHomeGoals: z.number().int().min(0).max(30).optional(),
+        halfTimeAwayGoals: z.number().int().min(0).max(30).optional(),
+        yellowCards: z.number().int().min(0).max(50).optional(),
+        corners: z.number().int().min(0).max(50).optional(),
+        scorers: z.array(z.string().max(80)).max(30).optional(),
+      })).min(1).max(500),
+    }),
+  }),
+]);
+
+type FootMatchResult = {
+  matchId: string;
+  result: "1" | "X" | "2";
+  homeGoals?: number;
+  awayGoals?: number;
+  halfTimeHomeGoals?: number;
+  halfTimeAwayGoals?: number;
+  yellowCards?: number;
+  corners?: number;
+  scorers?: string[];
+};
+
+type TicketRow = {
+  id: string;
+  code: string;
+  user_id: string;
+  game_id: string;
+  draw_date: string | null;
+  picks: unknown;
+  stake: number;
+  status: "pending" | "losing" | "winning" | "paid";
+  prize: number | null;
+};
+
+type StoredFootPick = {
+  id: string;
+  fixture_id: string;
+  picks: unknown;
+  status: "pending" | "losing" | "winning" | "paid";
+};
+
 async function assertAdmin(userId: string) {
   const { data, error } = await supabaseAdmin.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (error) throw new Error("role_check_failed");
