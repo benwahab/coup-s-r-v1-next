@@ -277,6 +277,66 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_ledger: {
+        Row: {
+          id: string
+          event_type: "payment_pending" | "payment_confirmed" | "payment_failed" | "ticket_paid"
+          user_id: string | null
+          payment_id: string | null
+          ticket_id: string | null
+          reference: string | null
+          amount: number | null
+          prize: number | null
+          method: string | null
+          provider_reference: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          event_type: "payment_pending" | "payment_confirmed" | "payment_failed" | "ticket_paid"
+          user_id?: string | null
+          payment_id?: string | null
+          ticket_id?: string | null
+          reference?: string | null
+          amount?: number | null
+          prize?: number | null
+          method?: string | null
+          provider_reference?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          event_type?: "payment_pending" | "payment_confirmed" | "payment_failed" | "ticket_paid"
+          user_id?: string | null
+          payment_id?: string | null
+          ticket_id?: string | null
+          reference?: string | null
+          amount?: number | null
+          prize?: number | null
+          method?: string | null
+          provider_reference?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_ledger_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       foot_ai_analyses: {
         Row: {
           analysis: Json
