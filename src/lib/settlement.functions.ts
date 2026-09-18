@@ -211,6 +211,19 @@ async function settleFootTicket(ticket: TicketRow, results: Map<string, FootMatc
     couponLosing ? "losing" : couponPending ? "pending" : "winning";
   const prize = nextStatus === "winning" ? Math.floor(ticket.stake * totalOdds) : 0;
 
+  // Re-check the coupon immediately before touching leg statuses. The ticket
+  // itself is the authoritative settlement lock; this prevents a late result
+  // publication from rewriting legs after another worker already settled it.
+  const { data: currentTicket, error: currentTicketError } = await supabaseAdmin
+    .from("tickets")
+    .select("id,status")
+    .eq("id", ticket.id)
+    .maybeSingle();
+  if (currentTicketError) throw new Error("ticket_state_lookup_failed: " + currentTicketError.message);
+  if (!currentTicket || currentTicket.status !== "pending") {
+    return { changed: false, reason: "already_settled" };
+  }
+
   if (nextStatus === "losing") {
     // A losing coupon makes every leg definitively red/finished, including legs
     // that had already won individually.
@@ -375,7 +388,7 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
       .maybeSingle();
     if (resultError) throw new Error(resultError.message);
     if (!result) throw new Error("result_not_found");
-    if (result.status === "published") return { ok: true as const, settled: 0, winners: 0, losers: 0, skipped: 0 };
+    const wasAlreadyPublished = result.status === "published";
 
     const { data: published, error: publishError } = await supabaseAdmin
       .from("draw_results")
@@ -385,7 +398,7 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
       .select("id")
       .maybeSingle();
     if (publishError) throw new Error(publishError.message);
-    if (!published) throw new Error("result_publish_conflict");
+    if (!published && !wasAlreadyPublished) throw new Error("result_publish_conflict");
 
     const { data: publishedResults, error: publishedResultsError } = await supabaseAdmin
       .from("draw_results")
@@ -423,6 +436,7 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
         winners,
         losers,
         skipped,
+        alreadyPublished: wasAlreadyPublished,
       },
     });
 
