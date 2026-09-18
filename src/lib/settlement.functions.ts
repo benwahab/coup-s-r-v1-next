@@ -5,7 +5,6 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { writeAuditLog } from "./audit.server";
 import { lotoMultipliers } from "./mock-data";
 
-const gameIdSchema = z.enum(["pmu", "loto", "foot"]);
 const drawResultSchema = z.discriminatedUnion("gameId", [
   z.object({
     gameId: z.literal("loto"),
@@ -27,10 +26,29 @@ const drawResultSchema = z.discriminatedUnion("gameId", [
       matches: z.array(z.object({
         matchId: z.string().min(1).max(100),
         result: z.enum(["1", "X", "2"]),
+        homeGoals: z.number().int().min(0).max(30).optional(),
+        awayGoals: z.number().int().min(0).max(30).optional(),
+        halfTimeHomeGoals: z.number().int().min(0).max(30).optional(),
+        halfTimeAwayGoals: z.number().int().min(0).max(30).optional(),
+        yellowCards: z.number().int().min(0).max(50).optional(),
+        corners: z.number().int().min(0).max(50).optional(),
+        scorers: z.array(z.string().max(80)).max(30).optional(),
       })).min(1).max(500),
     }),
   }),
 ]);
+
+type FootMatchResult = {
+  matchId: string;
+  result: "1" | "X" | "2";
+  homeGoals?: number;
+  awayGoals?: number;
+  halfTimeHomeGoals?: number;
+  halfTimeAwayGoals?: number;
+  yellowCards?: number;
+  corners?: number;
+  scorers?: string[];
+};
 
 type TicketRow = {
   id: string;
@@ -44,10 +62,229 @@ type TicketRow = {
   prize: number | null;
 };
 
+type StoredFootPick = {
+  id: string;
+  fixture_id: string;
+  picks: unknown;
+  status: "pending" | "losing" | "winning" | "paid";
+};
+
 async function assertAdmin(userId: string) {
   const { data, error } = await supabaseAdmin.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (error) throw new Error("role_check_failed");
   if (data !== true) throw new Error("Forbidden: admin role required");
+}
+
+function evaluateLoto(picks: unknown[], result: { numbers: number[] }, stake: number) {
+  const nums = picks.filter((p): p is number => typeof p === "number");
+  if (nums.length < 1 || nums.length > 5) return null;
+  const winning = nums.every((n) => result.numbers.includes(n));
+  return { winning, prize: winning ? Math.floor(stake * (lotoMultipliers[nums.length] ?? 1)) : 0 };
+}
+
+function evaluatePmu(picks: unknown[], result: { horses: number[] }, stake: number) {
+  const nums = picks.filter((p): p is number => typeof p === "number");
+  if (nums.length < 1 || nums.length > 8) return null;
+  const winning = nums.every((n) => result.horses.includes(n));
+  return { winning, prize: winning ? stake : 0 };
+}
+
+function finalOutcome(homeGoals: number, awayGoals: number): "1" | "X" | "2" {
+  if (homeGoals > awayGoals) return "1";
+  if (homeGoals < awayGoals) return "2";
+  return "X";
+}
+
+function thresholdSelection(value: number, selection: string): boolean | null {
+  const m = selection.match(/^(o|u)(05|15|25|35|45|75|95)$/);
+  if (!m) return null;
+  const threshold = Number(m[2]) / 10;
+  return m[1] === "o" ? value > threshold : value < threshold;
+}
+
+function evaluateFootSelection(m: FootMatchResult, marketId: string, selection: string): boolean | null {
+  const fullTime = m.result;
+
+  if (marketId === "1x2") return selection === fullTime;
+  if (marketId === "dc") {
+    if (selection === "1X") return fullTime === "1" || fullTime === "X";
+    if (selection === "12") return fullTime === "1" || fullTime === "2";
+    if (selection === "X2") return fullTime === "X" || fullTime === "2";
+    return null;
+  }
+
+  if (marketId === "ou" || marketId === "btts" || marketId === "cs") {
+    if (m.homeGoals == null || m.awayGoals == null) return null;
+    const total = m.homeGoals + m.awayGoals;
+    if (marketId === "ou") return thresholdSelection(total, selection);
+    if (marketId === "btts") {
+      const yes = m.homeGoals > 0 && m.awayGoals > 0;
+      return selection === "yes" ? yes : selection === "no" ? !yes : null;
+    }
+    return `${m.homeGoals}:${m.awayGoals}` === selection;
+  }
+
+  if (marketId === "ht") {
+    if (m.halfTimeHomeGoals == null || m.halfTimeAwayGoals == null) return null;
+    return selection === finalOutcome(m.halfTimeHomeGoals, m.halfTimeAwayGoals);
+  }
+
+  if (marketId === "cards") {
+    if (m.yellowCards == null) return null;
+    return thresholdSelection(m.yellowCards, selection);
+  }
+
+  if (marketId === "corners") {
+    if (m.corners == null) return null;
+    return thresholdSelection(m.corners, selection);
+  }
+
+  if (marketId === "scorer") {
+    if (!m.scorers) return null;
+    return m.scorers.includes(selection);
+  }
+
+  return null;
+}
+
+async function settleFootTicket(ticket: TicketRow, results: Map<string, FootMatchResult>) {
+  const { data: picks, error } = await supabaseAdmin
+    .from("foot_picks")
+    .select("id,fixture_id,picks,status")
+    .eq("ticket_id", ticket.id);
+
+  if (error) throw new Error("foot_picks_lookup_failed: " + error.message);
+  const rows = (picks ?? []) as StoredFootPick[];
+  if (rows.length === 0) return { changed: false, reason: "missing_foot_picks" };
+
+  let couponLosing = false;
+  let couponPending = false;
+  let totalOdds = 1;
+  const resolvedRows: { id: string; status: "winning" | "losing"; settledAt: string }[] = [];
+
+  for (const row of rows) {
+    const fixtureResult = results.get(row.fixture_id);
+    const selections = Array.isArray(row.picks) ? row.picks : [];
+    if (selections.length === 0) return { changed: false, reason: "invalid_foot_pick_row" };
+
+    let rowPending = false;
+    let rowLosing = false;
+    for (const raw of selections) {
+      if (!raw || typeof raw !== "object") return { changed: false, reason: "invalid_foot_pick_payload" };
+      const pick = raw as { marketId?: unknown; selection?: unknown; odds?: unknown };
+      const marketId = typeof pick.marketId === "string" ? pick.marketId : "";
+      const selection = typeof pick.selection === "string" ? pick.selection : "";
+      const odds = typeof pick.odds === "number" ? pick.odds : NaN;
+      if (!marketId || !selection || !Number.isFinite(odds) || odds < 1 || odds > 1000) {
+        return { changed: false, reason: "invalid_frozen_odds" };
+      }
+
+      totalOdds *= odds;
+      if (!Number.isFinite(totalOdds) || totalOdds > 1e12) {
+        throw new Error("foot_payout_overflow");
+      }
+
+      if (!fixtureResult) {
+        rowPending = true;
+        continue;
+      }
+      const passed = evaluateFootSelection(fixtureResult, marketId, selection);
+      if (passed === false) rowLosing = true;
+      if (passed === null) rowPending = true;
+    }
+
+    if (rowLosing) {
+      couponLosing = true;
+      resolvedRows.push({ id: row.id, status: "losing", settledAt: new Date().toISOString() });
+    } else if (rowPending) {
+      couponPending = true;
+    } else {
+      resolvedRows.push({ id: row.id, status: "winning", settledAt: new Date().toISOString() });
+    }
+  }
+
+  // 1xbet-style combined coupon rule:
+  // one failed selection kills the whole coupon immediately.
+  // If none failed but at least one selection is unresolved, the coupon stays pending.
+  // Only when every selection has passed does the coupon become winning.
+  const nextStatus: "pending" | "losing" | "winning" =
+    couponLosing ? "losing" : couponPending ? "pending" : "winning";
+  const prize = nextStatus === "winning" ? Math.floor(ticket.stake * totalOdds) : 0;
+
+  if (nextStatus === "losing") {
+    // A losing coupon makes every leg definitively red/finished, including legs
+    // that had already won individually.
+    const { error: legError } = await supabaseAdmin
+      .from("foot_picks")
+      .update({ status: "losing", settled_at: new Date().toISOString() })
+      .eq("ticket_id", ticket.id);
+    if (legError) throw new Error("foot_coupon_red_update_failed: " + legError.message);
+  } else {
+    for (const row of resolvedRows) {
+      const { error: rowError } = await supabaseAdmin
+        .from("foot_picks")
+        .update({ status: row.status, settled_at: row.settledAt })
+        .eq("id", row.id)
+        .eq("ticket_id", ticket.id);
+      if (rowError) throw new Error("foot_pick_status_update_failed: " + rowError.message);
+    }
+  }
+
+  if (ticket.status !== "pending") return { changed: false, reason: "already_settled" };
+
+  const { data, error: updateError } = await supabaseAdmin
+    .from("tickets")
+    .update({
+      status: nextStatus,
+      prize,
+    })
+    .eq("id", ticket.id)
+    .eq("status", "pending")
+    .select("id,status,prize")
+    .maybeSingle();
+
+  if (updateError) throw new Error(updateError.message);
+  if (!data) return { changed: false, reason: "concurrent_update" };
+  return { changed: true, status: data.status, prize: data.prize };
+}
+
+async function settleTicket(ticket: TicketRow, publishedResults: any[]) {
+  if (ticket.status !== "pending") return { changed: false, reason: "already_settled" };
+
+  if (ticket.game_id === "foot") {
+    const results = new Map<string, FootMatchResult>();
+    for (const row of publishedResults) {
+      const value = row?.result;
+      if (value && typeof value.matchId === "string" && ["1", "X", "2"].includes(value.result)) {
+        results.set(value.matchId, value as FootMatchResult);
+      }
+      // Backward compatibility for an older draft/published batch format.
+      if (Array.isArray(value?.matches)) {
+        for (const m of value.matches) {
+          if (m?.matchId && ["1", "X", "2"].includes(m.result)) results.set(m.matchId, m);
+        }
+      }
+    }
+    return settleFootTicket(ticket, results);
+  }
+
+  const result = publishedResults[0];
+  let evaluation: { winning: boolean; prize: number } | null = null;
+  if (ticket.game_id === "loto") evaluation = evaluateLoto(Array.isArray(ticket.picks) ? ticket.picks : [], result?.result, ticket.stake);
+  if (ticket.game_id === "pmu") evaluation = evaluatePmu(Array.isArray(ticket.picks) ? ticket.picks : [], result?.result, ticket.stake);
+  if (!evaluation) return { changed: false, reason: "unsupported_rule" };
+
+  const nextStatus = evaluation.winning ? "winning" : "losing";
+  const { data, error } = await supabaseAdmin
+    .from("tickets")
+    .update({ status: nextStatus, prize: evaluation.winning ? evaluation.prize : 0 })
+    .eq("id", ticket.id)
+    .eq("status", "pending")
+    .select("id,status,prize")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return { changed: false, reason: "concurrent_update" };
+  return { changed: true, status: data.status, prize: data.prize };
 }
 
 export const adminCreateDrawResult = createServerFn({ method: "POST" })
@@ -55,6 +292,45 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => drawResultSchema.parse(data))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
+
+    if (data.gameId === "foot") {
+      const createdIds: string[] = [];
+      for (const match of data.result.matches) {
+        const { data: existing, error: existingError } = await supabaseAdmin
+          .from("draw_results")
+          .select("id,status,result")
+          .eq("game_id", "foot")
+          .eq("draw_date", data.drawDate)
+          .filter("result->>matchId", "eq", match.matchId)
+          .maybeSingle();
+
+        if (existingError) throw new Error(existingError.message);
+        if (existing?.status === "published") throw new Error("foot_match_result_already_published");
+        if (existing) throw new Error("foot_match_result_draft_exists");
+
+        const { data: row, error } = await supabaseAdmin
+          .from("draw_results")
+          .insert({
+            game_id: "foot",
+            draw_date: data.drawDate,
+            draw_name: data.drawName ?? null,
+            result: match,
+            status: "draft",
+          })
+          .select("id,game_id,draw_date,status")
+          .single();
+        if (error) throw new Error(error.message);
+        createdIds.push(row.id);
+      }
+
+      await writeAuditLog(supabaseAdmin, {
+        userId: context.userId,
+        action: "admin.foot_results.created",
+        detail: { drawDate: data.drawDate, count: createdIds.length, resultIds: createdIds },
+      });
+      return { result: { id: createdIds[0] }, resultIds: createdIds };
+    }
+
     const { data: existing, error: existingError } = await supabaseAdmin
       .from("draw_results")
       .select("id,status")
@@ -86,60 +362,6 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
     return { result: row };
   });
 
-function evaluateLoto(picks: unknown[], result: { numbers: number[] }, stake: number) {
-  const nums = picks.filter((p): p is number => typeof p === "number");
-  if (nums.length < 1 || nums.length > 5) return null;
-  const winning = nums.every((n) => result.numbers.includes(n));
-  return { winning, prize: winning ? stake * (lotoMultipliers[nums.length] ?? 1) : 0 };
-}
-
-function evaluatePmu(picks: unknown[], result: { horses: number[] }, stake: number) {
-  const nums = picks.filter((p): p is number => typeof p === "number");
-  if (nums.length < 1 || nums.length > 8) return null;
-  const winning = nums.every((n) => result.horses.includes(n));
-  // PMU payout rules are partner-dependent in the demo. Do not invent an
-  // official dividend: a winning PMU ticket is marked winning with a
-  // provisional stake-level prize until the official dividend is integrated.
-  return { winning, prize: winning ? stake : 0 };
-}
-
-function evaluateFoot(picks: unknown[], result: { matches: { matchId: string; result: "1" | "X" | "2" }[] }) {
-  const map = new Map(result.matches.map((m) => [m.matchId, m.result]));
-  const keys = picks.filter((p): p is string => typeof p === "string");
-  if (keys.length === 0) return null;
-  for (const key of keys) {
-    const [fixtureId, marketId, ...rest] = key.split(":");
-    if (marketId !== "1x2") return null;
-    const selected = rest.join(":");
-    if (!["1", "X", "2"].includes(selected)) return null;
-    if (map.get(fixtureId) !== selected) return { winning: false, prize: 0 };
-  }
-  return { winning: true, prize: 0 };
-}
-
-async function settleTicket(ticket: TicketRow, result: { game_id: string; result: any }) {
-  if (ticket.status !== "pending") return { changed: false, reason: "already_settled" };
-
-  let evaluation: { winning: boolean; prize: number } | null = null;
-  if (result.game_id === "loto") evaluation = evaluateLoto(Array.isArray(ticket.picks) ? ticket.picks : [], result.result, ticket.stake);
-  if (result.game_id === "pmu") evaluation = evaluatePmu(Array.isArray(ticket.picks) ? ticket.picks : [], result.result, ticket.stake);
-  if (result.game_id === "foot") evaluation = evaluateFoot(Array.isArray(ticket.picks) ? ticket.picks : [], result.result);
-
-  if (!evaluation) return { changed: false, reason: "unsupported_rule" };
-
-  const nextStatus = evaluation.winning ? "winning" : "losing";
-  const { data, error } = await supabaseAdmin
-    .from("tickets")
-    .update({ status: nextStatus, prize: evaluation.winning ? evaluation.prize : 0 })
-    .eq("id", ticket.id)
-    .eq("status", "pending")
-    .select("id,status,prize")
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) return { changed: false, reason: "concurrent_update" };
-  return { changed: true, status: data.status, prize: data.prize };
-}
-
 export const adminPublishDrawResult = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ resultId: z.string().uuid() }).parse(data))
@@ -153,8 +375,8 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
       .maybeSingle();
     if (resultError) throw new Error(resultError.message);
     if (!result) throw new Error("result_not_found");
-    if (result.status === "published") return { ok: true as const, settled: 0 };
-    
+    if (result.status === "published") return { ok: true as const, settled: 0, winners: 0, losers: 0, skipped: 0 };
+
     const { data: published, error: publishError } = await supabaseAdmin
       .from("draw_results")
       .update({ status: "published", published_at: new Date().toISOString(), published_by: context.userId })
@@ -165,6 +387,14 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
     if (publishError) throw new Error(publishError.message);
     if (!published) throw new Error("result_publish_conflict");
 
+    const { data: publishedResults, error: publishedResultsError } = await supabaseAdmin
+      .from("draw_results")
+      .select("id,game_id,draw_date,result,status")
+      .eq("game_id", result.game_id)
+      .eq("draw_date", result.draw_date)
+      .eq("status", "published");
+    if (publishedResultsError) throw new Error(publishedResultsError.message);
+
     const { data: tickets, error: ticketsError } = await supabaseAdmin
       .from("tickets")
       .select("id,code,user_id,game_id,draw_date,picks,stake,status,prize")
@@ -173,12 +403,9 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
       .eq("status", "pending");
     if (ticketsError) throw new Error(ticketsError.message);
 
-    let settled = 0;
-    let winners = 0;
-    let losers = 0;
-    let skipped = 0;
+    let settled = 0, winners = 0, losers = 0, skipped = 0;
     for (const ticket of (tickets ?? []) as TicketRow[]) {
-      const out = await settleTicket(ticket, result);
+      const out = await settleTicket(ticket, publishedResults ?? []);
       if (!out.changed) { skipped++; continue; }
       settled++;
       if (out.status === "winning") winners++;
@@ -188,7 +415,15 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
     await writeAuditLog(supabaseAdmin, {
       userId: context.userId,
       action: "admin.draw_result.published",
-      detail: { resultId: result.id, gameId: result.game_id, drawDate: result.draw_date, settled, winners, losers, skipped },
+      detail: {
+        resultId: result.id,
+        gameId: result.game_id,
+        drawDate: result.draw_date,
+        settled,
+        winners,
+        losers,
+        skipped,
+      },
     });
 
     return { ok: true as const, settled, winners, losers, skipped };
