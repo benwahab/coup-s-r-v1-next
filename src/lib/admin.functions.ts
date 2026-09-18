@@ -125,6 +125,74 @@ export const adminListPlayerActivities = createServerFn({ method: "POST" })
     };
   });
 
+/**
+ * Super-admin dispute investigation.
+ *
+ * This is the ONLY administrative path that can inspect a player's complete
+ * betting history. It is deliberately unavailable to ordinary admins.
+ *
+ * Never returns authentication credentials, passwords, OTPs or Mobile Money
+ * PINs. Those secrets are not stored in the application data model.
+ */
+export const superAdminGetPlayerDisputeHistory = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .inputValidator((data: unknown) =>
+    z.object({ userId: z.string().uuid() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase as SB, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const [{ data: profile, error: profileError },
+      { data: tickets, error: ticketsError },
+      { data: payments, error: paymentsError },
+      { data: ledger, error: ledgerError },
+      { data: audit, error: auditError }] = await Promise.all([
+      supabaseAdmin.from("profiles")
+        .select("id,phone,first_name,last_name,region,created_at")
+        .eq("id", data.userId).maybeSingle(),
+      supabaseAdmin.from("tickets")
+        .select("id,code,game_id,stake,payment_method,status,prize,legs,phone,region,created_at")
+        .eq("user_id", data.userId)
+        .order("created_at", { ascending: false }),
+      supabaseAdmin.from("payments")
+        .select("id,game_id,amount,method,status,reference,ticket_id,created_at")
+        .eq("user_id", data.userId)
+        .order("created_at", { ascending: false }),
+      supabaseAdmin.from("financial_ledger")
+        .select("id,event_type,payment_id,ticket_id,reference,amount,prize,method,provider_reference,metadata,created_at")
+        .eq("user_id", data.userId)
+        .order("created_at", { ascending: false }),
+      supabaseAdmin.from("audit_logs")
+        .select("id,action,detail,ip,created_at")
+        .eq("user_id", data.userId)
+        .order("created_at", { ascending: false })
+        .limit(1000),
+    ]);
+
+    if (profileError) throw new Error(profileError.message);
+    if (!profile) throw new Error("player_not_found");
+    if (ticketsError) throw new Error(ticketsError.message);
+    if (paymentsError) throw new Error(paymentsError.message);
+    if (ledgerError) throw new Error(ledgerError.message);
+    if (auditError) throw new Error(auditError.message);
+
+    await writeAuditLog(supabaseAdmin, {
+      userId: context.userId,
+      action: "super_admin.player_dispute_history.viewed",
+      detail: { targetUserId: data.userId },
+    });
+
+    return {
+      profile,
+      tickets: tickets ?? [],
+      payments: payments ?? [],
+      financialLedger: ledger ?? [],
+      auditHistory: audit ?? [],
+      // Explicitly no auth.users, password hashes, OTPs or Mobile Money PINs.
+    };
+  });
+
 export const adminListAdmins = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
