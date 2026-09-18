@@ -142,6 +142,7 @@ export type Database = {
           amount: number
           created_at: string
           id: string
+          game_id: string | null
           method: string
           payment_key: string | null
           reference: string
@@ -154,6 +155,7 @@ export type Database = {
           amount: number
           created_at?: string
           id?: string
+          game_id?: string | null
           method: string
           payment_key?: string | null
           reference: string
@@ -166,6 +168,7 @@ export type Database = {
           amount?: number
           created_at?: string
           id?: string
+          game_id?: string | null
           method?: string
           payment_key?: string | null
           reference?: string
