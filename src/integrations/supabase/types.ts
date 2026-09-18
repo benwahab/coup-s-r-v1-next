@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      draw_results: {
+        Row: {
+          created_at: string
+          draw_date: string
+          draw_name: string | null
+          game_id: string
+          id: string
+          published_at: string | null
+          published_by: string | null
+          result: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          draw_date: string
+          draw_name?: string | null
+          game_id: string
+          id?: string
+          published_at?: string | null
+          published_by?: string | null
+          result: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          draw_date?: string
+          draw_name?: string | null
+          game_id?: string
+          id?: string
+          published_at?: string | null
+          published_by?: string | null
+          result?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
