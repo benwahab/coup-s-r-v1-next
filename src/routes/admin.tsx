@@ -23,6 +23,7 @@ import { BallsTab } from "@/components/admin/tabs/BallsTab";
 import { OpsTab } from "@/components/admin/tabs/OpsTab";
 import { LogsTab } from "@/components/admin/tabs/LogsTab";
 import { ClaimsTab } from "@/components/admin/tabs/ClaimsTab";
+import { ResultsTab } from "@/components/admin/tabs/ResultsTab";
 import { AdminsSection } from "@/components/admin/AdminsSection";
 
 export const Route = createFileRoute("/admin")({
@@ -36,7 +37,7 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-type Tab = "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "logs" | "claims" | "admins";
+type Tab = "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "results" | "logs" | "claims" | "admins";
 
 function AdminPage() {
   const { t } = useI18n();
@@ -280,6 +281,7 @@ function AdminPage() {
     { id: "regions", label: t("regions"), icon: MapPin },
     { id: "balls", label: t("ballsStats"), icon: Circle },
     { id: "ops", label: t("admin.nav.ops"), icon: Send },
+    { id: "results", label: "Résultats", icon: ListChecks },
     { id: "admins", label: t("admin.ops.title"), icon: Settings },
     { id: "logs", label: t("admin.nav.logs"), icon: LogIn },
     { id: "claims", label: t("admin.nav.claims"), icon: LifeBuoy },
@@ -396,6 +398,7 @@ function AdminPage() {
                 selectedBall={selectedBall} setSelectedBall={setSelectedBall}
                 selBallStat={selBallStat} />
             )}
+            {tab === "results" && <ResultsTab />}
             {tab === "ops" && (
               <OpsTab autoSms={autoSms} setAutoSms={(fn) => setAutoSms(fn)}
                 csvFrom={csvFrom} setCsvFrom={setCsvFrom}
