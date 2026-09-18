@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireConfiguredUser } from "@/lib/secure-user.functions";
 
 const SignInput = z.object({
   ticketId: z.string().min(1),
@@ -10,7 +10,7 @@ const SignInput = z.object({
 const VerifyInput = z.object({ token: z.string().min(1) });
 
 export const signTicketToken = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => SignInput.parse(data))
   .handler(async ({ data, context }) => {
     // Vérifie que le ticket appartient bien à l'utilisateur connecté avant
