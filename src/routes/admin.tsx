@@ -9,7 +9,7 @@ import { computeBallStats, computePlayerStats, computeRegionStats, generateSimTi
 import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
 import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
 import type { PaymentIntent } from "@/lib/payments";
-import { adminListPlayerActivities, getMyAdminPermissions, type AdminPermission } from "@/lib/admin.functions";
+import { adminGetLotoBallStatistics, adminListPlayerActivities, getMyAdminPermissions, type AdminPermission, type LotoBallWagerStat, type LotoCombinationWagerStat } from "@/lib/admin.functions";
 import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useThemeChartColors } from "@/hooks/use-theme-chart-colors";
@@ -44,6 +44,9 @@ function AdminPage() {
   const gameColor: Record<string, string> = { pmu: chart.gold, loto: chart.teal, foot: chart.primary };
   const isAdminResult = useIsAdmin();
   const [adminPermissions, setAdminPermissions] = useState<AdminPermission[] | "all">([]);
+  const [lotoBallWagerStats, setLotoBallWagerStats] = useState<LotoBallWagerStat[]>([]);
+  const [lotoCombinationWagerStats, setLotoCombinationWagerStats] = useState<LotoCombinationWagerStat[]>([]);
+  const [lotoBallStatsLive, setLotoBallStatsLive] = useState(false);
   const [permissionsReady, setPermissionsReady] = useState(false);
   const gate: "checking" | "ok" | "denied" | "anon" =
     !authed || !session
@@ -94,6 +97,18 @@ function AdminPage() {
   useEffect(() => { setSentLog(readSmsLog()); }, []);
 
   const [allIntents, setAllIntents] = useState<PaymentIntent[]>([]);
+  useEffect(() => {
+    if (gate !== "ok" || !permissionsReady) return;
+    if (adminPermissions !== "all" && !adminPermissions.includes("ball_stats")) return;
+    adminGetLotoBallStatistics()
+      .then((result) => {
+        setLotoBallWagerStats(result.balls);
+        setLotoCombinationWagerStats(result.combinations);
+        setLotoBallStatsLive(true);
+      })
+      .catch(() => setLotoBallStatsLive(false));
+  }, [gate, permissionsReady, adminPermissions]);
+
   useEffect(() => {
     if (gate !== "ok") return;
     (async () => {
@@ -255,6 +270,41 @@ function AdminPage() {
   const playerStats = useMemo(() => computePlayerStats(sims), [sims]);
   const regionStats = useMemo(() => computeRegionStats(sims), [sims]);
   const ballStats = useMemo(() => computeBallStats(sims), [sims]);
+  const demoLotoBallWagerStats = useMemo<LotoBallWagerStat[]>(() => {
+    const byBall = new Map<number, LotoBallWagerStat>();
+    for (const row of ballStats) {
+      byBall.set(row.ball, {
+        ball: row.ball,
+        wagerCount: row.total,
+        stakedAmount: 0,
+        soloWagerCount: row.solo,
+        comboWagerCount: row.combo,
+      });
+    }
+    for (const ticket of sims) {
+      if (ticket.gameId !== "loto" || ticket.picks.length === 0) continue;
+      for (const ball of ticket.picks) {
+        const row = byBall.get(ball);
+        if (row) row.stakedAmount += ticket.stake;
+      }
+    }
+    return Array.from(byBall.values());
+  }, [ballStats, sims]);
+
+  const demoLotoCombinationWagerStats = useMemo<LotoCombinationWagerStat[]>(() => {
+    const map = new Map<string, LotoCombinationWagerStat>();
+    for (const ticket of sims) {
+      if (ticket.gameId !== "loto" || ticket.picks.length === 0) continue;
+      const combination = [...ticket.picks].sort((a, b) => a - b).map((n) => String(n).padStart(2, "0")).join(" + ");
+      const row = map.get(combination) ?? { combination, wagerCount: 0, stakedAmount: 0 };
+      row.wagerCount += 1;
+      row.stakedAmount += ticket.stake;
+      map.set(combination, row);
+    }
+    return Array.from(map.values()).sort((a, b) => b.stakedAmount - a.stakedAmount);
+  }, [sims]);
+  const displayLotoBallWagerStats = lotoBallStatsLive ? lotoBallWagerStats : demoLotoBallWagerStats;
+  const displayLotoCombinationWagerStats = lotoBallStatsLive ? lotoCombinationWagerStats : demoLotoCombinationWagerStats;
   const maxBall = Math.max(1, ...ballStats.map((b) => b.total));
   const maxRegion = Math.max(1, ...regionStats.map((r) => r.staked));
 
@@ -403,7 +453,10 @@ function AdminPage() {
             {can("ball_stats") && tab === "balls" && (
               <BallsTab ballStats={ballStats} maxBall={maxBall}
                 selectedBall={selectedBall} setSelectedBall={setSelectedBall}
-                selBallStat={selBallStat} />
+                selBallStat={selBallStat}
+                wagerStats={displayLotoBallWagerStats}
+                combinationStats={displayLotoCombinationWagerStats}
+                live={lotoBallStatsLive} />
             )}
             {can("publish_results") && tab === "results" && <ResultsTab />}
             {false && tab === "ops" && (
