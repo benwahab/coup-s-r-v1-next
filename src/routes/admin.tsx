@@ -358,6 +358,14 @@ function AdminPage() {
     { id: "logs", label: t("admin.nav.logs"), icon: LogIn },
       ];
 
+  const visibleNav = adminPermissions === "all"
+    ? nav
+    : nav.filter((item) =>
+        item.id === "balls" ? can("ball_stats") :
+        item.id === "results" ? can("publish_results") :
+        false
+      );
+
   // Logs filters
   const [logPhone, setLogPhone] = useState("");
   const [logIp, setLogIp] = useState("");
@@ -401,7 +409,7 @@ function AdminPage() {
         <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-6">
           <aside className="lg:sticky lg:top-4 lg:self-start">
             <nav className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 pb-2 lg:flex-col lg:items-stretch lg:gap-1 lg:overflow-visible lg:rounded-3xl lg:border lg:border-border lg:bg-card lg:p-2 lg:shadow-soft">
-              {nav.map(n => {
+              {visibleNav.map(n => {
                 const active = tab === n.id;
                 return (
                   <button key={n.id} onClick={() => setTab(n.id)} className={cn(
