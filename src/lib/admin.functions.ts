@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireConfiguredUser } from "@/lib/secure-user.functions";
 import type { Database } from "@/integrations/supabase/types";
 import { writeAuditLog } from "./audit.server";
 
@@ -23,7 +23,7 @@ async function assertSuperAdmin(supabase: SB, userId: string) {
 }
 
 export const checkIsAdmin = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
@@ -34,7 +34,7 @@ export const checkIsAdmin = createServerFn({ method: "POST" })
   });
 
 export const checkIsSuperAdmin = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
@@ -45,7 +45,7 @@ export const checkIsSuperAdmin = createServerFn({ method: "POST" })
   });
 
 export const adminListAllTickets = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase as SB, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -59,7 +59,7 @@ export const adminListAllTickets = createServerFn({ method: "POST" })
   });
 
 export const adminUpdateTicketStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) =>
     z.object({ code: z.string().min(1), status: TicketStatus, prize: z.number().int().nullable().optional() }).parse(data),
   )
@@ -107,7 +107,7 @@ export const adminUpdateTicketStatus = createServerFn({ method: "POST" })
   });
 
 export const adminUpdateTicketLegStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) =>
     z.object({
       code: z.string().min(1),
@@ -179,7 +179,7 @@ export const adminUpdateTicketLegStatus = createServerFn({ method: "POST" })
  * (webhook/API vérifiée), et jamais par une décision du navigateur.
  */
 export const updateMyPaymentStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) =>
     z.object({
       reference: z.string().min(1),
@@ -231,7 +231,7 @@ export const updateMyPaymentStatus = createServerFn({ method: "POST" })
   });
 
 export const adminListFinancialLedger = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) =>
     z.object({
       limit: z.number().int().min(1).max(500).default(200),
@@ -257,7 +257,7 @@ export const adminListFinancialLedger = createServerFn({ method: "POST" })
   });
 
 export const adminListAllPayments = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase as SB, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -271,7 +271,7 @@ export const adminListAllPayments = createServerFn({ method: "POST" })
   });
 
 export const adminListAdmins = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
     await assertSuperAdmin(context.supabase as SB, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -301,7 +301,7 @@ export const adminListAdmins = createServerFn({ method: "POST" })
   });
 
 export const adminGrantRole = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => z.object({ phone: z.string().regex(/^\d{8}$/) }).parse(data))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.supabase as SB, context.userId);
@@ -329,7 +329,7 @@ export const adminGrantRole = createServerFn({ method: "POST" })
   });
 
 export const adminRevokeRole = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => z.object({ userId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.supabase as SB, context.userId);
