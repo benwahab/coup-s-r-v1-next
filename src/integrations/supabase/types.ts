@@ -509,6 +509,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_ticket_with_payment: {
+        Args: {
+          p_actor_user_id: string
+          p_foot_picks?: Json
+          p_payment_id: string
+          p_ticket: Json
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
