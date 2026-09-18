@@ -280,7 +280,7 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => drawResultSchema.parse(data))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
+    await assertPublishResultsPermission(context.supabase, context.userId);
 
     if (data.gameId === "foot") {
       const createdIds: string[] = [];
