@@ -54,6 +54,15 @@ function AdminPage() {
           ? "ok"
           : "denied";
 
+  useEffect(() => {
+    if (gate !== "ok") return;
+    setPermissionsReady(false);
+    getMyAdminPermissions()
+      .then((result) => setAdminPermissions(result.permissions))
+      .catch(() => setAdminPermissions([]))
+      .finally(() => setPermissionsReady(true));
+  }, [gate]);
+
   // SECURITY: the admin surface deliberately has no access to client tickets,
   // selections, legs, ticket status or prizes. Only aggregate/demo statistics
   // and sanitized player activity are available here.
