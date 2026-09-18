@@ -206,6 +206,8 @@ function AuthPage() {
     setPasswordBusy(true);
     try {
       await setUserPassword({ data: { password } });
+      const { error: refreshError } = await (await import("@/integrations/supabase/client")).supabase.auth.refreshSession();
+      if (refreshError) throw refreshError;
       toast.success("Mot de passe créé avec succès.");
       navigate({ to: "/" });
     } catch (e) {
