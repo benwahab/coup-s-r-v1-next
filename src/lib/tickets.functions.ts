@@ -81,7 +81,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: payment, error: paymentError } = await supabaseAdmin
       .from("payments")
-      .select("id, user_id, status, ticket_id, amount, game_id, reference")
+      .select("id, user_id, status, ticket_id, amount, game_id, reference, method")
       .eq("reference", data.paymentReference)
       .eq("user_id", context.userId)
       .maybeSingle();
@@ -98,15 +98,14 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     // Le numéro du ticket doit correspondre au profil authentifié.
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("phone")
+      .select("phone, first_name, last_name, region")
       .eq("id", context.userId)
       .maybeSingle();
     if (profileError) throw new Error("profile_lookup_failed: " + profileError.message);
     const profilePhone = profile?.phone ? toE164(profile.phone) : null;
     const submittedPhone = toE164(data.phone);
     if (!profilePhone || !submittedPhone || profilePhone !== submittedPhone) throw new Error("phone_mismatch");
-    if (data.payment.trim().length === 0) throw new Error("invalid_payment_method");
-    if (data.gameName.trim().length === 0) throw new Error("invalid_game_name");
+    if (!payment.method || payment.method !== data.payment) throw new Error("payment_method_mismatch");
     const drawDate = data.drawDate ? data.drawDate.slice(0, 10) : "";
     if (drawDate && !/^\d{4}-\d{2}-\d{2}$/.test(drawDate)) throw new Error("invalid_draw_date");
     if (drawDate && drawDate < new Date().toISOString().slice(0, 10)) throw new Error("draw_closed");
@@ -130,13 +129,13 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
       picks: data.picks as unknown as Database["public"]["Tables"]["tickets"]["Insert"]["picks"],
       picks_label: data.picksLabel,
       stake: data.stake,
-      payment_method: data.payment,
+      payment_method: payment.method,
       draw_date: drawDate || null,
       draw_name: data.drawName ?? null,
       status: "pending",
       legs: (legs ?? []) as unknown as Database["public"]["Tables"]["tickets"]["Insert"]["legs"],
-      phone: toE164(data.phone),
-      region: data.region ?? null,
+      phone: profilePhone,
+      region: profile?.region ?? null,
     };
 
     // Les paris foot sont enregistrés côté serveur. Le client ne peut donc
