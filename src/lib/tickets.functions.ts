@@ -214,63 +214,65 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
       }
     }
 
-    const { data: ticket, error: ticketError } = await supabaseAdmin
+    const footPickRows = data.gameId === "foot" && footPickKeys.length > 0
+      ? (() => {
+          const byFixture = new Map<string, { marketId: string; selection: string; odds: number; status: "pending" }[]>();
+          for (const key of footPickKeys) {
+            const parts = key.split(":");
+            const fixtureId = parts[0];
+            const marketId = parts[1];
+            const selection = parts.slice(2).join(":");
+            const catalogMatch = footMatches.find((m) => m.id === fixtureId);
+            if (!catalogMatch) throw new Error("fixture_catalog_mismatch");
+            const odds = oddForPick(key, catalogMatch);
+            if (!Number.isFinite(odds) || odds < 1 || odds > 1000) throw new Error("invalid_frozen_odds");
+            const list = byFixture.get(fixtureId) ?? [];
+            list.push({ marketId, selection, odds, status: "pending" });
+            byFixture.set(fixtureId, list);
+          }
+          return Array.from(byFixture.entries()).map(([fixtureId, picks]) => ({
+            fixture_id: fixtureId,
+            picks,
+          }));
+        })()
+      : [];
+
+    const ticketPayload = {
+      code,
+      game_id: data.gameId,
+      game_name: data.gameName,
+      picks: data.picks,
+      picks_label: data.picksLabel,
+      stake: data.stake,
+      payment_method: payment.method,
+      draw_date: drawDate || null,
+      draw_name: data.drawName ?? null,
+      legs: legs ?? [],
+      phone: profilePhone,
+      region: profile?.region ?? null,
+    };
+
+    const { data: ticketId, error: atomicError } = await supabaseAdmin.rpc(
+      "create_ticket_with_payment",
+      {
+        p_payment_id: payment.id,
+        p_actor_user_id: context.userId,
+        p_ticket: ticketPayload,
+        p_foot_picks: footPickRows,
+      },
+    );
+
+    if (atomicError) throw new Error("atomic_ticket_payment_failed: " + atomicError.message);
+    if (!ticketId) throw new Error("ticket_creation_failed");
+
+    const { data: ticket, error: ticketLookupError } = await supabaseAdmin
       .from("tickets")
-      .insert(insert)
-      .select()
+      .select("*")
+      .eq("id", ticketId)
+      .eq("user_id", context.userId)
       .single();
 
-    if (ticketError) throw new Error(ticketError.message);
-
-    if (data.gameId === "foot" && footPickKeys.length > 0) {
-      const byFixture = new Map<string, { marketId: string; selection: string; odds: number; status: "pending" }[]>();
-      for (const key of footPickKeys) {
-        const parts = key.split(":");
-        const fixtureId = parts[0];
-        const marketId = parts[1];
-        const selection = parts.slice(2).join(":");
-        const list = byFixture.get(fixtureId) ?? [];
-        const catalogMatch = footMatches.find((m) => m.id === fixtureId);
-        if (!catalogMatch) throw new Error("fixture_catalog_mismatch");
-        const odds = oddForPick(key, catalogMatch);
-        if (!Number.isFinite(odds) || odds < 1 || odds > 1000) throw new Error("invalid_frozen_odds");
-        list.push({ marketId, selection, odds, status: "pending" });
-        byFixture.set(fixtureId, list);
-      }
-      const rows = Array.from(byFixture.entries()).map(([fixtureId, picks]) => ({
-        user_id: context.userId,
-        fixture_id: fixtureId,
-        ticket_id: ticket.id,
-        picks,
-        status: "pending" as const,
-      }));
-      const { error: pickError } = await supabaseAdmin.from("foot_picks").insert(rows);
-      if (pickError) {
-        await supabaseAdmin.from("tickets").delete().eq("id", ticket.id).eq("user_id", context.userId);
-        throw new Error("foot_pick_insert_failed: " + pickError.message);
-      }
-    }
-
-    const { data: linkedPayment, error: linkError } = await supabaseAdmin
-      .from("payments")
-      .update({ ticket_id: ticket.id })
-      .eq("id", payment.id)
-      .eq("user_id", context.userId)
-      .eq("status", "confirmed")
-      .is("ticket_id", null)
-      .select("id")
-      .maybeSingle();
-
-    if (linkError) {
-      await supabaseAdmin.from("foot_picks").delete().eq("ticket_id", ticket.id).eq("user_id", context.userId);
-      await supabaseAdmin.from("tickets").delete().eq("id", ticket.id).eq("user_id", context.userId);
-      throw new Error(linkError.message);
-    }
-    if (!linkedPayment) {
-      await supabaseAdmin.from("foot_picks").delete().eq("ticket_id", ticket.id).eq("user_id", context.userId);
-      await supabaseAdmin.from("tickets").delete().eq("id", ticket.id).eq("user_id", context.userId);
-      throw new Error("payment_link_failed");
-    }
+    if (ticketLookupError) throw new Error("ticket_lookup_failed: " + ticketLookupError.message);
 
     return { ticket };
   });
