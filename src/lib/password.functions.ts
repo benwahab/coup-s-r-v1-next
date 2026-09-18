@@ -1,12 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { writeAuditLog } from "./audit.server";
 import { toE164Phone } from "./otp.server";
+import { signPasswordSetupToken, verifyPasswordSetupToken } from "./password-setup.server";
 
 const PhoneSchema = z.string().regex(/^\d{8}$/);
 const PasswordSchema = z.string().min(8).max(128);
+const SetupTokenSchema = z.string().min(20).max(2048);
 
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const MAX_FAILED_LOGINS = 5;
@@ -51,11 +52,7 @@ async function passwordLoginRateBlocked(phoneE164: string): Promise<boolean> {
   return (count ?? 0) >= MAX_FAILED_LOGINS;
 }
 
-async function recordPasswordLoginAttempt(
-  phoneE164: string,
-  success: boolean,
-  userId?: string,
-): Promise<void> {
+async function recordPasswordLoginAttempt(phoneE164: string, success: boolean, userId?: string): Promise<void> {
   const phoneHash = await sha256Hex(phoneE164);
   const { error } = await supabaseAdmin.from("auth_login_attempts").insert({
     phone_hash: phoneHash,
@@ -66,10 +63,7 @@ async function recordPasswordLoginAttempt(
 }
 
 export const loginWithPassword = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => z.object({
-    phone: PhoneSchema,
-    password: PasswordSchema,
-  }).parse(data))
+  .inputValidator((data: unknown) => z.object({ phone: PhoneSchema, password: PasswordSchema }).parse(data))
   .handler(async ({ data }) => {
     const phoneE164 = toE164Phone(data.phone);
 
@@ -82,21 +76,12 @@ export const loginWithPassword = createServerFn({ method: "POST" })
     }
 
     const email = syntheticEmail(phoneE164);
-
-    // The actual password check is delegated to Supabase Auth. We do not
-    // read, hash, compare, or store the password ourselves.
     const { createClient } = await import("@supabase/supabase-js");
-    const anon = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_PUBLISHABLE_KEY!,
-      { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-    );
-
-    const { data: signed, error } = await anon.auth.signInWithPassword({
-      email,
-      password: data.password,
+    const anon = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
     });
 
+    const { data: signed, error } = await anon.auth.signInWithPassword({ email, password: data.password });
     if (error || !signed.session) {
       await recordPasswordLoginAttempt(phoneE164, false);
       await writeAuditLog(supabaseAdmin, {
@@ -115,47 +100,53 @@ export const loginWithPassword = createServerFn({ method: "POST" })
 
     return {
       ok: true as const,
-      session: {
-        access_token: signed.session.access_token,
-        refresh_token: signed.session.refresh_token,
-      },
+      session: { access_token: signed.session.access_token, refresh_token: signed.session.refresh_token },
       userId: signed.user.id,
     };
   });
 
 /**
- * Finalise un mot de passe choisi par l'utilisateur après vérification OTP.
- * Le mot de passe n'est jamais stocké dans notre base applicative.
+ * Finalise le mot de passe après OTP, sans ouvrir de session Auth dans le
+ * navigateur avant que le mot de passe permanent soit choisi.
  */
 export const setUserPassword = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => z.object({ password: PasswordSchema }).parse(data))
-  .handler(async ({ data, context }) => {
-    const userId = context.userId;
+  .inputValidator((data: unknown) => z.object({ setupToken: SetupTokenSchema, password: PasswordSchema }).parse(data))
+  .handler(async ({ data }) => {
+    const verified = await verifyPasswordSetupToken(data.setupToken);
+    if (!verified) throw new Error("password_setup_token_invalid");
 
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+    const { data: userData, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(verified.userId);
+    if (getUserError || !userData.user) throw new Error("password_setup_user_invalid");
+
+    const appMetadata = userData.user.app_metadata ?? {};
+    if (appMetadata.password_setup_required !== true) throw new Error("password_setup_already_completed");
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(verified.userId, {
       password: data.password,
+      app_metadata: { ...appMetadata, password_setup_required: false },
     });
     if (error) throw new Error(`password_update_failed: ${error.message}`);
 
     await writeAuditLog(supabaseAdmin, {
-      userId,
+      userId: verified.userId,
       action: "auth.password.created",
       detail: { method: "otp_verified" },
     });
 
-    return { ok: true as const };
+    return { ok: true as const, userId: verified.userId };
   });
 
 /**
- * After OTP verification, rotate the temporary bootstrap password before
- * handing a session to the client. The client then immediately replaces it
- * with the user's chosen password through setUserPassword.
+ * Après OTP : crée ou réinitialise l'identité Auth avec un mot de passe
+ * temporaire aléatoire qui n'est jamais transmis au client. Un drapeau
+ * app_metadata + un token court autorisent ensuite uniquement la définition
+ * du mot de passe permanent.
  */
 export async function createOrResetPasswordForOtp(phoneE164: string): Promise<{
   email: string;
   password: string;
   userId: string;
+  setupToken: string;
 }> {
   const email = syntheticEmail(phoneE164);
   const password = randomTemporaryPassword();
@@ -168,9 +159,10 @@ export async function createOrResetPasswordForOtp(phoneE164: string): Promise<{
       email_confirm: true,
       phone: phoneE164,
       phone_confirm: true,
+      app_metadata: { password_setup_required: true },
     });
     if (error) throw new Error(`user_reset_failed: ${error.message}`);
-    return { email, password, userId: existingUserId };
+    return { email, password, userId: existingUserId, setupToken: await signPasswordSetupToken(existingUserId) };
   }
 
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
@@ -179,10 +171,9 @@ export async function createOrResetPasswordForOtp(phoneE164: string): Promise<{
     phone: phoneE164,
     email_confirm: true,
     phone_confirm: true,
+    app_metadata: { password_setup_required: true },
   });
-  if (error || !data.user) {
-    throw new Error(`user_create_failed: ${error?.message ?? "no user"}`);
-  }
+  if (error || !data.user) throw new Error(`user_create_failed: ${error?.message ?? "no user"}`);
 
-  return { email, password, userId: data.user.id };
+  return { email, password, userId: data.user.id, setupToken: await signPasswordSetupToken(data.user.id) };
 }
