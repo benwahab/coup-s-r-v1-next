@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireConfiguredUser } from "@/lib/secure-user.functions";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
 import { footMatches, horses, lotoMultipliers } from "@/lib/mock-data";
@@ -78,7 +78,7 @@ function ticketCodeFromPayment(paymentId: string): string {
  * server-side gate that creates the ticket only after that confirmation.
  */
 export const createTicketAfterPayment = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => createTicketSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { data: payment, error: paymentError } = await supabaseAdmin
