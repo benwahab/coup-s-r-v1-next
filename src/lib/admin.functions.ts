@@ -19,6 +19,25 @@ const AdminPermission = z.enum([
 ]);
 export type AdminPermission = z.infer<typeof AdminPermission>;
 
+export interface LotoBallWagerStat {
+  ball: number;
+  wagerCount: number;
+  stakedAmount: number;
+  soloWagerCount: number;
+  comboWagerCount: number;
+}
+
+export interface LotoCombinationWagerStat {
+  combination: string;
+  wagerCount: number;
+  stakedAmount: number;
+}
+
+export interface LotoBallStatistics {
+  balls: LotoBallWagerStat[];
+  combinations: LotoCombinationWagerStat[];
+}
+
 async function assertAdmin(supabase: SB, userId: string) {
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (error) throw new Error("role_check_failed");
@@ -139,6 +158,25 @@ export const updateMyPaymentStatus = createServerFn({ method: "POST" })
  * - The player's Mobile Money secret/password is never persisted or exposed.
  * - This is operational activity, not access to the player's ticket.
  */
+/** Aggregate Loto wager exposure for the dedicated ball_stats admin capability.
+ * No ticket IDs, player IDs, phones, selections-by-player or individual tickets are returned.
+ */
+export const adminGetLotoBallStatistics = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .handler(async ({ context }) => {
+    await assertAdminPermission(context.supabase as SB, context.userId, "ball_stats");
+    const { data, error } = await supabaseAdmin.rpc("get_loto_ball_statistics");
+    if (error) throw new Error("ball_statistics_failed: " + error.message);
+    const payload = (data ?? { balls: [], combinations: [] }) as unknown as {
+      balls?: LotoBallWagerStat[];
+      combinations?: LotoCombinationWagerStat[];
+    };
+    return {
+      balls: payload.balls ?? [],
+      combinations: payload.combinations ?? [],
+    } satisfies LotoBallStatistics;
+  });
+
 export const adminListPlayerActivities = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
@@ -247,20 +285,15 @@ export const adminListAdmins = createServerFn({ method: "POST" })
       .eq("role", "admin")
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
-    let permissionRows: { user_id: string; permission: string }[] = [];
-    if (userIds.length > 0) {
-      const { data: rows, error: permissionError } = await supabaseAdmin
-        .from("admin_permissions")
-        .select("user_id, permission")
-        .in("user_id", userIds);
-      if (permissionError) throw new Error(permissionError.message);
-      permissionRows = rows ?? [];
-    }
-    const permissionsByUser = new Map<string, string[]>();
-    for (const row of permissionRows) { const list = permissionsByUser.get(row.user_id) ?? []; list.push(row.permission); permissionsByUser.set(row.user_id, list); }
-
     const userIds = (roles ?? []).map((r) => r.user_id);
     if (userIds.length === 0) return { admins: [] };
+    let permissionRows: { user_id: string; permission: string }[] = [];
+    const { data: rows, error: permissionError } = await supabaseAdmin
+      .from("admin_permissions")
+      .select("user_id, permission")
+      .in("user_id", userIds);
+    if (permissionError) throw new Error(permissionError.message);
+    permissionRows = rows ?? [];
     const { data: profiles, error: e2 } = await supabaseAdmin
       .from("profiles")
       .select("id, phone, first_name, last_name")
