@@ -211,54 +211,26 @@ async function settleFootTicket(ticket: TicketRow, results: Map<string, FootMatc
     couponLosing ? "losing" : couponPending ? "pending" : "winning";
   const prize = nextStatus === "winning" ? Math.floor(ticket.stake * totalOdds) : 0;
 
-  // Re-check the coupon immediately before touching leg statuses. The ticket
-  // itself is the authoritative settlement lock; this prevents a late result
-  // publication from rewriting legs after another worker already settled it.
-  const { data: currentTicket, error: currentTicketError } = await supabaseAdmin
-    .from("tickets")
-    .select("id,status")
-    .eq("id", ticket.id)
-    .maybeSingle();
-  if (currentTicketError) throw new Error("ticket_state_lookup_failed: " + currentTicketError.message);
-  if (!currentTicket || currentTicket.status !== "pending") {
-    return { changed: false, reason: "already_settled" };
+  if (nextStatus === "pending") {
+    return { changed: false, reason: "pending_results" };
   }
 
-  if (nextStatus === "losing") {
-    // A losing coupon makes every leg definitively red/finished, including legs
-    // that had already won individually.
-    const { error: legError } = await supabaseAdmin
-      .from("foot_picks")
-      .update({ status: "losing", settled_at: new Date().toISOString() })
-      .eq("ticket_id", ticket.id);
-    if (legError) throw new Error("foot_coupon_red_update_failed: " + legError.message);
-  } else {
-    for (const row of resolvedRows) {
-      const { error: rowError } = await supabaseAdmin
-        .from("foot_picks")
-        .update({ status: row.status, settled_at: row.settledAt })
-        .eq("id", row.id)
-        .eq("ticket_id", ticket.id);
-      if (rowError) throw new Error("foot_pick_status_update_failed: " + rowError.message);
-    }
-  }
+  const { data: settled, error: settlementError } = await supabaseAdmin.rpc(
+    "settle_ticket_atomic",
+    {
+      p_ticket_id: ticket.id,
+      p_status: nextStatus,
+      p_prize: prize,
+      p_leg_updates: resolvedRows,
+      p_mark_all_foot_losing: nextStatus === "losing",
+    },
+  );
 
-  if (ticket.status !== "pending") return { changed: false, reason: "already_settled" };
+  if (settlementError) throw new Error("atomic_foot_settlement_failed: " + settlementError.message);
+  const row = Array.isArray(settled) ? settled[0] : settled;
+  if (!row) return { changed: false, reason: "already_settled" };
+  return { changed: true, status: row.status, prize: row.prize };
 
-  const { data, error: updateError } = await supabaseAdmin
-    .from("tickets")
-    .update({
-      status: nextStatus,
-      prize,
-    })
-    .eq("id", ticket.id)
-    .eq("status", "pending")
-    .select("id,status,prize")
-    .maybeSingle();
-
-  if (updateError) throw new Error(updateError.message);
-  if (!data) return { changed: false, reason: "concurrent_update" };
-  return { changed: true, status: data.status, prize: data.prize };
 }
 
 async function settleTicket(ticket: TicketRow, publishedResults: any[]) {
@@ -288,16 +260,20 @@ async function settleTicket(ticket: TicketRow, publishedResults: any[]) {
   if (!evaluation) return { changed: false, reason: "unsupported_rule" };
 
   const nextStatus = evaluation.winning ? "winning" : "losing";
-  const { data, error } = await supabaseAdmin
-    .from("tickets")
-    .update({ status: nextStatus, prize: evaluation.winning ? evaluation.prize : 0 })
-    .eq("id", ticket.id)
-    .eq("status", "pending")
-    .select("id,status,prize")
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) return { changed: false, reason: "concurrent_update" };
-  return { changed: true, status: data.status, prize: data.prize };
+  const { data: settled, error: settlementError } = await supabaseAdmin.rpc(
+    "settle_ticket_atomic",
+    {
+      p_ticket_id: ticket.id,
+      p_status: nextStatus,
+      p_prize: evaluation.winning ? evaluation.prize : 0,
+      p_leg_updates: [],
+      p_mark_all_foot_losing: false,
+    },
+  );
+  if (settlementError) throw new Error("atomic_settlement_failed: " + settlementError.message);
+  const row = Array.isArray(settled) ? settled[0] : settled;
+  if (!row) return { changed: false, reason: "already_settled" };
+  return { changed: true, status: row.status, prize: row.prize };
 }
 
 export const adminCreateDrawResult = createServerFn({ method: "POST" })
