@@ -107,7 +107,7 @@ function useProviderValue(cfg: BetFlowConfig) {
     if (!/^\d{4,6}$/.test(mmPwd)) { setMmError(t("mmPasswordHint")); return; }
     try {
       const selectionKey = allLegs.map((l) => `${l.gameId}#${l.picksLabel}`).join("||");
-      const pk = paymentKey({ phone, amount: totalStake, gameId, selection: selectionKey });
+      const pk = await paymentKey({ phone, amount: totalStake, gameId, selection: selectionKey });
       const dup = await checkDuplicate(pk);
       if (dup.duplicate) {
         const msg = dup.intent?.status === "confirmed"
