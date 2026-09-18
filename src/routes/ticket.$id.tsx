@@ -7,6 +7,8 @@ import { useI18n } from "@/lib/i18n";
 import { useTickets } from "@/lib/tickets";
 import { signTicketToken } from "@/lib/ticket-token.functions";
 import { requestCashout } from "@/lib/settlement.functions";
+import { footMatches } from "@/lib/mock-data";
+import { labelForPick } from "@/lib/foot-markets";
 import { cn } from "@/lib/utils";
 import { WinConfetti } from "@/components/WinConfetti";
 
@@ -112,6 +114,35 @@ function TicketPage() {
             ) : (
               <Row label={ticket.gameId === "loto" ? t("numbers") : ticket.gameId === "pmu" ? t("horses") : t("matches")} value={<span className="whitespace-pre-wrap">{ticket.picksLabel}</span>} />
             )}
+            {ticket.gameId === "foot" && ticket.footPickStatuses?.length ? (
+              <Row
+                label={t("matches")}
+                value={
+                  <ul className="space-y-1.5">
+                    {ticket.footPickStatuses.map((pick, index) => {
+                      const match = footMatches.find((m) => m.id === pick.fixtureId);
+                      const key = `${pick.fixtureId}:${pick.marketId}:${pick.selection}`;
+                      const label = match ? labelForPick(key, match) : key;
+                      const color =
+                        pick.status === "winning" || pick.status === "paid"
+                          ? "border-success/30 bg-success/10 text-success"
+                          : pick.status === "losing"
+                            ? "border-destructive/30 bg-destructive/10 text-destructive"
+                            : "border-border bg-secondary/30 text-muted-foreground";
+                      return (
+                        <li key={`${key}-${index}`} className={cn("rounded-xl border px-3 py-2", color)}>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="min-w-0 truncate text-xs font-semibold">{label}</span>
+                            <span className="shrink-0 text-[10px] font-bold uppercase">{pick.status}</span>
+                          </div>
+                          <div className="mt-0.5 text-[10px] font-bold tabular-nums opacity-80">×{pick.odds.toFixed(2)}</div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                }
+              />
+            ) : null}
             <Row label={t("totalStake")} value={<span className="font-display text-lg font-bold">{ticket.stake.toLocaleString()} {t("fcfa")}</span>} />
             <Row label={t("payment")} value={ticket.payment} />
             <Row label={t("drawDate")} value={new Date(ticket.drawDate).toLocaleString()} />
