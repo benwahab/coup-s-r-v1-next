@@ -156,10 +156,14 @@ export const adminUpdateTicketLegStatus = createServerFn({ method: "POST" })
       .from("tickets")
       .update({ legs: nextLegs as unknown as Database["public"]["Tables"]["tickets"]["Update"]["legs"], status: global, prize: totalPrize || null })
       .eq("id", row.id)
+      .eq("status", "winning")
+      // Optimistic concurrency guard: another admin must not overwrite a
+      // newer leg update made from a stale snapshot.
+      .eq("legs", row.legs)
       .select("id")
       .maybeSingle();
     if (e2) throw new Error(e2.message);
-    if (!updatedTicket) throw new Error("ticket_not_found");
+    if (!updatedTicket) throw new Error("leg_update_conflict");
     await writeAuditLog(supabaseAdmin, {
       userId: context.userId,
       action: "admin.ticket.leg_updated",
@@ -184,7 +188,6 @@ export const updateMyPaymentStatus = createServerFn({ method: "POST" })
     z.object({
       reference: z.string().min(1),
       status: PaymentStatus.refine((s) => s === "confirmed" || s === "failed"),
-      ticketId: z.string().uuid().optional(),
     }).parse(data),
   )
   .handler(async ({ data, context }) => {
@@ -202,30 +205,23 @@ export const updateMyPaymentStatus = createServerFn({ method: "POST" })
       throw new Error("invalid_payment_state_transition");
     }
 
-    let ticketId = data.ticketId;
-    if (ticketId) {
-      const { data: ticket, error: ticketError } = await supabaseAdmin
-        .from("tickets")
-        .select("id, user_id")
-        .eq("id", ticketId)
-        .maybeSingle();
-      if (ticketError) throw new Error(ticketError.message);
-      if (!ticket || ticket.user_id !== context.userId) throw new Error("ticket_not_owned");
-    }
-
-    const patch: Database["public"]["Tables"]["payments"]["Update"] = { status: data.status };
-    if (ticketId) patch.ticket_id = ticketId;
-    const { error } = await supabaseAdmin
+    // Le navigateur ne peut jamais choisir ni rattacher un ticket lors de la
+    // confirmation. Le lien payment -> ticket est créé uniquement par le RPC
+    // atomique de création du ticket après validation complète du ticket.
+    const { data: updatedPayment, error } = await supabaseAdmin
       .from("payments")
-      .update(patch)
+      .update({ status: data.status })
       .eq("id", payment.id)
       .eq("user_id", context.userId)
-      .eq("status", "pending");
+      .eq("status", "pending")
+      .select("id,status,ticket_id")
+      .maybeSingle();
     if (error) throw new Error(error.message);
+    if (!updatedPayment) throw new Error("payment_state_conflict");
     await writeAuditLog(supabaseAdmin, {
       userId: context.userId,
       action: "payment.demo.status_updated",
-      detail: { reference: data.reference, status: data.status, ticketId: ticketId ?? null },
+      detail: { reference: data.reference, status: data.status, ticketId: null },
     });
     return { ok: true as const };
   });
