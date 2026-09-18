@@ -1,10 +1,12 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import QRCode from "qrcode";
 import { Download, Home, Printer, ShieldCheck, Trophy } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTickets } from "@/lib/tickets";
 import { signTicketToken } from "@/lib/ticket-token.functions";
+import { requestCashout } from "@/lib/settlement.functions";
 import { cn } from "@/lib/utils";
 import { WinConfetti } from "@/components/WinConfetti";
 
@@ -19,6 +21,7 @@ function TicketPage() {
   const { getTicket } = useTickets();
   const ticket = getTicket(id);
   const [qr, setQr] = useState<string>("");
+  const [cashoutBusy, setCashoutBusy] = useState(false);
 
   useEffect(() => {
     if (!ticket) return;
@@ -121,6 +124,34 @@ function TicketPage() {
           </div>
         </div>
       </div>
+
+      {ticket.status === "winning" && (ticket.prize ?? 0) > 0 && (
+        <div className="mt-5 rounded-2xl border border-success/30 bg-success/10 p-4 print:hidden">
+          <div className="text-sm font-bold text-success">Vos gains sont disponibles</div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Le bouton d'encaissement n'apparaît que pour un coupon entièrement gagnant.
+          </p>
+          <button
+            type="button"
+            disabled={cashoutBusy}
+            onClick={async () => {
+              setCashoutBusy(true);
+              try {
+                await requestCashout({ data: { code: ticket.id } });
+                toast.success("Encaissement enregistré.");
+                window.location.reload();
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Encaissement impossible.");
+              } finally {
+                setCashoutBusy(false);
+              }
+            }}
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-success px-4 py-3 font-bold text-success-foreground shadow-soft disabled:opacity-50"
+          >
+            {cashoutBusy ? "Encaissement…" : "Encaisser mes gains"}
+          </button>
+        </div>
+      )}
 
       <div className="mt-5 flex flex-wrap gap-2 print:hidden">
         <button onClick={async () => { const { downloadTicketPdf } = await import("@/lib/receipt-pdf"); await downloadTicketPdf(ticket); }} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-bold text-primary-foreground shadow-soft hover:brightness-105">
