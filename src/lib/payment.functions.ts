@@ -87,6 +87,7 @@ export const beginPayment = createServerFn({ method: "POST" })
         user_id: context.userId,
         amount: data.amount,
         method: data.method,
+        game_id: data.gameId,
         status: "pending",
         reference: txRef,
         payment_key: data.key,
