@@ -3,7 +3,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
-import { horses, lotoMultipliers } from "@/lib/mock-data";
+import { footMatches, horses, lotoMultipliers } from "@/lib/mock-data";
+import { oddForPick } from "@/lib/foot-markets";
 
 const TicketStatus = z.literal("pending");
 
@@ -229,7 +230,11 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
         const marketId = parts[1];
         const selection = parts.slice(2).join(":");
         const list = byFixture.get(fixtureId) ?? [];
-        list.push({ marketId, selection, odds: 1, status: "pending" });
+        const catalogMatch = footMatches.find((m) => m.id === fixtureId);
+        if (!catalogMatch) throw new Error("fixture_catalog_mismatch");
+        const odds = oddForPick(key, catalogMatch);
+        if (!Number.isFinite(odds) || odds < 1 || odds > 1000) throw new Error("invalid_frozen_odds");
+        list.push({ marketId, selection, odds, status: "pending" });
         byFixture.set(fixtureId, list);
       }
       const rows = Array.from(byFixture.entries()).map(([fixtureId, picks]) => ({
