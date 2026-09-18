@@ -428,3 +428,54 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
 
     return { ok: true as const, settled, winners, losers, skipped };
   });
+
+
+/**
+ * Demo cash-out gate.
+ *
+ * The server is the only authority allowed to mark a winning coupon as paid.
+ * In production this transition must happen only after a verified LONANI/payment
+ * provider payout confirmation. No external money movement is performed here.
+ */
+export const requestCashout = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ code: z.string().min(1).max(100) }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: ticket, error } = await supabaseAdmin
+      .from("tickets")
+      .select("id,code,user_id,status,prize,phone")
+      .eq("code", data.code)
+      .eq("user_id", context.userId)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    if (!ticket) throw new Error("ticket_not_found");
+    if (ticket.status !== "winning") throw new Error("cashout_not_available");
+    if (!Number.isInteger(ticket.prize) || ticket.prize <= 0) throw new Error("invalid_prize");
+
+    const { data: paid, error: updateError } = await supabaseAdmin
+      .from("tickets")
+      .update({ status: "paid" })
+      .eq("id", ticket.id)
+      .eq("user_id", context.userId)
+      .eq("status", "winning")
+      .select("id,status,prize")
+      .maybeSingle();
+
+    if (updateError) throw new Error(updateError.message);
+    if (!paid) throw new Error("cashout_conflict");
+
+    await writeAuditLog(supabaseAdmin, {
+      userId: context.userId,
+      action: "ticket.cashout.demo",
+      detail: {
+        ticketId: ticket.id,
+        code: ticket.code,
+        prize: ticket.prize,
+        destinationPhone: ticket.phone,
+        mode: "demo",
+      },
+    });
+
+    return { ok: true as const, status: "paid" as const, prize: paid.prize };
+  });
