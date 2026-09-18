@@ -68,14 +68,36 @@ export const adminUpdateTicketStatus = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: Database["public"]["Tables"]["tickets"]["Update"] = { status: data.status };
     if (data.prize !== undefined) patch.prize = data.prize;
+    const { data: currentTicket, error: currentError } = await supabaseAdmin
+      .from("tickets")
+      .select("id,status,prize")
+      .eq("code", data.code)
+      .maybeSingle();
+    if (currentError) throw new Error(currentError.message);
+    if (!currentTicket) throw new Error("ticket_not_found");
+
+    // Winning/losing states are produced by the published-result settlement
+    // engine, never by a generic admin edit. The only manual transition kept
+    // here is winning -> paid, which represents the payout approval step.
+    if (data.status !== "paid" || currentTicket.status !== "winning") {
+      if (data.status === currentTicket.status) return { ok: true as const, unchanged: true as const };
+      throw new Error("manual_settlement_disabled");
+    }
+    if (data.prize !== undefined && data.prize !== null && data.prize <= 0) {
+      throw new Error("invalid_payout_amount");
+    }
+
+    patch.status = "paid";
+    patch.prize = data.prize ?? currentTicket.prize;
     const { data: updatedTicket, error } = await supabaseAdmin
       .from("tickets")
       .update(patch)
       .eq("code", data.code)
+      .eq("status", "winning")
       .select("id")
       .maybeSingle();
     if (error) throw new Error(error.message);
-    if (!updatedTicket) throw new Error("ticket_not_found");
+    if (!updatedTicket) throw new Error("payout_conflict");
     await writeAuditLog(supabaseAdmin, {
       userId: context.userId,
       action: "admin.ticket.status_updated",
