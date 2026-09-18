@@ -354,17 +354,25 @@ function AdminPage() {
     { id: "balls", label: t("ballsStats"), icon: Circle },
     { id: "ops", label: t("admin.nav.ops"), icon: Send },
     { id: "results", label: "Résultats", icon: ListChecks },
+    { id: "claims", label: "Réclamations", icon: ShieldCheck },
     { id: "admins", label: t("admin.ops.title"), icon: Settings },
     { id: "logs", label: t("admin.nav.logs"), icon: LogIn },
       ];
 
   const visibleNav = adminPermissions === "all"
     ? nav
-    : nav.filter((item) =>
-        item.id === "balls" ? can("ball_stats") :
-        item.id === "results" ? can("publish_results") :
-        false
-      );
+    : nav.filter((item) => {
+        switch (item.id) {
+          case "transactions": return can("player_activity");
+          case "players": return can("player_stats");
+          case "regions": return can("region_stats");
+          case "balls": return can("ball_stats");
+          case "results": return can("publish_results");
+          case "claims": return can("complaints");
+          case "logs": return can("security_logs");
+          default: return false;
+        }
+      });
 
   // Logs filters
   const [logPhone, setLogPhone] = useState("");
