@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { ShieldCheck, Sparkles, BarChart3, ListChecks, Users, MapPin, Circle, Send, LogIn, LifeBuoy, Settings, type LucideIcon } from "lucide-react";
+import { ShieldCheck, Sparkles, BarChart3, ListChecks, Users, MapPin, Circle, Send, LogIn, Settings, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/AppShell";
@@ -20,7 +20,6 @@ import { RegionsTab } from "@/components/admin/tabs/RegionsTab";
 import { BallsTab } from "@/components/admin/tabs/BallsTab";
 import { OpsTab } from "@/components/admin/tabs/OpsTab";
 import { LogsTab } from "@/components/admin/tabs/LogsTab";
-import { ClaimsTab } from "@/components/admin/tabs/ClaimsTab";
 import { ResultsTab } from "@/components/admin/tabs/ResultsTab";
 import { AdminsSection } from "@/components/admin/AdminsSection";
 
@@ -56,10 +55,6 @@ function AdminPage() {
   // selections, legs, ticket status or prizes. Only aggregate/demo statistics
   // and sanitized player activity are available here.
   const tickets: never[] = [];
-  const drafts: never[] = [];
-  const updateStatus = () => { throw new Error("admin_ticket_access_disabled"); };
-  const updateLegStatus = () => { throw new Error("admin_ticket_access_disabled"); };
-  const removeDraft = () => { throw new Error("admin_ticket_access_disabled"); };
   const sims = useMemo(() => generateSimTickets(260), []);
   const [tab, setTab] = useState<Tab>("dashboard");
 
@@ -301,19 +296,6 @@ function AdminPage() {
     const body = filteredLog.map((e) => [new Date(e.at).toISOString(), e.phone, e.ip, e.kind, `"${(e.note ?? "").replace(/"/g, "''")}"`].join(","));
     downloadCsv([header.join(","), ...body].join("\n"), "coupsur-auth-logs.csv");
   };
-
-  // Claims
-  const [claimPhone, setClaimPhone] = useState("");
-  const claim = useMemo(() => {
-    if (!claimPhone) return null;
-    const norm = claimPhone.replace(/\s/g, "");
-    return {
-      tickets: tickets.filter((t) => t.phone.replace(/\s/g, "").includes(norm)),
-      drafts: drafts.filter((d) => (d.phone ?? "").replace(/\s/g, "").includes(norm)),
-      authEvents: authLog.filter((e) => e.phone.replace(/\s/g, "").includes(norm)).slice(0, 20),
-      intents: allIntents.slice(0, 20),
-    };
-  }, [claimPhone, tickets, drafts, authLog, allIntents]);
 
   if (gate === "checking") return <div className="min-h-[60vh]" aria-hidden />;
   if (gate === "anon") return <Navigate to="/auth" replace />;
