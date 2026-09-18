@@ -89,7 +89,12 @@ BEGIN
       event_type, user_id, payment_id, ticket_id, reference, amount,
       method, provider_reference, metadata
     ) VALUES (
-      'payment_pending', NEW.user_id, NEW.id, NEW.ticket_id, NEW.reference, NEW.amount,
+      CASE NEW.status
+        WHEN 'confirmed' THEN 'payment_confirmed'
+        WHEN 'failed' THEN 'payment_failed'
+        ELSE 'payment_pending'
+      END,
+      NEW.user_id, NEW.id, NEW.ticket_id, NEW.reference, NEW.amount,
       NEW.method, NEW.reference,
       jsonb_build_object('event', 'ticket_linked', 'status', NEW.status)
     );
