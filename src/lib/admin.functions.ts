@@ -48,6 +48,28 @@ export const checkIsAdmin = createServerFn({ method: "POST" })
     return { isAdmin: data === true };
   });
 
+export const getMyAdminPermissions = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .handler(async ({ context }) => {
+    const { data: superAdmin, error: superError } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "super_admin",
+    });
+    if (superError) throw new Error("role_check_failed");
+    if (superAdmin === true) {
+      return { isSuperAdmin: true as const, permissions: AdminPermission[] | "all" };
+    }
+    const { data, error } = await context.supabase
+      .from("admin_permissions")
+      .select("permission")
+      .eq("user_id", context.userId);
+    if (error) throw new Error("permission_lookup_failed");
+    return {
+      isSuperAdmin: false as const,
+      permissions: (data ?? []).map((row) => row.permission as AdminPermission),
+    };
+  });
+
 export const checkIsSuperAdmin = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
