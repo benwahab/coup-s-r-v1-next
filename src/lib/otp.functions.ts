@@ -91,7 +91,7 @@ export const verifyOtp = createServerFn({ method: "POST" })
     const sess = signRes.data;
     const p = data.profile;
     if (p && (p.firstName || p.lastName || p.region)) {
-      const patch: Record<string, string | null> = { phone: phoneE164 };
+      const patch: Record<string, string | null | boolean> = { phone: phoneE164, password_setup_required: true };
       if (p.firstName !== undefined) patch.first_name = p.firstName || null;
       if (p.lastName !== undefined) patch.last_name = p.lastName || null;
       if (p.region !== undefined) patch.region = p.region || null;
@@ -102,7 +102,7 @@ export const verifyOtp = createServerFn({ method: "POST" })
       }
     }
 
-    const { data: profileRow } = await supabaseAdmin.from("profiles").select("first_name, last_name, region").eq("id", sess.session.user.id).maybeSingle();
+    const { data: profileRow } = await supabaseAdmin.from("profiles").select("first_name, last_name, region, password_setup_required").eq("id", sess.session.user.id).maybeSingle();
     await writeAuditLog(supabaseAdmin, { userId: sess.session.user.id, action: "auth.otp.verified", detail: { phone: phoneE164, passwordSetupRequired: true } });
 
     return {
