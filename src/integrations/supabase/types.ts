@@ -195,6 +195,7 @@ export type Database = {
           last_name: string | null
           phone: string | null
           region: string | null
+          password_setup_required: boolean
           updated_at: string
         }
         Insert: {
@@ -204,6 +205,7 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           region?: string | null
+          password_setup_required?: boolean
           updated_at?: string
         }
         Update: {
@@ -213,6 +215,7 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           region?: string | null
+          password_setup_required?: boolean
           updated_at?: string
         }
         Relationships: []
