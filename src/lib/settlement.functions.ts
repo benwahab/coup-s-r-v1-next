@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireConfiguredUser } from "@/lib/secure-user.functions";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { writeAuditLog } from "./audit.server";
 import { lotoMultipliers } from "./mock-data";
@@ -277,7 +277,7 @@ async function settleTicket(ticket: TicketRow, publishedResults: any[]) {
 }
 
 export const adminCreateDrawResult = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => drawResultSchema.parse(data))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
@@ -352,7 +352,7 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
   });
 
 export const adminPublishDrawResult = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => z.object({ resultId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
@@ -428,7 +428,7 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
  * provider payout confirmation. No external money movement is performed here.
  */
 export const requestCashout = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => z.object({ code: z.string().min(1).max(100) }).parse(data))
   .handler(async ({ data, context }) => {
     const { data: ticket, error } = await supabaseAdmin
