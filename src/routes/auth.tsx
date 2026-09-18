@@ -20,7 +20,7 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Connexion — Coup Sûr" },
-      { name: "description", content: "Connectez-vous à Coup Sûr avec votre numéro de téléphone et un code OTP envoyé par SMS." },
+      { name: "description", content: "Connectez-vous à Coup Sûr avec votre numéro de téléphone et votre mot de passe." },
       { name: "robots", content: "noindex, follow" },
     ],
   }),
@@ -175,7 +175,13 @@ function AuthPage() {
     try {
       const res = await loginWithPassword({ data: { phone, password } });
       if (!res.ok) {
-        setError("Numéro ou mot de passe incorrect.");
+        if (res.reason === "rate-limited") {
+          const msg = "Trop de tentatives de connexion. Réessayez dans 15 minutes.";
+          setError(msg);
+          toast.error(msg);
+        } else {
+          setError("Numéro ou mot de passe incorrect.");
+        }
         return;
       }
       const { error: sessionError } = await (await import("@/integrations/supabase/client")).supabase.auth.setSession(res.session);
