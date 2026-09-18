@@ -287,13 +287,6 @@ export const adminListAdmins = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     const userIds = (roles ?? []).map((r) => r.user_id);
     if (userIds.length === 0) return { admins: [] };
-    let permissionRows: { user_id: string; permission: string }[] = [];
-    const { data: rows, error: permissionError } = await supabaseAdmin
-      .from("admin_permissions")
-      .select("user_id, permission")
-      .in("user_id", userIds);
-    if (permissionError) throw new Error(permissionError.message);
-    permissionRows = rows ?? [];
     const { data: profiles, error: e2 } = await supabaseAdmin
       .from("profiles")
       .select("id, phone, first_name, last_name")
