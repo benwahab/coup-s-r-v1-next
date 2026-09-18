@@ -252,18 +252,42 @@ export const adminListFinancialLedger = createServerFn({ method: "POST" })
     return { ledger: rows ?? [] };
   });
 
+/**
+ * Admin activity feed only.
+ *
+ * SECURITY BOUNDARY:
+ * - No ticket id/code, picks, legs, prize or ticket state is returned.
+ * - No payment_key is returned.
+ * - The player's Mobile Money secret/password is never persisted or exposed.
+ * - This is operational activity, not access to the player's ticket.
+ */
 export const adminListAllPayments = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase as SB, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
     const { data, error } = await supabaseAdmin
       .from("payments")
-      .select("*")
+      .select("id,user_id,game_id,amount,method,status,reference,created_at")
       .order("created_at", { ascending: false })
       .limit(500);
+
     if (error) throw new Error(error.message);
-    return { payments: data ?? [] };
+
+    return {
+      payments: (data ?? []).map((row) => ({
+        id: row.id,
+        playerId: row.user_id,
+        gameId: row.game_id,
+        amount: row.amount,
+        method: row.method,
+        status: row.status,
+        occurredAt: row.created_at,
+        // Transaction reference is operational metadata, not a ticket.
+        reference: row.reference,
+      })),
+    };
   });
 
 export const adminListAdmins = createServerFn({ method: "POST" })
