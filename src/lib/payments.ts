@@ -67,18 +67,10 @@ export async function beginPayment(input: {
 }
 
 /** Marque l'intention comme confirmée (ticket émis). */
-export async function confirmPayment(txRef: string, ticket?: Pick<Ticket, "id"> | null) {
-  // Récupère l'uuid du ticket via son `code` public pour lier la ligne payments.
-  let ticketId: string | undefined;
-  if (ticket) {
-    const { data } = await supabase
-      .from("tickets")
-      .select("id")
-      .eq("code", ticket.id)
-      .maybeSingle();
-    ticketId = data?.id;
-  }
-  await updateMyPaymentStatus({ data: { reference: txRef, status: "confirmed", ticketId } });
+export async function confirmPayment(txRef: string) {
+  // The payment-to-ticket link is created atomically by the server-side
+  // ticket creation RPC. The client never supplies a ticket id here.
+  await updateMyPaymentStatus({ data: { reference: txRef, status: "confirmed" } });
 }
 
 /** Marque l'intention comme échouée (annule le blocage anti-doublon). */
