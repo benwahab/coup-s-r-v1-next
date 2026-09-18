@@ -13,7 +13,79 @@ export type Database = {
     PostgrestVersion: "14.5"
   }
   public: {
-    Tables: {\n      admin_permissions: {\n        Row: { id: string; user_id: string; permission: string; created_at: string }\n        Insert: { id?: string; user_id: string; permission: string; created_at?: string }\n        Update: { id?: string; user_id?: string; permission?: string; created_at?: string }\n        Relationships: []\n      }
+    Tables: {
+      admin_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          detail: Json | null
+          id: string
+          ip: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          detail?: Json | null
+          id?: string
+          ip?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          detail?: Json | null
+          id?: string
+          ip?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      auth_login_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          phone_hash: string
+          success: boolean
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phone_hash: string
+          success?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phone_hash?: string
+          success?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       draw_results: {
         Row: {
           created_at: string
@@ -53,278 +125,48 @@ export type Database = {
         }
         Relationships: []
       }
-      auth_login_attempts: {
-        Row: {
-          created_at: string
-          id: string
-          phone_hash: string
-          success: boolean
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          phone_hash: string
-          success?: boolean
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          phone_hash?: string
-          success?: boolean
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      audit_logs: {
-        Row: {
-          action: string
-          created_at: string
-          detail: Json | null
-          id: string
-          ip: string | null
-          user_id: string | null
-        }
-        Insert: {
-          action: string
-          created_at?: string
-          detail?: Json | null
-          id?: string
-          ip?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          action?: string
-          created_at?: string
-          detail?: Json | null
-          id?: string
-          ip?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      otp_codes: {
-        Row: {
-          attempts: number
-          code_hash: string
-          consumed_at: string | null
-          created_at: string
-          expires_at: string
-          id: string
-          ip: string | null
-          phone: string
-        }
-        Insert: {
-          attempts?: number
-          code_hash: string
-          consumed_at?: string | null
-          created_at?: string
-          expires_at: string
-          id?: string
-          ip?: string | null
-          phone: string
-        }
-        Update: {
-          attempts?: number
-          code_hash?: string
-          consumed_at?: string | null
-          created_at?: string
-          expires_at?: string
-          id?: string
-          ip?: string | null
-          phone?: string
-        }
-        Relationships: []
-      }
-      payments: {
-        Row: {
-          amount: number
-          created_at: string
-          id: string
-          game_id: string | null
-          method: string
-          payment_key: string | null
-          reference: string
-          status: Database["public"]["Enums"]["payment_status"]
-          ticket_id: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          id?: string
-          game_id?: string | null
-          method: string
-          payment_key?: string | null
-          reference: string
-          status?: Database["public"]["Enums"]["payment_status"]
-          ticket_id?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          id?: string
-          game_id?: string | null
-          method?: string
-          payment_key?: string | null
-          reference?: string
-          status?: Database["public"]["Enums"]["payment_status"]
-          ticket_id?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "payments_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profiles: {
-        Row: {
-          created_at: string
-          first_name: string | null
-          id: string
-          last_name: string | null
-          phone: string | null
-          region: string | null
-          password_setup_required: boolean
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          first_name?: string | null
-          id: string
-          last_name?: string | null
-          phone?: string | null
-          region?: string | null
-          password_setup_required?: boolean
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          first_name?: string | null
-          id?: string
-          last_name?: string | null
-          phone?: string | null
-          region?: string | null
-          password_setup_required?: boolean
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      tickets: {
-        Row: {
-          code: string
-          created_at: string
-          draw_date: string | null
-          draw_name: string | null
-          game_id: string
-          game_name: string
-          id: string
-          legs: Json | null
-          payment_method: string
-          phone: string | null
-          picks: Json
-          picks_label: string
-          prize: number | null
-          region: string | null
-          stake: number
-          status: Database["public"]["Enums"]["ticket_status"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          draw_date?: string | null
-          draw_name?: string | null
-          game_id: string
-          game_name: string
-          id?: string
-          legs?: Json | null
-          payment_method: string
-          phone?: string | null
-          picks: Json
-          picks_label: string
-          prize?: number | null
-          region?: string | null
-          stake: number
-          status?: Database["public"]["Enums"]["ticket_status"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          draw_date?: string | null
-          draw_name?: string | null
-          game_id?: string
-          game_name?: string
-          id?: string
-          legs?: Json | null
-          payment_method?: string
-          phone?: string | null
-          picks?: Json
-          picks_label?: string
-          prize?: number | null
-          region?: string | null
-          stake?: number
-          status?: Database["public"]["Enums"]["ticket_status"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       financial_ledger: {
         Row: {
-          id: string
-          event_type: "payment_pending" | "payment_confirmed" | "payment_failed" | "ticket_paid"
-          user_id: string | null
-          payment_id: string | null
-          ticket_id: string | null
-          reference: string | null
           amount: number | null
-          prize: number | null
-          method: string | null
-          provider_reference: string | null
-          metadata: Json
           created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          method: string | null
+          payment_id: string | null
+          prize: number | null
+          provider_reference: string | null
+          reference: string | null
+          ticket_id: string | null
+          user_id: string | null
         }
         Insert: {
-          id?: string
-          event_type: "payment_pending" | "payment_confirmed" | "payment_failed" | "ticket_paid"
-          user_id?: string | null
-          payment_id?: string | null
-          ticket_id?: string | null
-          reference?: string | null
           amount?: number | null
-          prize?: number | null
-          method?: string | null
-          provider_reference?: string | null
-          metadata?: Json
           created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          method?: string | null
+          payment_id?: string | null
+          prize?: number | null
+          provider_reference?: string | null
+          reference?: string | null
+          ticket_id?: string | null
+          user_id?: string | null
         }
         Update: {
-          id?: string
-          event_type?: "payment_pending" | "payment_confirmed" | "payment_failed" | "ticket_paid"
-          user_id?: string | null
-          payment_id?: string | null
-          ticket_id?: string | null
-          reference?: string | null
           amount?: number | null
-          prize?: number | null
-          method?: string | null
-          provider_reference?: string | null
-          metadata?: Json
           created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          method?: string | null
+          payment_id?: string | null
+          prize?: number | null
+          provider_reference?: string | null
+          reference?: string | null
+          ticket_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -486,6 +328,185 @@ export type Database = {
           },
         ]
       }
+      otp_codes: {
+        Row: {
+          attempts: number
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          ip: string | null
+          phone: string
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          ip?: string | null
+          phone: string
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip?: string | null
+          phone?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          game_id: string | null
+          id: string
+          method: string
+          payment_key: string | null
+          reference: string
+          status: Database["public"]["Enums"]["payment_status"]
+          ticket_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          game_id?: string | null
+          id?: string
+          method: string
+          payment_key?: string | null
+          reference: string
+          status?: Database["public"]["Enums"]["payment_status"]
+          ticket_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          game_id?: string | null
+          id?: string
+          method?: string
+          payment_key?: string | null
+          reference?: string
+          status?: Database["public"]["Enums"]["payment_status"]
+          ticket_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          password_setup_required: boolean
+          phone: string | null
+          region: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          password_setup_required?: boolean
+          phone?: string | null
+          region?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          password_setup_required?: boolean
+          phone?: string | null
+          region?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tickets: {
+        Row: {
+          code: string
+          created_at: string
+          draw_date: string | null
+          draw_name: string | null
+          game_id: string
+          game_name: string
+          id: string
+          legs: Json | null
+          payment_method: string
+          phone: string | null
+          picks: Json
+          picks_label: string
+          prize: number | null
+          region: string | null
+          stake: number
+          status: Database["public"]["Enums"]["ticket_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          draw_date?: string | null
+          draw_name?: string | null
+          game_id: string
+          game_name: string
+          id?: string
+          legs?: Json | null
+          payment_method: string
+          phone?: string | null
+          picks: Json
+          picks_label: string
+          prize?: number | null
+          region?: string | null
+          stake: number
+          status?: Database["public"]["Enums"]["ticket_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          draw_date?: string | null
+          draw_name?: string | null
+          game_id?: string
+          game_name?: string
+          id?: string
+          legs?: Json | null
+          payment_method?: string
+          phone?: string | null
+          picks?: Json
+          picks_label?: string
+          prize?: number | null
+          region?: string | null
+          stake?: number
+          status?: Database["public"]["Enums"]["ticket_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -512,6 +533,35 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_ticket_with_payment: {
+        Args: {
+          p_actor_user_id: string
+          p_foot_picks?: Json
+          p_payment_id: string
+          p_ticket: Json
+        }
+        Returns: string
+      }
+      get_loto_ball_statistics: { Args: never; Returns: Json }
+      has_admin_permission: {
+        Args: { _permission: string; _user_id: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      set_admin_permissions_atomic: {
+        Args: {
+          p_actor_user_id: string
+          p_permissions: string[]
+          p_target_user_id: string
+        }
+        Returns: undefined
+      }
       settle_ticket_atomic: {
         Args: {
           p_leg_updates?: Json
@@ -522,32 +572,15 @@ export type Database = {
         }
         Returns: {
           id: string
+          prize: number
           status: Database["public"]["Enums"]["ticket_status"]
-          prize: number | null
         }[]
-      }
-      create_ticket_with_payment: {
-        Args: {
-          p_actor_user_id: string
-          p_foot_picks?: Json
-          p_payment_id: string
-          p_ticket: Json
-        }
-        Returns: string
-      }
-      set_admin_permissions_atomic: { Args: { p_actor_user_id: string; p_target_user_id: string; p_permissions: string[] }; Returns: undefined }\n      has_admin_permission: { Args: { _permission: string; _user_id: string }; Returns: boolean }\n      get_loto_ball_statistics: { Args: Record<string, never>; Returns: Json }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
       }
     }
     Enums: {
       app_role: "admin" | "player" | "super_admin"
       payment_status: "pending" | "confirmed" | "failed"
-      ticket_status: "pending" | "losing" | "winning" | "paid"\n      admin_permission: "complaints" | "player_activity" | "ball_stats" | "publish_results" | "player_stats" | "region_stats" | "security_logs"
+      ticket_status: "pending" | "losing" | "winning" | "paid"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -563,12 +596,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -592,11 +625,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -617,11 +650,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -642,11 +675,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -659,11 +692,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -677,7 +710,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "player", "super_admin"],
       payment_status: ["pending", "confirmed", "failed"],
-      ticket_status: ["pending", "losing", "winning", "paid"],\n      admin_permission: ["complaints", "player_activity", "ball_stats", "publish_results", "player_stats", "region_stats", "security_logs"],
+      ticket_status: ["pending", "losing", "winning", "paid"],
     },
   },
 } as const
