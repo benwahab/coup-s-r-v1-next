@@ -535,7 +535,7 @@ export type Database = {
         }
         Returns: string
       }
-      has_admin_permission: { Args: { _permission: string; _user_id: string }; Returns: boolean }\n      has_role: {
+      set_admin_permissions_atomic: { Args: { p_actor_user_id: string; p_target_user_id: string; p_permissions: string[] }; Returns: undefined }\n      has_admin_permission: { Args: { _permission: string; _user_id: string }; Returns: boolean }\n      has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
