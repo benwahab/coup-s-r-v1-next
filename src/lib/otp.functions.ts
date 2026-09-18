@@ -11,21 +11,14 @@ const PhoneInput = z.object({ phone: z.string().regex(/^\d{8}$/) });
 const VerifyInput = z.object({
   phone: z.string().regex(/^\d{8}$/),
   code: z.string().regex(/^\d{6}$/),
-  profile: z
-    .object({
-      firstName: z.string().trim().max(80).optional(),
-      lastName: z.string().trim().max(80).optional(),
-      region: z.string().trim().max(80).optional(),
-    })
-    .optional(),
+  profile: z.object({
+    firstName: z.string().trim().max(80).optional(),
+    lastName: z.string().trim().max(80).optional(),
+    region: z.string().trim().max(80).optional(),
+  }).optional(),
 });
 
-/** Envoi d'un OTP simulé.
- *  - Génère un code 6 chiffres, stocke SHA-256 dans `otp_codes` (TTL 5 min, 3 tentatives).
- *  - Le code est retourné en clair au client UNIQUEMENT parce que le mode SMS est
- *    volontairement simulé (pas de coût provider). Quand un vrai fournisseur sera
- *    branché, retirer `code` du retour et l'envoyer par SMS à la place.
- */
+/** Envoi d'un OTP simulé. Le code est retourné uniquement pour la démo. */
 export const sendOtp = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => PhoneInput.parse(data))
   .handler(async ({ data }) => {
@@ -33,10 +26,6 @@ export const sendOtp = createServerFn({ method: "POST" })
     const { generateOtpCode, sha256Hex, toE164Phone } = await import("./otp.server");
 
     const phoneE164 = toE164Phone(data.phone);
-
-    // Limitation de débit serveur : évite qu'un même numéro déclenche un
-    // nombre illimité de demandes d'OTP (spam, coût SMS futur, contournement
-    // du compteur de tentatives en redemandant sans cesse un nouveau code).
     const windowStartIso = new Date(Date.now() - OTP_RATE_WINDOW_MS).toISOString();
     const { count: recentCount, error: rateErr } = await supabaseAdmin
       .from("otp_codes")
@@ -44,15 +33,12 @@ export const sendOtp = createServerFn({ method: "POST" })
       .eq("phone", phoneE164)
       .gte("created_at", windowStartIso);
     if (rateErr) throw new Error(`otp_rate_check_failed: ${rateErr.message}`);
-    if ((recentCount ?? 0) >= MAX_OTP_REQUESTS_PER_WINDOW) {
-      return { ok: false as const, reason: "rate-limited" as const };
-    }
+    if ((recentCount ?? 0) >= MAX_OTP_REQUESTS_PER_WINDOW) return { ok: false as const, reason: "rate-limited" as const };
 
     const code = generateOtpCode();
     const codeHash = await sha256Hex(code);
     const expiresAt = new Date(Date.now() + OTP_TTL_MS).toISOString();
 
-    // On invalide les OTP encore actifs pour ce téléphone avant d'en créer un nouveau.
     const { error: invalidateError } = await supabaseAdmin
       .from("otp_codes")
       .update({ consumed_at: new Date().toISOString() })
@@ -60,33 +46,26 @@ export const sendOtp = createServerFn({ method: "POST" })
       .is("consumed_at", null);
     if (invalidateError) throw new Error(`otp_invalidate_failed: ${invalidateError.message}`);
 
-    const { error } = await supabaseAdmin.from("otp_codes").insert({
-      phone: phoneE164,
-      code_hash: codeHash,
-      expires_at: expiresAt,
-      attempts: 0,
-    });
+    const { error } = await supabaseAdmin.from("otp_codes").insert({ phone: phoneE164, code_hash: codeHash, expires_at: expiresAt, attempts: 0 });
     if (error) throw new Error(`otp_insert_failed: ${error.message}`);
 
-    // SIMULÉ — code renvoyé pour affichage démo. À supprimer quand un vrai SMS est branché.
-    // eslint-disable-next-line no-console
+    // SIMULÉ — à supprimer avec le branchement d'un vrai fournisseur SMS.
     console.info("[Coup Sûr DEMO] OTP", phoneE164, "→", code);
     return { ok: true as const, code, ttlSec: Math.floor(OTP_TTL_MS / 1000) };
   });
 
-/** Vérifie l'OTP et établit une session Supabase pour le téléphone.
- *  Retourne les tokens à poser côté client via `supabase.auth.setSession(...)`. */
+/**
+ * Vérifie l'OTP. Aucune session Auth n'est créée à ce stade : le navigateur
+ * reçoit seulement un token court permettant de choisir le mot de passe.
+ */
 export const verifyOtp = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => VerifyInput.parse(data))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { sha256Hex, toE164Phone } = await import("./otp.server");
-    const { createClient } = await import("@supabase/supabase-js");
 
     const phoneE164 = toE164Phone(data.phone);
     const nowIso = new Date().toISOString();
-
-    // Récupère l'OTP actif le plus récent pour ce téléphone.
     const { data: rows, error: selErr } = await supabaseAdmin
       .from("otp_codes")
       .select("id, code_hash, expires_at, attempts")
@@ -100,10 +79,7 @@ export const verifyOtp = createServerFn({ method: "POST" })
     if (!otp) return { ok: false as const, reason: "expired" as const };
 
     if (otp.attempts >= MAX_ATTEMPTS) {
-      await supabaseAdmin
-        .from("otp_codes")
-        .update({ consumed_at: nowIso })
-        .eq("id", otp.id);
+      await supabaseAdmin.from("otp_codes").update({ consumed_at: nowIso }).eq("id", otp.id);
       return { ok: false as const, reason: "locked" as const };
     }
 
@@ -112,10 +88,7 @@ export const verifyOtp = createServerFn({ method: "POST" })
       const nextAttempts = otp.attempts + 1;
       const { data: failedAttemptUpdate, error: failedAttemptError } = await supabaseAdmin
         .from("otp_codes")
-        .update({
-          attempts: nextAttempts,
-          consumed_at: nextAttempts >= MAX_ATTEMPTS ? nowIso : null,
-        })
+        .update({ attempts: nextAttempts, consumed_at: nextAttempts >= MAX_ATTEMPTS ? nowIso : null })
         .eq("id", otp.id)
         .is("consumed_at", null)
         .eq("attempts", otp.attempts)
@@ -123,18 +96,10 @@ export const verifyOtp = createServerFn({ method: "POST" })
         .maybeSingle();
       if (failedAttemptError) throw new Error(`otp_attempt_update_failed: ${failedAttemptError.message}`);
       if (!failedAttemptUpdate) return { ok: false as const, reason: "already-used" as const };
-      await writeAuditLog(supabaseAdmin, {
-        action: "auth.otp.failed",
-        detail: { phone: phoneE164, remaining: Math.max(0, MAX_ATTEMPTS - nextAttempts) },
-      });
-      return {
-        ok: false as const,
-        reason: "wrong-code" as const,
-        remaining: Math.max(0, MAX_ATTEMPTS - nextAttempts),
-      };
+      await writeAuditLog(supabaseAdmin, { action: "auth.otp.failed", detail: { phone: phoneE164, remaining: Math.max(0, MAX_ATTEMPTS - nextAttempts) } });
+      return { ok: false as const, reason: "wrong-code" as const, remaining: Math.max(0, MAX_ATTEMPTS - nextAttempts) };
     }
 
-    // Consomme l'OTP.
     const { data: consumedOtp, error: consumeError } = await supabaseAdmin
       .from("otp_codes")
       .update({ consumed_at: nowIso })
@@ -146,33 +111,9 @@ export const verifyOtp = createServerFn({ method: "POST" })
     if (consumeError) throw new Error(`otp_consume_failed: ${consumeError.message}`);
     if (!consumedOtp) return { ok: false as const, reason: "already-used" as const };
 
-    // OTP verified: create or reset the Supabase Auth password to a
-    // cryptographically random temporary value. The client receives only the
-    // authenticated session; the temporary password is never returned.
     const { createOrResetPasswordForOtp } = await import("./password.functions");
-    const { createClient } = await import("@supabase/supabase-js");
-
     const bootstrap = await createOrResetPasswordForOtp(phoneE164);
 
-    // Client publishable, sans persistance, pour établir la session.
-    const anon = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_PUBLISHABLE_KEY!,
-      { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-    );
-
-    const signRes = await anon.auth.signInWithPassword({
-      email: bootstrap.email,
-      password: bootstrap.password,
-    });
-    if (signRes.error || !signRes.data.session) {
-      throw new Error(`sign_in_failed: ${signRes.error?.message ?? "no session"}`);
-    }
-
-    const sess = signRes.data;
-
-    // Upsert du profil : le trigger `handle_new_user` a inséré la ligne de base
-    // (id + phone). On complète avec les champs facultatifs saisis avant l'OTP.
     const p = data.profile;
     if (p && (p.firstName || p.lastName || p.region)) {
       const patch: Record<string, string | null> = { phone: phoneE164 };
@@ -181,45 +122,34 @@ export const verifyOtp = createServerFn({ method: "POST" })
       if (p.region !== undefined) patch.region = p.region || null;
       const { error: profileUpsertError } = await supabaseAdmin
         .from("profiles")
-        .upsert({ id: sess.session.user.id, ...patch }, { onConflict: "id" });
+        .upsert({ id: bootstrap.userId, ...patch }, { onConflict: "id" });
       if (profileUpsertError) {
-        await writeAuditLog(supabaseAdmin, {
-          userId: sess.session.user.id,
-          action: "auth.profile_sync.failed",
-          detail: { phone: phoneE164, error: profileUpsertError.message },
-        });
+        await writeAuditLog(supabaseAdmin, { userId: bootstrap.userId, action: "auth.profile_sync.failed", detail: { phone: phoneE164, error: profileUpsertError.message } });
         throw new Error("profile_sync_failed");
       }
     }
 
-    // Récupère le profil existant (utile côté client pour réafficher nom/région
-    // sur un nouvel appareil, où le compte local est encore vide).
     const { data: profileRow } = await supabaseAdmin
       .from("profiles")
       .select("first_name, last_name, region")
-      .eq("id", sess.session.user.id)
+      .eq("id", bootstrap.userId)
       .maybeSingle();
 
     await writeAuditLog(supabaseAdmin, {
-      userId: sess.session.user.id,
+      userId: bootstrap.userId,
       action: "auth.otp.verified",
       detail: { phone: phoneE164, passwordSetupRequired: true },
     });
 
     return {
       ok: true as const,
-      session: {
-        access_token: sess.session.access_token,
-        refresh_token: sess.session.refresh_token,
-      },
-      userId: sess.session.user.id,
+      setupToken: bootstrap.setupToken,
+      userId: bootstrap.userId,
       phone: phoneE164,
-      profile: profileRow
-        ? {
-            firstName: profileRow.first_name ?? undefined,
-            lastName: profileRow.last_name ?? undefined,
-            region: profileRow.region ?? undefined,
-          }
-        : null,
+      profile: profileRow ? {
+        firstName: profileRow.first_name ?? undefined,
+        lastName: profileRow.last_name ?? undefined,
+        region: profileRow.region ?? undefined,
+      } : null,
     };
   });
