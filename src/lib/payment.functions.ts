@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { isGameOpen } from "@/lib/schedule";
 
 const paymentInput = z.object({
   key: z.string().min(3).max(200),
@@ -12,6 +13,8 @@ const paymentInput = z.object({
 });
 
 const duplicateInput = z.object({ key: z.string().min(3).max(200) });
+
+const PAYMENT_METHODS = new Set(["airtel", "amanata", "mynita", "moov", "zamani"]);
 
 function toE164(phone: string): string {
   const s = phone.replace(/\D/g, "");
@@ -30,6 +33,11 @@ export const beginPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => paymentInput.parse(data))
   .handler(async ({ data, context }) => {
+    if ((data.gameId === "pmu" || data.gameId === "loto") && !isGameOpen(16, 15)) {
+      throw new Error("game_closed");
+    }
+    if (!PAYMENT_METHODS.has(data.method)) throw new Error("invalid_payment_method");
+
     const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
     const { count, error: countError } = await supabaseAdmin
@@ -56,7 +64,7 @@ export const beginPayment = createServerFn({ method: "POST" })
 
     const { data: duplicate, error: duplicateError } = await supabaseAdmin
       .from("payments")
-      .select("reference, amount, status, payment_key, created_at")
+       .select("reference, amount, status, payment_key, created_at, game_id")
       .eq("user_id", context.userId)
       .eq("payment_key", data.key)
       .or("status.eq.confirmed,and(status.eq.pending,created_at.gte." + cutoff + ")")
@@ -71,7 +79,7 @@ export const beginPayment = createServerFn({ method: "POST" })
         intent: {
           key: duplicate.payment_key ?? data.key,
           txRef: duplicate.reference,
-          gameId: data.gameId,
+          gameId: duplicate.game_id,
           phone,
           amount: duplicate.amount,
           createdAt: new Date(duplicate.created_at).getTime(),
@@ -118,7 +126,7 @@ export const checkPaymentDuplicate = createServerFn({ method: "POST" })
     const cutoff = new Date(Date.now() - 30_000).toISOString();
     const { data: row, error } = await supabaseAdmin
       .from("payments")
-      .select("payment_key, reference, amount, status, created_at")
+       .select("payment_key, reference, amount, status, created_at, game_id")
       .eq("user_id", context.userId)
       .eq("payment_key", data.key)
       .or("status.eq.confirmed,and(status.eq.pending,created_at.gte." + cutoff + ")")
@@ -134,7 +142,7 @@ export const checkPaymentDuplicate = createServerFn({ method: "POST" })
       intent: {
         key: row.payment_key ?? data.key,
         txRef: row.reference,
-        gameId: "",
+        gameId: row.game_id,
         phone: "",
         amount: row.amount,
         createdAt: new Date(row.created_at).getTime(),
