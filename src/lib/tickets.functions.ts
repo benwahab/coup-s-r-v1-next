@@ -21,7 +21,7 @@ const ticketLegSchema = z.object({
   prize: z.number().int().min(0).optional(),
 });
 
-const footPickSchema = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:[^:]{1,40}:.{1,100}$/i);
+const footPickSchema = z.string().regex(/^[^:]{1,100}:[^:]{1,40}:.{1,100}$/);
 
 const FOOT_MARKETS: Record<string, Set<string>> = {
   "1x2": new Set(["1", "X", "2"]),
@@ -183,7 +183,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     // plus fabriquer directement une ligne foot_picks avec un autre user_id,
     // un autre match ou un marché arbitraire.
     const footPickKeys = data.gameId === "foot"
-      ? (data.picks as unknown[]).filter((p): p is string => typeof p === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:[^:]{1,40}:.{1,100}$/i.test(p))
+      ? (data.picks as unknown[]).filter((p): p is string => typeof p === "string" && /^[^:]{1,100}:[^:]{1,40}:.{1,100}$/.test(p))
       : [];
     if (data.gameId === "foot" && footPickKeys.length === 0) throw new Error("missing_foot_picks");
     if (data.gameId === "foot" && footPickKeys.length > 0) {
