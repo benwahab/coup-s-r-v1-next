@@ -1,7 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { GameId } from "./mock-data";
-import { footMatches } from "./mock-data";
-import { labelForPick } from "./foot-markets";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./auth";
 import {
