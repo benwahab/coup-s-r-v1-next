@@ -3,6 +3,7 @@ import { ShieldCheck, Sparkles, BarChart3, ListChecks, Users, MapPin, Circle, Se
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/AppShell";
+import type { Ticket } from "@/lib/tickets";
 import { cn, formatFcfa } from "@/lib/utils";
 import { computeBallStats, computePlayerStats, computeRegionStats, generateSimTickets } from "@/lib/mock-stats";
 import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
@@ -54,7 +55,7 @@ function AdminPage() {
   // SECURITY: the admin surface deliberately has no access to client tickets,
   // selections, legs, ticket status or prizes. Only aggregate/demo statistics
   // and sanitized player activity are available here.
-  const tickets: never[] = [];
+  const tickets: Ticket[] = [];
   const sims = useMemo(() => generateSimTickets(260), []);
   const [tab, setTab] = useState<Tab>("dashboard");
 
