@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireConfiguredUser } from "@/lib/secure-user.functions";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isGameOpen } from "@/lib/schedule";
 
@@ -30,7 +30,7 @@ function toE164(phone: string): string {
  * intent is created, and confirmation must come from provider verification.
  */
 export const beginPayment = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => paymentInput.parse(data))
   .handler(async ({ data, context }) => {
     if ((data.gameId === "pmu" || data.gameId === "loto") && !isGameOpen(16, 15)) {
@@ -120,7 +120,7 @@ export const beginPayment = createServerFn({ method: "POST" })
   });
 
 export const checkPaymentDuplicate = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => duplicateInput.parse(data))
   .handler(async ({ data, context }) => {
     const cutoff = new Date(Date.now() - 30_000).toISOString();
