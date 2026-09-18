@@ -7,7 +7,7 @@ import { writeAuditLog } from "./audit.server";
 
 type SB = SupabaseClient<Database>;
 
-const PaymentStatus = z.enum(["pending", "confirmed", "failed"]);
+const PaymentStatus = z.enum(["pending", "confirmed", "failed"]);\nconst AdminPermission = z.enum([\n  "complaints",\n  "player_activity",\n  "ball_stats",\n  "publish_results",\n  "player_stats",\n  "region_stats",\n  "security_logs",\n]);\nexport type AdminPermission = z.infer<typeof AdminPermission>;
 
 async function assertAdmin(supabase: SB, userId: string) {
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
@@ -15,7 +15,7 @@ async function assertAdmin(supabase: SB, userId: string) {
   if (data !== true) throw new Error("Forbidden: admin role required");
 }
 
-async function assertSuperAdmin(supabase: SB, userId: string) {
+async function assertAdminPermission(supabase: SB, userId: string, permission: AdminPermission) {\n  const { data, error } = await supabase.rpc("has_admin_permission", { _user_id: userId, _permission: permission });\n  if (error) throw new Error("permission_check_failed");\n  if (data !== true) throw new Error("Forbidden: admin permission required");\n}\n\nasync function assertSuperAdmin(supabase: SB, userId: string) {
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "super_admin" });
   if (error) throw new Error("role_check_failed");
   if (data !== true) throw new Error("Forbidden: super_admin role required");
@@ -204,7 +204,7 @@ export const adminListAdmins = createServerFn({ method: "POST" })
       .eq("role", "admin")
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
-    const userIds = (roles ?? []).map((r) => r.user_id);
+    const permissionRows = userIds.length === 0 ? [] : (await supabaseAdmin.from("admin_permissions").select("user_id, permission").in("user_id", userIds)).data ?? [];\n    const permissionsByUser = new Map<string, string[]>();\n    for (const row of permissionRows) { const list = permissionsByUser.get(row.user_id) ?? []; list.push(row.permission); permissionsByUser.set(row.user_id, list); }\n\n    const userIds = (roles ?? []).map((r) => r.user_id);
     if (userIds.length === 0) return { admins: [] };
     const { data: profiles, error: e2 } = await supabaseAdmin
       .from("profiles")
@@ -223,7 +223,7 @@ export const adminListAdmins = createServerFn({ method: "POST" })
     };
   });
 
-export const adminGrantRole = createServerFn({ method: "POST" })
+export const adminListPermissions = createServerFn({ method: "POST" })\n  .middleware([requireConfiguredUser])\n  .handler(async ({ context }) => {\n    await assertSuperAdmin(context.supabase as SB, context.userId);\n    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");\n    const { data, error } = await supabaseAdmin.from("admin_permissions").select("user_id, permission, created_at").order("created_at", { ascending: true });\n    if (error) throw new Error(error.message);\n    return { permissions: data ?? [] };\n  });\n\nexport const adminSetPermissions = createServerFn({ method: "POST" })\n  .middleware([requireConfiguredUser])\n  .inputValidator((data: unknown) => z.object({ userId: z.string().uuid(), permissions: z.array(AdminPermission).max(20) }).parse(data))\n  .handler(async ({ data, context }) => {\n    await assertSuperAdmin(context.supabase as SB, context.userId);\n    if (data.userId === context.userId) throw new Error("cannot_change_own_admin_permissions");\n    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");\n    const { data: targetAdmin, error: roleError } = await supabaseAdmin.from("user_roles").select("id").eq("user_id", data.userId).eq("role", "admin").maybeSingle();\n    if (roleError) throw new Error(roleError.message);\n    if (!targetAdmin) throw new Error("admin_role_required");\n    const { error: deleteError } = await supabaseAdmin.from("admin_permissions").delete().eq("user_id", data.userId);\n    if (deleteError) throw new Error(deleteError.message);\n    if (data.permissions.length > 0) {\n      const { error: insertError } = await supabaseAdmin.from("admin_permissions").insert(data.permissions.map((permission) => ({ user_id: data.userId, permission })));\n      if (insertError) throw new Error(insertError.message);\n    }\n    await writeAuditLog(supabaseAdmin, { userId: context.userId, action: "admin.permissions.updated", detail: { targetUserId: data.userId, permissions: data.permissions } });\n    return { ok: true as const, permissions: data.permissions };\n  });\n\nexport const adminGrantRole = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => z.object({ phone: z.string().regex(/^\d{8}$/) }).parse(data))
   .handler(async ({ data, context }) => {
