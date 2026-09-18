@@ -127,8 +127,17 @@ export const adminUpdateTicketLegStatus = createServerFn({ method: "POST" })
     if (e1) throw new Error(e1.message);
     if (!row) throw new Error("ticket_not_found");
     const legs = Array.isArray(row.legs) ? (row.legs as Array<Record<string, unknown>>) : [];
-    const targetExists = legs.some((l) => l.legId === data.legId);
-    if (!targetExists) throw new Error("ticket_leg_not_found");
+    const target = legs.find((l) => l.legId === data.legId);
+    if (!target) throw new Error("ticket_leg_not_found");
+
+    // Leg win/loss decisions belong to the settlement engine. This endpoint
+    // only permits the final payout transition after the whole ticket is
+    // already winning.
+    if (data.status !== "paid" || !["winning", "paid"].includes(String(row.status))) {
+      if (data.status === target.status) return { ok: true as const, unchanged: true as const };
+      throw new Error("manual_leg_settlement_disabled");
+    }
+    if (target.status !== "winning") throw new Error("leg_not_winning");
     const nextLegs = legs.map((l) =>
       l.legId === data.legId
         ? { ...l, status: data.status, ...(data.prize !== undefined ? { prize: data.prize } : {}) }
