@@ -87,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         startedAt: Date.now(),
         lastActivity: Date.now(),
         userId: u.id,
+        passwordSetupRequired: u.app_metadata?.password_setup_required === true,
       });
     });
     return () => { mounted = false; sub.subscription.unsubscribe(); };
