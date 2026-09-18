@@ -15,7 +15,7 @@ interface Props {
   live: boolean;
 }
 
-export function BallsTab({ ballStats, maxBall, selectedBall, setSelectedBall, selBallStat }: Props) {
+export function BallsTab({ ballStats, maxBall, selectedBall, setSelectedBall, selBallStat, wagerStats, combinationStats, live }: Props) {
   const { t } = useI18n();
   return (
     <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
