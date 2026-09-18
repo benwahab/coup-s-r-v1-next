@@ -230,6 +230,32 @@ export const updateMyPaymentStatus = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const adminListFinancialLedger = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      limit: z.number().int().min(1).max(500).default(200),
+      userId: z.string().uuid().optional(),
+      ticketId: z.string().uuid().optional(),
+      eventType: z.enum(["payment_pending", "payment_confirmed", "payment_failed", "ticket_paid"]).optional(),
+    }).parse(data ?? {})
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase as SB, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let query = supabaseAdmin
+      .from("financial_ledger")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(data.limit);
+    if (data.userId) query = query.eq("user_id", data.userId);
+    if (data.ticketId) query = query.eq("ticket_id", data.ticketId);
+    if (data.eventType) query = query.eq("event_type", data.eventType);
+    const { data: rows, error } = await query;
+    if (error) throw new Error(error.message);
+    return { ledger: rows ?? [] };
+  });
+
 export const adminListAllPayments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
