@@ -152,7 +152,7 @@ function useProviderValue(cfg: BetFlowConfig) {
           picks: first.picks,
           picksLabel: allLegs.map(l => l.picksLabel).join(" | "),
           stake: totalStake,
-          payment: `${selectedPayment.name} · ${intent.txRef}`,
+          payment: selectedPayment.id,
           drawDate: first.drawDate,
           drawName,
           legs: allLegs,
