@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { useAccount } from "@/lib/account";
 import { checkPhoneAccount } from "@/lib/account.functions";
+import { loginWithPassword, setUserPassword } from "@/lib/password.functions";
 import { useI18n } from "@/lib/i18n";
 import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
 import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=160&quality=90&url";
@@ -13,6 +14,7 @@ import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=160&quality=90
 // Validation client — miroir de la validation serveur dans otp.functions.ts.
 const PhoneSchema = z.string().regex(/^\d{8}$/, "Saisissez un numéro à 8 chiffres.");
 const OtpSchema = z.string().regex(/^\d{6}$/, "Le code OTP fait 6 chiffres.");
+const PasswordSchema = z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères.").max(128, "Mot de passe trop long.");
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -39,7 +41,10 @@ function AuthPage() {
   const { account, isPhoneAvailable } = useAccount();
   const { requestOtp, verifyOtp, remainingLockMs, isPermanent, failedAttempts } = useAuth();
 
-  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [step, setStep] = useState<"phone" | "otp" | "password-setup">("phone");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [passwordBusy, setPasswordBusy] = useState(false);
   const [phone, setPhone] = useState(account?.phone ?? "");
   const [otp, setOtp] = useState("");
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
@@ -134,9 +139,10 @@ function AuthPage() {
     try {
       const res = await verifyOtp(phone, otp, account?.phone ?? null);
       if (res.ok) {
-        setInfo(t("account.loginSuccess"));
-        toast.success(t("account.welcomeToast"));
-        setTimeout(() => navigate({ to: "/" }), 600);
+        setPassword("");
+        setPasswordConfirm("");
+        setStep("password-setup");
+        setInfo("OTP vérifié. Choisissez maintenant votre mot de passe.");
         return;
       }
       if (res.reason === "rate-limited") {
@@ -158,6 +164,48 @@ function AuthPage() {
       toast.error(msg);
     } finally {
       setVerifying(false);
+    }
+  };
+
+  const submitPasswordLogin = async () => {
+    setError(null);
+    const parsed = PasswordSchema.safeParse(password);
+    if (!parsed.success) { setError(parsed.error.issues[0].message); return; }
+    setPasswordBusy(true);
+    try {
+      const res = await loginWithPassword({ data: { phone, password } });
+      if (!res.ok) {
+        setError("Numéro ou mot de passe incorrect.");
+        return;
+      }
+      const { error: sessionError } = await (await import("@/integrations/supabase/client")).supabase.auth.setSession(res.session);
+      if (sessionError) throw sessionError;
+      toast.success(t("account.welcomeToast"));
+      navigate({ to: "/" });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Connexion impossible.");
+    } finally {
+      setPasswordBusy(false);
+    }
+  };
+
+  const submitPasswordSetup = async () => {
+    setError(null);
+    const parsed = PasswordSchema.safeParse(password);
+    if (!parsed.success) { setError(parsed.error.issues[0].message); return; }
+    if (password !== passwordConfirm) {
+      setError("Les deux mots de passe ne correspondent pas.");
+      return;
+    }
+    setPasswordBusy(true);
+    try {
+      await setUserPassword({ data: { password } });
+      toast.success("Mot de passe créé avec succès.");
+      navigate({ to: "/" });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Impossible d'enregistrer le mot de passe.");
+    } finally {
+      setPasswordBusy(false);
     }
   };
 
