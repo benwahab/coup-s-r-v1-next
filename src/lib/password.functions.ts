@@ -100,6 +100,11 @@ export const changeUserPassword = createServerFn({ method: "POST" })
     const { error: metaError } = await supabaseAdmin.auth.admin.updateUserById(context.userId, {
       app_metadata: { ...(userData.user.app_metadata ?? {}), password_setup_required: false },
     });
+    const { error: profileFlagError } = await supabaseAdmin
+      .from("profiles")
+      .update({ password_setup_required: false })
+      .eq("id", userId);
+    if (profileFlagError) throw new Error("password_setup_state_update_failed");
     if (metaError) throw new Error("password_change_metadata_failed");
 
     const { error: revokeError } = await context.supabase.auth.signOut({ scope: "others" });
