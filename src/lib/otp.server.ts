@@ -29,17 +29,3 @@ export function toE164Phone(phone: string): string {
   if (clean.startsWith("227")) return `+${clean}`;
   return clean.startsWith("+") ? clean : `+${clean}`;
 }
-
-/** Mot de passe déterministe dérivé du téléphone. Utilisé uniquement en interne
- *  pour créer/authentifier un utilisateur Supabase après vérification OTP. */
-export async function derivePhonePassword(phone: string, secret: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(`pwd:${phone}`));
-  return toHex(sig);
-}
