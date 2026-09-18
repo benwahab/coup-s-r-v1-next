@@ -2,14 +2,12 @@ import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { ShieldCheck, Sparkles, BarChart3, ListChecks, Users, MapPin, Circle, Send, LogIn, LifeBuoy, Settings, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { useTickets, type Ticket } from "@/lib/tickets";
 import { PageHeader } from "@/components/AppShell";
 import { cn, formatFcfa } from "@/lib/utils";
 import { computeBallStats, computePlayerStats, computeRegionStats, generateSimTickets } from "@/lib/mock-stats";
 import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
 import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
-import { useDrafts } from "@/lib/drafts";
-import { listMyIntents, type PaymentIntent } from "@/lib/payments";
+import type { PaymentIntent } from "@/lib/payments";
 import { adminListAllPayments } from "@/lib/admin.functions";
 import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/hooks/use-is-admin";
@@ -54,8 +52,14 @@ function AdminPage() {
           ? "ok"
           : "denied";
 
-  const { tickets, updateStatus, updateLegStatus } = useTickets();
-  const { drafts, removeDraft } = useDrafts();
+  // SECURITY: the admin surface deliberately has no access to client tickets,
+  // selections, legs, ticket status or prizes. Only aggregate/demo statistics
+  // and sanitized player activity are available here.
+  const tickets: never[] = [];
+  const drafts: never[] = [];
+  const updateStatus = () => { throw new Error("admin_ticket_access_disabled"); };
+  const updateLegStatus = () => { throw new Error("admin_ticket_access_disabled"); };
+  const removeDraft = () => { throw new Error("admin_ticket_access_disabled"); };
   const sims = useMemo(() => generateSimTickets(260), []);
   const [tab, setTab] = useState<Tab>("dashboard");
 
@@ -78,17 +82,16 @@ function AdminPage() {
       try {
         const { payments } = await adminListAllPayments();
         setAllIntents(payments.map((r) => ({
-          key: r.payment_key ?? "",
+          key: "",
           txRef: r.reference,
-          gameId: "",
-          phone: r.user_id,
+          gameId: r.gameId ?? "",
+          phone: r.playerId,
           amount: r.amount,
-          createdAt: new Date(r.created_at).getTime(),
+          createdAt: new Date(r.occurredAt).getTime(),
           status: r.status,
         })));
       } catch { setAllIntents([]); }
     })();
-    void listMyIntents;
   }, [gate]);
 
   useEffect(() => {
@@ -179,17 +182,19 @@ function AdminPage() {
 
   const activityFeed: ActivityItem[] = useMemo(() => {
     const items: ActivityItem[] = [];
-    tickets.slice(0, 20).forEach(t => items.push({
-      at: new Date(t.createdAt).getTime(),
-      kind: "ticket", label: `Ticket ${t.id}`, sub: `${t.gameName} · ${formatFcfa(t.stake)} FCFA · ${t.phone}`,
-      tone: t.status === "winning" ? "gold" : t.status === "paid" ? "ok" : "info",
+    allIntents.slice(0, 20).forEach(p => items.push({
+      at: p.createdAt,
+      kind: "payment",
+      label: "Activité de paiement",
+      sub: `${p.gameId || "jeu"} · ${formatFcfa(p.amount)} FCFA · joueur ${p.phone.slice(-4).padStart(p.phone.length, "•")}`,
+      tone: p.status === "confirmed" ? "ok" : p.status === "failed" ? "warn" : "info",
     }));
     readAuthLog().slice(0, 15).forEach(l => items.push({
       at: l.at, kind: "auth", label: l.kind, sub: `${l.phone} · ${l.ip}`,
       tone: l.kind === "verify-ok" ? "ok" : l.kind === "verify-fail" || l.kind === "locked" ? "warn" : "info",
     }));
     return items.sort((a, b) => b.at - a.at).slice(0, 12);
-  }, [tickets]);
+  }, [allIntents]);
 
   const allRows: TxRow[] = useMemo(() => {
     const rows: TxRow[] = [];
@@ -267,12 +272,7 @@ function AdminPage() {
     downloadCsv([header.join(","), ...body].join("\n"), `coupsur-transactions-${todayIso}.csv`);
   };
 
-  void updateLegStatus;
 
-  const approveCashout = (id: string) => {
-    updateStatus(id, "paid" as Ticket["status"], tickets.find((t) => t.id === id)?.prize);
-    setCashoutRequests((prev) => prev.filter((x) => x !== id));
-  };
 
   const nav: { id: Tab; label: string; icon: LucideIcon }[] = [
     { id: "dashboard", label: t("admin.nav.dashboard"), icon: BarChart3 },
@@ -284,8 +284,7 @@ function AdminPage() {
     { id: "results", label: "Résultats", icon: ListChecks },
     { id: "admins", label: t("admin.ops.title"), icon: Settings },
     { id: "logs", label: t("admin.nav.logs"), icon: LogIn },
-    { id: "claims", label: t("admin.nav.claims"), icon: LifeBuoy },
-  ];
+      ];
 
   // Logs filters
   const [logPhone, setLogPhone] = useState("");
@@ -406,7 +405,7 @@ function AdminPage() {
                 csvScope={csvScope} setCsvScope={setCsvScope}
                 exportCsv={exportCsv}
                 cashoutRequests={cashoutRequests} tickets={tickets}
-                approveCashout={approveCashout} sentLog={sentLog}
+                approveCashout={() => { throw new Error("admin_cashout_ui_disabled"); }} sentLog={sentLog}
               />
             )}
             {tab === "admins" && <AdminsSection />}
@@ -418,11 +417,7 @@ function AdminPage() {
                 exportLogsCsv={exportLogsCsv}
               />
             )}
-            {tab === "claims" && (
-              <ClaimsTab claimPhone={claimPhone} setClaimPhone={setClaimPhone}
-                claim={claim} updateStatus={updateStatus} removeDraft={removeDraft}
-              />
-            )}
+
           </main>
         </div>
       </div>
