@@ -81,6 +81,36 @@ export const loginWithPassword = createServerFn({ method: "POST" })
     };
   });
 
+/** Change le mot de passe depuis une session déjà authentifiée. */
+export const changeUserPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ currentPassword: PasswordSchema, newPassword: PasswordSchema }).parse(data))
+  .handler(async ({ data, context }) => {
+    if (data.currentPassword === data.newPassword) throw new Error("password_must_change");
+
+    const { error } = await context.supabase.auth.updateUser({
+      password: data.newPassword,
+      current_password: data.currentPassword,
+    });
+    if (error) throw new Error("password_change_failed");
+
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(context.userId);
+    if (userError || !userData.user) throw new Error("password_change_user_invalid");
+
+    const { error: metaError } = await supabaseAdmin.auth.admin.updateUserById(context.userId, {
+      app_metadata: { ...(userData.user.app_metadata ?? {}), password_setup_required: false },
+    });
+    if (metaError) throw new Error("password_change_metadata_failed");
+
+    const { error: revokeError } = await context.supabase.auth.signOut({ scope: "others" });
+    if (revokeError) {
+      await writeAuditLog(supabaseAdmin, { userId: context.userId, action: "auth.session.revoke_others_failed", detail: { reason: revokeError.message, source: "password_change" } });
+    }
+
+    await writeAuditLog(supabaseAdmin, { userId: context.userId, action: "auth.password.changed", detail: { method: "current_password" } });
+    return { ok: true as const };
+  });
+
 /** Finalise le mot de passe après OTP vérifié. */
 export const setUserPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
