@@ -40,12 +40,17 @@ async function assertSuperAdmin(supabase: SB, userId: string) {
 export const checkIsAdmin = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase.rpc("has_role", {
+    const { data: admin, error: adminError } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
       _role: "admin",
     });
-    if (error) return { isAdmin: false };
-    return { isAdmin: data === true };
+    if (adminError) return { isAdmin: false };
+    if (admin === true) return { isAdmin: true };
+    const { data: superAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "super_admin",
+    });
+    return { isAdmin: superAdmin === true };
   });
 
 export const getMyAdminPermissions = createServerFn({ method: "POST" })
