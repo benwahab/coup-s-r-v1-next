@@ -43,6 +43,17 @@ export const beginPayment = createServerFn({ method: "POST" })
     if ((count ?? 0) >= 10) throw new Error("payment_rate_limited");
 
     const phone = toE164(data.phone);
+
+    // Le numéro utilisé pour un paiement doit être celui du compte authentifié.
+    // Cela évite qu’un navigateur falsifie le bénéficiaire/compte de paiement.
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("phone")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (profileError) throw new Error("profile_lookup_failed: " + profileError.message);
+    if (!profile?.phone || toE164(profile.phone) !== phone) throw new Error("phone_mismatch");
+
     const { data: duplicate, error: duplicateError } = await supabaseAdmin
       .from("payments")
       .select("reference, amount, status, payment_key, created_at")
