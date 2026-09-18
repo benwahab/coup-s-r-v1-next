@@ -21,7 +21,7 @@ interface AuthState {
   lastPhone?: string;
 }
 
-interface Session { phone: string; startedAt: number; lastActivity: number; userId: string }
+interface Session { phone: string; startedAt: number; lastActivity: number; userId: string; passwordSetupRequired: boolean }
 
 interface Ctx extends AuthState {
   authed: boolean;
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const u = data.user;
       if (u && u.phone) {
         const startedAt = u.last_sign_in_at ? new Date(u.last_sign_in_at).getTime() : Date.now();
-        setSession({ phone: stripPrefix(u.phone), startedAt, lastActivity: Date.now(), userId: u.id });
+        setSession({ phone: stripPrefix(u.phone), startedAt, lastActivity: Date.now(), userId: u.id, passwordSetupRequired: u.app_metadata?.password_setup_required === true });
       }
       setAuthChecked(true);
     });
@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [state.lockedUntil]);
 
   // Session illimitée — conservé pour compat API, retourne toujours Infinity si connecté.
-  const sessionRemainingMs = useCallback(() => (session ? Number.POSITIVE_INFINITY : 0), [session]);
+  const sessionRemainingMs = useCallback(() => (session && !session.passwordSetupRequired ? Number.POSITIVE_INFINITY : 0), [session]);
 
   const touchSession = useCallback(() => {
     if (!session) return;
@@ -225,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthCtx.Provider
       value={{
         ...state,
-        authed: !!session,
+        authed: !!session && !session.passwordSetupRequired,
         authChecked,
         session,
         sessionRemainingMs,
