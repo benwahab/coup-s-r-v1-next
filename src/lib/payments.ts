@@ -85,14 +85,14 @@ export async function listMyIntents(): Promise<PaymentIntent[]> {
   if (!userId) return [];
   const { data } = await supabase
     .from("payments")
-    .select("payment_key, reference, amount, status, created_at")
+    .select("payment_key, reference, amount, status, game_id, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(50);
   return (data ?? []).map((r) => ({
     key: r.payment_key ?? "",
     txRef: r.reference,
-    gameId: "",
+    gameId: r.game_id ?? "",
     phone: "",
     amount: r.amount,
     createdAt: new Date(r.created_at).getTime(),
