@@ -69,6 +69,17 @@ function AdminPage() {
   const tickets: Ticket[] = [];
   const sims = useMemo(() => generateSimTickets(260), []);
   const [tab, setTab] = useState<Tab>("dashboard");
+  useEffect(() => {
+    if (!permissionsReady || adminPermissions === "all" || tab !== "dashboard") return;
+    const first =
+      adminPermissions.includes("player_activity") ? "transactions" :
+      adminPermissions.includes("player_stats") ? "players" :
+      adminPermissions.includes("region_stats") ? "regions" :
+      adminPermissions.includes("ball_stats") ? "balls" :
+      adminPermissions.includes("publish_results") ? "results" :
+      "dashboard";
+    setTab(first);
+  }, [permissionsReady, adminPermissions, tab]);
 
   const todayIso = new Date().toISOString().slice(0, 10);
   const weekAgoIso = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
