@@ -124,13 +124,28 @@ export const setUserPassword = createServerFn({ method: "POST" })
     const userId = context.userId;
     const { data: userData, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
     if (getUserError || !userData.user) throw new Error("password_setup_user_invalid");
-    if (userData.user.app_metadata?.password_setup_required !== true) throw new Error("password_setup_not_pending");
+    const { data: profileState, error: profileStateError } = await supabaseAdmin
+      .from("profiles")
+      .select("password_setup_required")
+      .eq("id", userId)
+      .maybeSingle();
+    if (profileStateError || !profileState) throw new Error("password_setup_state_unavailable");
+    if (userData.user.app_metadata?.password_setup_required !== true || profileState.password_setup_required !== true) {
+      throw new Error("password_setup_not_pending");
+    }
 
     const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       password: data.password,
       app_metadata: { ...(userData.user.app_metadata ?? {}), password_setup_required: false },
     });
     if (error) throw new Error(`password_update_failed: ${error.message}`);
+
+    const { error: profileFlagError } = await supabaseAdmin
+      .from("profiles")
+      .update({ password_setup_required: false })
+      .eq("id", userId)
+      .eq("password_setup_required", true);
+    if (profileFlagError) throw new Error("password_setup_state_update_failed");
 
     // A password reset/setup is a security-sensitive event. Keep the current
     // verified session, but revoke refresh tokens for other devices/sessions.
