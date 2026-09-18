@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { GameId } from "./mock-data";
+import { footMatches } from "./mock-data";
+import { labelForPick } from "./foot-markets";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./auth";
 import {
@@ -68,7 +70,7 @@ function stripPrefix(e164: string | null | undefined): string {
   return s.slice(-8);
 }
 
-function rowToTicket(r: TicketRow, profile: ProfileRow | null): Ticket {
+function rowToTicket(r: TicketRow, profile: ProfileRow | null, footPickStatuses?: Ticket["footPickStatuses"]): Ticket {
   const legs = (Array.isArray(r.legs) ? r.legs : []) as unknown as TicketLeg[];
   return {
     id: r.code,
@@ -89,6 +91,7 @@ function rowToTicket(r: TicketRow, profile: ProfileRow | null): Ticket {
     status: r.status,
     prize: r.prize ?? undefined,
     legs: legs.length > 0 ? legs : undefined,
+    footPickStatuses: footPickStatuses?.length ? footPickStatuses : undefined,
   };
 }
 
@@ -119,9 +122,41 @@ export function TicketsProvider({ children }: { children: ReactNode }) {
         ]);
         if (cancelled) return;
         if (tRes.error) throw new Error(tRes.error.message);
+        const rows = tRes.data ?? [];
+        const footTicketIds = rows.filter((r) => r.game_id === "foot").map((r) => r.id);
+        const fpRes = footTicketIds.length
+          ? await supabase
+              .from("foot_picks")
+              .select("ticket_id,fixture_id,picks,status")
+              .in("ticket_id", footTicketIds)
+          : { data: [], error: null };
+        if (fpRes.error) throw new Error(fpRes.error.message);
+        const byTicket = new Map<string, Ticket["footPickStatuses"]>();
+        for (const row of fpRes.data ?? []) {
+          const selections = Array.isArray(row.picks) ? row.picks : [];
+          const target = byTicket.get(row.ticket_id ?? "") ?? [];
+          for (const raw of selections) {
+            if (!raw || typeof raw !== "object") continue;
+            const pick = raw as { marketId?: unknown; selection?: unknown; odds?: unknown };
+            if (
+              typeof pick.marketId === "string" &&
+              typeof pick.selection === "string" &&
+              typeof pick.odds === "number"
+            ) {
+              target.push({
+                fixtureId: row.fixture_id,
+                marketId: pick.marketId,
+                selection: pick.selection,
+                odds: pick.odds,
+                status: row.status,
+              });
+            }
+          }
+          if (row.ticket_id) byTicket.set(row.ticket_id, target);
+        }
         const prof = pRes.data ?? null;
         setProfile(prof);
-        setTickets((tRes.data ?? []).map((r) => rowToTicket(r, prof)));
+        setTickets(rows.map((r) => rowToTicket(r, prof, byTicket.get(r.id))));
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Erreur réseau");
