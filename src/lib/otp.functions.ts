@@ -102,6 +102,17 @@ export const verifyOtp = createServerFn({ method: "POST" })
       }
     }
 
+    const { error: setupStateError } = await supabaseAdmin
+      .from("profiles")
+      .upsert(
+        { id: sess.session.user.id, phone: phoneE164, password_setup_required: true },
+        { onConflict: "id" },
+      );
+    if (setupStateError) {
+      await writeAuditLog(supabaseAdmin, { userId: sess.session.user.id, action: "auth.password_setup_state.failed", detail: { phone: phoneE164, error: setupStateError.message } });
+      throw new Error("password_setup_state_failed");
+    }
+
     const { data: profileRow } = await supabaseAdmin.from("profiles").select("first_name, last_name, region, password_setup_required").eq("id", sess.session.user.id).maybeSingle();
     await writeAuditLog(supabaseAdmin, { userId: sess.session.user.id, action: "auth.otp.verified", detail: { phone: phoneE164, passwordSetupRequired: true } });
 
