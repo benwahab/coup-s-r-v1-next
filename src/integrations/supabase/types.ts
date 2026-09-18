@@ -509,6 +509,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      settle_ticket_atomic: {
+        Args: {
+          p_leg_updates?: Json
+          p_mark_all_foot_losing?: boolean
+          p_prize: number
+          p_status: Database["public"]["Enums"]["ticket_status"]
+          p_ticket_id: string
+        }
+        Returns: {
+          id: string
+          status: Database["public"]["Enums"]["ticket_status"]
+          prize: number | null
+        }[]
+      }
       create_ticket_with_payment: {
         Args: {
           p_actor_user_id: string
