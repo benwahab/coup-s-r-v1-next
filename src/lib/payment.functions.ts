@@ -14,7 +14,7 @@ const paymentInput = z.object({
 
 const duplicateInput = z.object({ key: z.string().min(3).max(200) });
 
-const PAYMENT_METHODS = new Set(["airtel", "amanata", "mynita", "moov", "zamani"]);
+const PAYMENT_METHODS = new Set(["airtel"]);
 
 function toE164(phone: string): string {
   const s = phone.replace(/\D/g, "");
