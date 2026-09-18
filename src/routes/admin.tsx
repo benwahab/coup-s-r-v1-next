@@ -344,6 +344,8 @@ function AdminPage() {
 
 
 
+  const can = (permission: AdminPermission) => adminPermissions === "all" || adminPermissions.includes(permission);
+
   const nav: { id: Tab; label: string; icon: LucideIcon }[] = [
     { id: "dashboard", label: t("admin.nav.dashboard"), icon: BarChart3 },
     { id: "transactions", label: t("admin.tx.title"), icon: ListChecks },
