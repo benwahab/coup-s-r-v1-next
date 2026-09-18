@@ -96,7 +96,7 @@ export const updateMyPaymentStatus = createServerFn({ method: "POST" })
  * - The player's Mobile Money secret/password is never persisted or exposed.
  * - This is operational activity, not access to the player's ticket.
  */
-export const adminListAllPayments = createServerFn({ method: "POST" })
+export const adminListPlayerActivities = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase as SB, context.userId);
