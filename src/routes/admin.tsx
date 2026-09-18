@@ -9,7 +9,7 @@ import { computeBallStats, computePlayerStats, computeRegionStats, generateSimTi
 import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
 import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
 import type { PaymentIntent } from "@/lib/payments";
-import { adminListPlayerActivities } from "@/lib/admin.functions";
+import { adminListPlayerActivities, getMyAdminPermissions, type AdminPermission } from "@/lib/admin.functions";
 import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useThemeChartColors } from "@/hooks/use-theme-chart-colors";
@@ -42,7 +42,7 @@ function AdminPage() {
   const { authed, session } = useAuth();
   const chart = useThemeChartColors();
   const gameColor: Record<string, string> = { pmu: chart.gold, loto: chart.teal, foot: chart.primary };
-  const isAdminResult = useIsAdmin();
+  const isAdminResult = useIsAdmin();\n  const [adminPermissions, setAdminPermissions] = useState<AdminPermission[] | "all">([]);\n  const [permissionsReady, setPermissionsReady] = useState(false);
   const gate: "checking" | "ok" | "denied" | "anon" =
     !authed || !session
       ? "anon"
@@ -88,7 +88,7 @@ function AdminPage() {
         })));
       } catch { setAllIntents([]); }
     })();
-  }, [gate]);
+  }, [gate, permissionsReady]);
 
   useEffect(() => {
     if (!autoSms) return;
@@ -298,7 +298,7 @@ function AdminPage() {
     downloadCsv([header.join(","), ...body].join("\n"), "coupsur-auth-logs.csv");
   };
 
-  if (gate === "checking") return <div className="min-h-[60vh]" aria-hidden />;
+  if (gate === "checking" || !permissionsReady) return <div className="min-h-[60vh]" aria-hidden />;
   if (gate === "anon") return <Navigate to="/auth" replace />;
   if (gate === "denied") {
     return (
@@ -344,7 +344,7 @@ function AdminPage() {
           </aside>
 
           <main className="mt-3 lg:mt-0 min-w-0">
-            {tab === "dashboard" && (
+            {adminPermissions === "all" && tab === "dashboard" && (
               <DashboardTab
                 totalStaked={totalStaked} todayStake={todayStake} activePlayers={activePlayers}
                 winnersCount={winnersCount} weekGrowth={weekGrowth} growth={growth}
@@ -356,7 +356,7 @@ function AdminPage() {
                 csvFrom={csvFrom} csvTo={csvTo} setTab={setTab} exportCsv={exportCsv}
               />
             )}
-            {tab === "transactions" && (
+            {can("player_activity") && tab === "transactions" && (
               <TransactionsTab
                 filteredRows={filteredRows} pageRows={pageRows}
                 txSearch={txSearch} setTxSearch={setTxSearch}
@@ -367,21 +367,21 @@ function AdminPage() {
                 gameColor={gameColor} exportTransactionsCsv={exportTransactionsCsv}
               />
             )}
-            {tab === "players" && (
+            {can("player_stats") && tab === "players" && (
               <PlayersTab
                 filteredPlayers={filteredPlayers} regionStats={regionStats}
                 searchPlayer={searchPlayer} setSearchPlayer={setSearchPlayer}
                 filterRegion={filterRegion} setFilterRegion={setFilterRegion}
               />
             )}
-            {tab === "regions" && <RegionsTab regionStats={regionStats} maxRegion={maxRegion} />}
-            {tab === "balls" && (
+            {can("region_stats") && tab === "regions" && <RegionsTab regionStats={regionStats} maxRegion={maxRegion} />}
+            {can("ball_stats") && tab === "balls" && (
               <BallsTab ballStats={ballStats} maxBall={maxBall}
                 selectedBall={selectedBall} setSelectedBall={setSelectedBall}
                 selBallStat={selBallStat} />
             )}
-            {tab === "results" && <ResultsTab />}
-            {tab === "ops" && (
+            {can("publish_results") && tab === "results" && <ResultsTab />}
+            {false && tab === "ops" && (
               <OpsTab autoSms={autoSms} setAutoSms={(fn) => setAutoSms(fn)}
                 csvFrom={csvFrom} setCsvFrom={setCsvFrom}
                 csvTo={csvTo} setCsvTo={setCsvTo}
@@ -391,8 +391,8 @@ function AdminPage() {
                 approveCashout={() => { throw new Error("admin_cashout_ui_disabled"); }} sentLog={sentLog}
               />
             )}
-            {tab === "admins" && <AdminsSection />}
-            {tab === "logs" && (
+            {adminPermissions === "all" && tab === "admins" && <AdminsSection />}
+            {adminPermissions === "all" && tab === "logs" && (
               <LogsTab filteredLog={filteredLog}
                 logPhone={logPhone} setLogPhone={setLogPhone}
                 logIp={logIp} setLogIp={setLogIp}
