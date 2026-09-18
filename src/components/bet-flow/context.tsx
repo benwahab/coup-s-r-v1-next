@@ -122,7 +122,7 @@ function useProviderValue(cfg: BetFlowConfig) {
         gameId,
         phone,
         amount: totalStake,
-        method: selectedPayment.name,
+        method: selectedPayment.id,
       });
       setPaying(true);
       await new Promise((r) => setTimeout(r, 1400));
