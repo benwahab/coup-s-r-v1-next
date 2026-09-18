@@ -9,7 +9,7 @@ import { computeBallStats, computePlayerStats, computeRegionStats, generateSimTi
 import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
 import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
 import type { PaymentIntent } from "@/lib/payments";
-import { adminListAllPayments } from "@/lib/admin.functions";
+import { adminListPlayerActivities } from "@/lib/admin.functions";
 import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useThemeChartColors } from "@/hooks/use-theme-chart-colors";
