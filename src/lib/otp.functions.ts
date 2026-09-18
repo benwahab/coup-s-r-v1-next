@@ -53,11 +53,12 @@ export const sendOtp = createServerFn({ method: "POST" })
     const expiresAt = new Date(Date.now() + OTP_TTL_MS).toISOString();
 
     // On invalide les OTP encore actifs pour ce téléphone avant d'en créer un nouveau.
-    await supabaseAdmin
+    const { error: invalidateError } = await supabaseAdmin
       .from("otp_codes")
       .update({ consumed_at: new Date().toISOString() })
       .eq("phone", phoneE164)
       .is("consumed_at", null);
+    if (invalidateError) throw new Error(`otp_invalidate_failed: ${invalidateError.message}`);
 
     const { error } = await supabaseAdmin.from("otp_codes").insert({
       phone: phoneE164,
@@ -128,10 +129,11 @@ export const verifyOtp = createServerFn({ method: "POST" })
     }
 
     // Consomme l'OTP.
-    await supabaseAdmin
+    const { error: consumeError } = await supabaseAdmin
       .from("otp_codes")
       .update({ consumed_at: nowIso })
       .eq("id", otp.id);
+    if (consumeError) throw new Error(`otp_consume_failed: ${consumeError.message}`);
 
     // Bootstrap de l'utilisateur Supabase à partir du téléphone.
     // Le provider "phone" n'est pas activé sur ce projet Supabase → on utilise
