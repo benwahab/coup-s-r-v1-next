@@ -287,15 +287,12 @@ export const adminSetPermissions = createServerFn({ method: "POST" })
     await assertSuperAdmin(context.supabase as SB, context.userId);
     if (data.userId === context.userId) throw new Error("cannot_change_own_admin_permissions");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: targetAdmin, error: roleError } = await supabaseAdmin.from("user_roles").select("id").eq("user_id", data.userId).eq("role", "admin").maybeSingle();
-    if (roleError) throw new Error(roleError.message);
-    if (!targetAdmin) throw new Error("admin_role_required");
-    const { error: deleteError } = await supabaseAdmin.from("admin_permissions").delete().eq("user_id", data.userId);
-    if (deleteError) throw new Error(deleteError.message);
-    if (data.permissions.length > 0) {
-      const { error: insertError } = await supabaseAdmin.from("admin_permissions").insert(data.permissions.map((permission) => ({ user_id: data.userId, permission })));
-      if (insertError) throw new Error(insertError.message);
-    }
+    const { error: permissionError } = await supabaseAdmin.rpc("set_admin_permissions_atomic", {
+      p_actor_user_id: context.userId,
+      p_target_user_id: data.userId,
+      p_permissions: data.permissions,
+    });
+    if (permissionError) throw new Error(permissionError.message);
     await writeAuditLog(supabaseAdmin, { userId: context.userId, action: "admin.permissions.updated", detail: { targetUserId: data.userId, permissions: data.permissions } });
     return { ok: true as const, permissions: data.permissions };
   });
