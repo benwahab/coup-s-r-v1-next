@@ -53,6 +53,30 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_login_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          phone_hash: string
+          success: boolean
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phone_hash: string
+          success?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phone_hash?: string
+          success?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
