@@ -14,3 +14,17 @@ CREATE UNIQUE INDEX IF NOT EXISTS draw_results_non_foot_game_date_uniq
 CREATE UNIQUE INDEX IF NOT EXISTS draw_results_foot_match_uniq
   ON public.draw_results (game_id, draw_date, ((result->>'matchId')))
   WHERE game_id = 'foot';
+
+-- Reconcile with the published-result uniqueness rules already used in the database.
+-- These partial indexes prevent duplicate published outcomes while still allowing drafts.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_draw_results_published_non_foot
+  ON public.draw_results (game_id, draw_date)
+  WHERE status = 'published' AND game_id <> 'foot';
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_draw_results_published_foot_match
+  ON public.draw_results (game_id, draw_date, ((result->>'matchId')))
+  WHERE status = 'published' AND game_id = 'foot';
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_payments_ticket_id
+  ON public.payments (ticket_id)
+  WHERE ticket_id IS NOT NULL;
