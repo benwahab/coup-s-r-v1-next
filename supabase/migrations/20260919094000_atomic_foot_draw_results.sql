@@ -18,15 +18,18 @@ BEGIN
     RAISE EXCEPTION 'invalid_foot_results_batch';
   END IF;
 
-  INSERT INTO public.draw_results (game_id, draw_date, draw_name, result, status)
-  SELECT
-    'foot',
-    p_draw_date,
-    p_draw_name,
-    item,
-    'draft'
-  FROM jsonb_array_elements(p_matches) AS item
-  RETURNING id INTO v_ids;
+  WITH inserted AS (
+    INSERT INTO public.draw_results (game_id, draw_date, draw_name, result, status)
+    SELECT
+      'foot',
+      p_draw_date,
+      p_draw_name,
+      item,
+      'draft'
+    FROM jsonb_array_elements(p_matches) AS item
+    RETURNING id
+  )
+  SELECT array_agg(id) INTO v_ids FROM inserted;
 
   RETURN v_ids;
 END;
