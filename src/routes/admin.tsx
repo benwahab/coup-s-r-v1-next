@@ -226,7 +226,7 @@ function AdminPage() {
 
   type RegionStat = { region: string; players: number; tickets: number; staked: number; paid: number; delta7d: number };
   type PlayerStat = { player: string; region: string; tickets: number; staked: number; won: number };
-  type BallStat = { ball: number; total: number; solo: number; combo: number; topPairs: { ball: number; count: number }[] };
+  type BallStat = { ball: number; total: number; solo: number | null; combo: number | null; topPairs: { ball: number; count: number }[] };
 
   const regionStats: RegionStat[] = useMemo(() => {
     const map = new Map<string, { players: Set<string>; tickets: number; staked: number; paid: number }>();
@@ -328,8 +328,7 @@ function AdminPage() {
   const exportLogsCsv = () => {
     const header = ["horodatage", "telephone", "ip", "evenement", "note"];
     const body = filteredLog.map((e) => [new Date(e.at).toISOString(), e.phone, e.ip, e.kind, `"${(e.note ?? "").replace(/"/g, "''")}"`].join(","));
-    downloadCsv([header.join(","), ...body].join("
-"), "coupsur-auth-logs.csv");
+    downloadCsv([header.join(","), ...body].join("\n"), "coupsur-auth-logs.csv");
   };
 
   if (gate === "checking" || !permissionsReady) return <div className="min-h-[60vh]" aria-hidden />;
