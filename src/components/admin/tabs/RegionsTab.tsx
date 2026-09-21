@@ -1,8 +1,6 @@
 import { MapPin } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
-import type { RegionStat } from "@/lib/mock-stats";
-
 export function RegionsTab({ regionStats, maxRegion }: { regionStats: RegionStat[]; maxRegion: number }) {
   const { t } = useI18n();
   return (
