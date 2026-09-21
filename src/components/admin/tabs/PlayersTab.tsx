@@ -1,10 +1,8 @@
 import { Users } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
-import type { RegionStat } from "@/lib/mock-stats";
-import { computePlayerStats } from "@/lib/mock-stats";
-
-type PlayerStat = ReturnType<typeof computePlayerStats>[number];
+type RegionStat = { region: string; players: number; tickets: number; staked: number; paid: number; delta7d: number };
+type PlayerStat = { player: string; region: string; tickets: number; staked: number; won: number };
 
 interface Props {
   filteredPlayers: PlayerStat[];
