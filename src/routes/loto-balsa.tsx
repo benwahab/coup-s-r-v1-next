@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Sparkles, Shuffle, Eraser, Clock, Plus, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
 import { PageHeader } from "@/components/AppShell";
 import { cn, formatFcfa, formatHour } from "@/lib/utils";
-import { lotoMultipliers, drawSchedule } from "@/lib/mock-data";
+import { lotoMultipliers } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
 import { drawNameForDate, nigerDateLabel, isGameOpen } from "@/lib/schedule";
 import type { TicketLeg } from "@/lib/tickets";
 import ogAsset from "@/assets/og-loto.jpg.asset.json";
@@ -47,12 +48,14 @@ function LotoPage() {
   const [picks, setPicks] = useState<number[]>([]);
   const [stake, setStake] = useState(DEFAULT_STAKE);
   const [cart, setCart] = useState<TicketLeg[]>([]);
+  const [schedule, setSchedule] = useState({ open_hour: 16, close_hour: 15, draw_hour: 15, draw_minute: 30 });
+  useEffect(() => { void supabase.from("game_schedules").select("open_hour,close_hour,draw_hour,draw_minute").eq("game_id","loto").maybeSingle().then(({ data }) => { if (data) setSchedule(data); }); }, []);
 
   const drawName = drawNameForDate();
   const dateLabel = nigerDateLabel();
   const drawDateIso = useMemo(() => {
     const d = new Date();
-    d.setHours(drawSchedule.loto.drawHour, drawSchedule.loto.drawMinute, 0, 0);
+    d.setHours(schedule.draw_hour, schedule.draw_minute, 0, 0);
     return d.toISOString();
   }, []);
 
@@ -126,9 +129,9 @@ function LotoPage() {
           </div>
           <div className="grid grid-cols-3 gap-2 text-[11px]">
             {[
-              { l: t("closeAt"), v: formatHour(drawSchedule.loto.closeHour) },
+              { l: t("closeAt"), v: formatHour(schedule.close_hour) },
               { l: t("drawAt"), v: formatHour(drawSchedule.loto.drawHour, drawSchedule.loto.drawMinute) },
-              { l: t("openAt"), v: formatHour(drawSchedule.loto.openHour) },
+              { l: t("openAt"), v: formatHour(schedule.open_hour) },
             ].map((b, i) => (
               <div key={i} className="rounded-lg border border-border bg-background/40 px-3 py-1.5 text-center">
                 <div className="text-[9px] uppercase tracking-widest text-muted-foreground">{b.l}</div>
