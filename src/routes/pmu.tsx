@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Trophy, Info, Plus, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
-import { drawSchedule, isGameOpen } from "@/lib/schedule";
+import { isGameOpen } from "@/lib/schedule";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { pmuBets, findBet, type PmuBetId } from "@/lib/pmu-bets";
@@ -51,8 +51,8 @@ function PmuPage() {
   const [loadError, setLoadError] = useState(false);
 
   const [raceStartAt, setRaceStartAt] = useState<string | null>(null);
-  const [schedule, setSchedule] = useState({ open_hour: 16, close_hour: 15, draw_hour: 15, draw_minute: 30, enabled: true });
-  useEffect(() => { void supabase.from("game_schedules").select("open_hour,close_hour,draw_hour,draw_minute").eq("game_id","pmu").maybeSingle().then(({ data }) => { if (data) setSchedule(data); }); }, []);
+  const [schedule, setSchedule] = useState<{ open_hour:number; close_hour:number; draw_hour:number; draw_minute:number; enabled:boolean } | null>(null);
+  useEffect(() => { void supabase.from("game_schedules").select("open_hour,close_hour,draw_hour,draw_minute,enabled").eq("game_id","pmu").maybeSingle().then(({ data }) => { setSchedule(data ?? null); }); }, []);
 
   const loadRace = async () => {
     setLoading(true); setLoadError(false);
@@ -141,8 +141,8 @@ function PmuPage() {
         lockedStake={effectiveLegs.length ? undefined : totalStake}
         defaultStake={unitStake}
         minStake={MIN_STAKE}
-        gameOpen={schedule.enabled && isGameOpen(schedule.open_hour, schedule.close_hour)}
-        openHour={schedule.open_hour}
+        gameOpen={Boolean(schedule?.enabled && schedule && isGameOpen(schedule.open_hour, schedule.close_hour))}
+        openHour={schedule?.open_hour ?? 0}
         renderSelection={
           <div>
             {/* Sélecteur type de pari */}
