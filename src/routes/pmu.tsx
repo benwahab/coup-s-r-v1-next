@@ -3,15 +3,14 @@ import { useEffect, useMemo, useState } from "react";
 import { Trophy, Info, Plus, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
-import { isGameOpen } from "@/lib/schedule";
-import { drawSchedule } from "@/lib/schedule";
+import { drawSchedule, isGameOpen } from "@/lib/schedule";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { pmuBets, findBet, type PmuBetId } from "@/lib/pmu-bets";
 import type { TicketLeg } from "@/lib/tickets";
+import { cn } from "@/lib/utils";
 
 interface PmuHorse { number:number; name:string; intlName:string|null; jockey:string; status:"partant"|"non-partant"; form:string|null; winRate:number|null; placeRate:number|null; weight:number|null; }
-import { cn } from "@/lib/utils";
 import ogAsset from "@/assets/og-pmu.jpg.asset.json";
 import { SITE_ORIGIN, absoluteOgUrl } from "@/lib/og";
 
@@ -59,8 +58,8 @@ function PmuPage() {
   };
   useEffect(() => { void loadRace(); }, []);
   const bet = findBet(betId);
-  const partants = useMemo(() => horses.filter((h) => h.status === "partant"), []);
-  const nonPartants = useMemo(() => horses.filter((h) => h.status === "non-partant"), []);
+  const partants = useMemo(() => horses.filter((h) => h.status === "partant"), [horses]);
+  const nonPartants = useMemo(() => horses.filter((h) => h.status === "non-partant"), [horses]);
 
   const toggle = (n: number) => {
     const horse = horses.find((h) => h.number === n);
@@ -292,7 +291,7 @@ function PmuPage() {
           </div>
         }
       />
-      }
+      )}
     </>
   );
 }
