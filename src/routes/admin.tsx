@@ -93,8 +93,7 @@ function AdminPage() {
   const [csvTo, setCsvTo] = useState(todayIso);
   const [csvScope, setCsvScope] = useState<"all" | "winners" | "cashout">("all");
 
-  const [sentLog] = useState<never[]>([]);
-  const [cashoutRequests] = useState<string[]>([]);
+  const sentLog: never[] = [];
 
   const [allIntents, setAllIntents] = useState<PaymentIntent[]>([]);
   useEffect(() => {
