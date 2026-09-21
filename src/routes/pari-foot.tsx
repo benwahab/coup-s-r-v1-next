@@ -7,7 +7,6 @@ import { PageHeader } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import type { FootMatch } from "@/lib/foot.types";
 import { analyzeFootMatch, type FootAnalysis } from "@/lib/ai-foot.functions";
-import { syncFootFixtures } from "@/lib/foot-sync.functions";
 import { marketsForMatch, oddForPick, labelForPick } from "@/lib/foot-markets";
 import { cn } from "@/lib/utils";
 import { z } from "zod";
@@ -65,7 +64,6 @@ function FootPage() {
   const loadFixtures = async () => {
     setLoading(true);
     setLoadError(false);
-    await syncFootFixtures({});
     const { data, error } = await supabase
       .from("foot_fixtures")
       .select("id,league_name,kickoff_at,home_team,away_team,odds_home,odds_draw,odds_away,status")
