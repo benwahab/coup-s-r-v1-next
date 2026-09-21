@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, ShieldCheck, Smartphone, Zap, Flame, Radio, Clock, CalendarDays, Trophy, Users } from "lucide-react";
+import { ArrowRight, ShieldCheck, Smartphone, Zap, Radio, Clock, CalendarDays, Trophy, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { games, recentResults, drawSchedule } from "@/lib/mock-data";
-import { formatDate, formatFcfa, formatHour } from "@/lib/utils";
+import { games, drawSchedule } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
+import { formatFcfa, formatHour } from "@/lib/utils";
 import { nextDailyEvent, diffParts, drawNameForDate, nigerDateLabel } from "@/lib/schedule";
 import heroJpg from "@/assets/hero-winners.jpg";
 // Variantes optimisées (vite-imagetools) — WebP couvre ~97 % du parc, AVIF ~90 %.
@@ -76,12 +77,30 @@ function useLiveStage(openHour: number, closeHour: number, drawHour: number, dra
 function Index() {
   const { t } = useI18n();
   const pmuEvt = useLiveStage(drawSchedule.pmu.openHour, drawSchedule.pmu.closeHour, drawSchedule.pmu.drawHour, drawSchedule.pmu.drawMinute);
+  const [lastPmu, setLastPmu] = useState<{ date: string; horses: number[] } | null>(null);
+  const [lastLoto, setLastLoto] = useState<{ date: string; numbers: number[] } | null>(null);
+  useEffect(() => {
+    const loadResults = async () => {
+      const [{ data: pmuRows }, { data: lotoRows }] = await Promise.all([
+        supabase.from("draw_results").select("draw_date,result").eq("game_id","pmu").eq("status","published").order("draw_date",{ascending:false}).limit(1),
+        supabase.from("draw_results").select("draw_date,result").eq("game_id","loto").eq("status","published").order("draw_date",{ascending:false}).limit(1),
+      ]);
+      const pmu = pmuRows?.[0];
+      const loto = lotoRows?.[0];
+      const pr = pmu?.result as Record<string, unknown> | null | undefined;
+      const lr = loto?.result as Record<string, unknown> | null | undefined;
+      setLastPmu(pmu && Array.isArray(pr?.horses) ? { date: pmu.draw_date, horses: pr.horses.filter((n): n is number => typeof n === "number") } : null);
+      setLastLoto(loto && Array.isArray(lr?.numbers) ? { date: loto.draw_date, numbers: lr.numbers.filter((n): n is number => typeof n === "number") } : null);
+    };
+    void loadResults();
+  }, []);
   const lotoEvt = useLiveStage(drawSchedule.loto.openHour, drawSchedule.loto.closeHour, drawSchedule.loto.drawHour, drawSchedule.loto.drawMinute);
   const pmuCd = useCountdown(pmuEvt?.target ?? new Date(0));
   const lotoCd = useCountdown(lotoEvt?.target ?? new Date(0));
   const lotoDrawName = drawNameForDate();
 
   const todayWinnersCount: number | null = null;
+  const todayPaid: number | null = null;
   const todayLabel = nigerDateLabel();
 
   return (
@@ -120,8 +139,8 @@ function Index() {
             Jouez. Gagnez. <span className="bg-gradient-to-r from-[oklch(0.82_0.20_150)] to-[oklch(0.86_0.16_88)] bg-clip-text text-transparent">Encaissez.</span>
           </h1>
           <p className="mt-4 max-w-xl text-base sm:text-lg text-white/75">
-            PMU, Loto Balsa et Pari Foot disponibles H24, 7j/7. Tirage quotidien à 15h30.
-            Paiement Airtel Money, Moov Flooz, Zamani Cash, Amanata, MyNita. Reçu QR sécurisé, SMS gagnant automatique.
+            PMU et Loto Balsa suivent leur cycle quotidien ; le Pari Foot dépend des fixtures réelles disponibles.
+            Le paiement actuellement connecté est Airtel Money. Reçu QR sécurisé.
           </p>
 
           {/* Jackpot principal — PMU */}
@@ -206,7 +225,7 @@ function Index() {
                   <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/60">
                     <Trophy className="h-3 w-3" /> {t("totalPaidToday")}
                   </div>
-                  <div className="mt-0.5 font-display text-xl font-extrabold tabular-nums text-gold">{formatFcfa(todayPaid)} <span className="text-[10px] font-semibold text-white/70">{t("fcfa")}</span></div>
+                  <div className="mt-0.5 font-display text-xl font-extrabold tabular-nums text-gold">{todayPaid === null ? "—" : formatFcfa(todayPaid)} <span className="text-[10px] font-semibold text-white/70">{t("fcfa")}</span></div>
                 </div>
               </div>
 
@@ -247,10 +266,7 @@ function Index() {
               ) : (
                 <div className="mt-1.5 h-[44px] animate-pulse rounded-lg bg-white/5" />
               )}
-              <div className="mt-2 flex items-center gap-1.5 text-[11px] text-white/60">
-                <Flame className="h-3.5 w-3.5 text-gold" /> {t("hotNumbers")} :
-                <span className="ml-1 font-bold text-gold tabular-nums">{hotNumbers.slice(0, 4).join(" · ")}</span>
-              </div>
+              <div className="mt-2 text-[11px] text-white/60">Les statistiques et tendances seront affichées après réception de résultats réels.</div>
               <Link to="/loto-balsa" className="mt-4 inline-flex items-center gap-2 rounded-full bg-gold-gradient px-5 py-2.5 font-bold text-[var(--gold-foreground)] shadow-gold transition hover:brightness-110">
                 {t("playNow")} <ArrowRight className="h-4 w-4" />
               </Link>
@@ -303,45 +319,9 @@ function Index() {
         </div>
       </section>
 
-      {/* Last draw highlight */}
-      <section className="mx-auto grid max-w-6xl gap-4 px-4 pb-10 sm:grid-cols-2">
-        {lastPmu?.horses && (
-          <div className="rounded-3xl border border-border bg-card p-6 shadow-soft">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <div className="text-xs uppercase tracking-widest text-muted-foreground">PMU — {t("pmuDaily")}</div>
-                <div className="font-display text-xl font-bold">{t("latestWinning")}</div>
-              </div>
-              <span className="text-xs text-muted-foreground tabular-nums">{formatDate(lastPmu.date)}</span>
-            </div>
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {lastPmu.horses.map((h, i) => (
-                <span key={h} className="inline-flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-muted-foreground">{i + 1}.</span>
-                  <span className="number-ball number-ball-sm">{h}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-        {lastLoto?.numbers && (
-          <div className="rounded-3xl border border-border bg-card p-6 shadow-soft">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <div className="text-xs uppercase tracking-widest text-muted-foreground">Loto Balsa — {t("lotoWeekly")}</div>
-                <div className="font-display text-xl font-bold">{t("latestWinning")}</div>
-              </div>
-              <span className="text-xs text-muted-foreground tabular-nums">{formatDate(lastLoto.date)}</span>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {lastLoto.numbers.map((n) => (
-                <span key={n} className="number-ball">{n}</span>
-              ))}
-            </div>
-          </div>
-        )}
-        <Link to="/resultats" className="sm:col-span-2 inline-flex items-center justify-center gap-1.5 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-bold text-primary hover:border-primary/40">
-          Voir tous les résultats <ArrowRight className="h-4 w-4" />
+      <section className="mx-auto max-w-6xl px-4 pb-10">
+        <Link to="/resultats" className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-bold text-primary hover:border-primary/40">
+          Voir les derniers résultats publiés <ArrowRight className="h-4 w-4" />
         </Link>
       </section>
 
