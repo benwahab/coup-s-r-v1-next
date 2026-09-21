@@ -1,4 +1,4 @@
-import { Download, MessageCircle, Send, Settings, Clock3 } from "lucide-react";
+import { Download, Send, Settings, Clock3 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { adminUpdateGameSchedule, getGameSchedules } from "@/lib/game-schedule.functions";
 
@@ -9,7 +9,6 @@ interface Props {
   csvTo: string; setCsvTo: (v: string) => void;
   csvScope: "all" | "winners" | "cashout"; setCsvScope: (v: "all" | "winners" | "cashout") => void;
   exportCsv: (scope?: "all" | "winners" | "cashout") => void;
-  sentLog: never[];
 }
 
 export function OpsTab(p: Props) {
@@ -80,7 +79,10 @@ export function OpsTab(p: Props) {
           <h2 className="font-display text-lg font-bold">{t("admin.ops.title")}</h2>
         </div>
         <div className="mt-3 rounded-2xl border border-border bg-muted/30 p-4">
-          <p className="text-sm font-semibold">SMS automatiques désactivés</p>\n          <p className="mt-1 text-xs text-muted-foreground">Aucun SMS de gain n’est envoyé ou simulé tant qu’un fournisseur SMS réel n’est pas configuré.</p>\n        </div>\n        <div className="mt-4 flex flex-wrap items-center gap-1.5">
+          <p className="text-sm font-semibold">SMS automatiques désactivés</p>
+          <p className="mt-1 text-xs text-muted-foreground">Aucun SMS de gain n’est envoyé ou simulé tant qu’un fournisseur SMS réel n’est pas configuré.</p>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-1.5">
           <input type="date" value={p.csvFrom} onChange={(e) => p.setCsvFrom(e.target.value)} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]" />
           <input type="date" value={p.csvTo} onChange={(e) => p.setCsvTo(e.target.value)} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]" />
           <select value={p.csvScope} onChange={(e) => p.setCsvScope(e.target.value as "all" | "winners" | "cashout")} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]">
@@ -95,7 +97,13 @@ export function OpsTab(p: Props) {
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-3xl border border-border bg-card shadow-soft">\n          <div className="flex items-center justify-between border-b border-border px-5 py-3">\n            <div className="flex items-center gap-2"><Send className="h-4 w-4 text-gold" /><h2 className="font-display text-lg font-bold">{t("cashoutRequests")}</h2></div>\n          </div>\n          <p className="px-5 py-8 text-center text-sm text-muted-foreground">Les retraits restent bloqués jusqu’à la connexion d’un fournisseur de paiement réel.</p>\n        </section>\n        <section className="rounded-3xl border border-border bg-card shadow-soft">
+        <section className="rounded-3xl border border-border bg-card shadow-soft">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3">
+            <div className="flex items-center gap-2"><Send className="h-4 w-4 text-gold" /><h2 className="font-display text-lg font-bold">{t("cashoutRequests")}</h2></div>
+          </div>
+          <p className="px-5 py-8 text-center text-sm text-muted-foreground">Les retraits restent bloqués jusqu’à la connexion d’un fournisseur de paiement réel.</p>
+        </section>
+        <section className="rounded-3xl border border-border bg-card shadow-soft">
           <div className="flex items-center justify-between border-b border-border px-5 py-3">
             <div className="flex items-center gap-2">
               <MessageCircle className="h-4 w-4 text-primary" />
