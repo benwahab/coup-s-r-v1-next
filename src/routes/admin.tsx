@@ -209,77 +209,6 @@ function AdminPage() {
     stake: t.stake, status: t.status, prize: t.prize ?? 0, kind: "live",
   })), [adminTicketRows]);
 
-  const playerStats = useMemo(() => {
-    const map = new Map<string, { player: string; region: string; tickets: number; staked: number; won: number }>();
-    for (const t of adminTicketRows) {
-      const key = t.userId;
-      const row = map.get(key) ?? { player: t.phone ?? t.userId.slice(0, 8), region: t.region ?? "—", tickets: 0, staked: 0, won: 0 };
-      row.tickets += 1; row.staked += t.stake; row.won += t.prize ?? 0; map.set(key, row);
-    }
-    return Array.from(map.values());
-  }, [adminTicketRows]);
-
-  const regionStats = useMemo(() => {
-    const map = new Map<string, { region: string; players: number; tickets: number; staked: number; paid: number; delta7d: number }>();
-    for (const t of adminTicketRows) {
-      const key = t.region ?? "Non renseignée";
-      const row = map.get(key) ?? { region: key, players: 0, tickets: 0, staked: 0, paid: 0, delta7d: 0 };
-      row.tickets += 1; row.staked += t.stake; row.paid += t.prize ?? 0; map.set(key, row);
-    }
-    const usersByRegion = new Map<string, Set<string>>();
-    for (const t of adminTicketRows) { const s = usersByRegion.get(t.region ?? "Non renseignée") ?? new Set<string>(); s.add(t.userId); usersByRegion.set(t.region ?? "Non renseignée", s); }
-    return Array.from(map.values()).map(r => ({ ...r, players: usersByRegion.get(r.region)?.size ?? 0 }));
-  }, [adminTicketRows]);
-
-  const ballStats = useMemo(() => Array.from({ length: 90 }, (_, i) => {
-    const ball = i + 1;
-    const row = lotoBallWagerStats.find(x => x.ball === ball);
-    return { ball, total: row?.wagerCount ?? 0, solo: row?.soloWagerCount ?? 0, combo: row?.comboWagerCount ?? 0, topPairs: [] as { ball: number; count: number }[] };
-  }), [lotoBallWagerStats]);
-  const displayLotoBallWagerStats = lotoBallStatsLive ? lotoBallWagerStats : [];
-  const displayLotoCombinationWagerStats = lotoBallStatsLive ? lotoCombinationWagerStats : [];
-  const maxBall = Math.max(1, ...ballStats.map(b => b.total));
-  const maxRegion = Math.max(1, ...regionStats.map(r => r.staked));
-
-  const [searchPlayer, setSearchPlayer] = useState("");
-  const [filterRegion, setFilterRegion] = useState("all");
-  const filteredPlayers = playerStats.filter(p => (filterRegion === "all" || p.region === filterRegion) && p.player.toLowerCase().includes(searchPlayer.toLowerCase())).slice(0, 30);
-
-  const [selectedBall, setSelectedBall] = useState<number | null>(null);
-  const selBallStat = selectedBall ? ballStats.find(b => b.ball === selectedBall) ?? null : null;
-
-  const [authLog, setAuthLog] = useState<AuthEvent[]>([]);
-  useEffect(() => { setAuthLog(readAuthLog()); }, [tab]);
-
-  const activityFeed: ActivityItem[] = useMemo(() => {
-    const items: ActivityItem[] = [];
-    allIntents.slice(0, 20).forEach(p => items.push({
-      at: p.createdAt,
-      kind: "payment",
-      label: "Activité de paiement",
-      sub: `${p.gameId || "jeu"} · ${formatFcfa(p.amount)} FCFA · joueur ${p.phone.slice(-4).padStart(p.phone.length, "•")}`,
-      tone: p.status === "confirmed" ? "ok" : p.status === "failed" ? "warn" : "info",
-    }));
-    readAuthLog().slice(0, 15).forEach(l => items.push({
-      at: l.at, kind: "auth", label: l.kind, sub: `${l.phone} · ${l.ip}`,
-      tone: l.kind === "verify-ok" ? "ok" : l.kind === "verify-fail" || l.kind === "locked" ? "warn" : "info",
-    }));
-    return items.sort((a, b) => b.at - a.at).slice(0, 12);
-  }, [allIntents]);
-
-  const allRows: TxRow[] = useMemo(() => {
-    const rows: TxRow[] = [];
-    tickets.forEach(t => rows.push({
-      id: t.id, date: t.createdAt, game: t.gameId, phone: t.phone, region: t.region ?? "—",
-      stake: t.stake, status: t.status, prize: t.prize ?? 0, kind: "live",
-    }));
-    sims.forEach(s => rows.push({
-      id: s.id, date: s.iso, game: s.gameId, phone: "—", region: s.region,
-      stake: s.stake, status: s.status, prize: s.prize, kind: "sim",
-    }));
-    return rows;
-  }, [tickets, sims]);
-
   const [txSearch, setTxSearch] = useState("");
   const [txGame, setTxGame] = useState<"all" | "pmu" | "loto" | "foot">("all");
   const [txStatus, setTxStatus] = useState<"all" | "pending" | "winning" | "paid" | "losing">("all");
@@ -429,7 +358,7 @@ function AdminPage() {
               <DashboardTab
                 totalStaked={totalStaked} todayStake={todayStake} activePlayers={activePlayers}
                 winnersCount={winnersCount} weekGrowth={weekGrowth} growth={growth}
-                ticketsCount={tickets.length} totalPayout={totalPayout}
+                ticketsCount={adminTicketRows.length} totalPayout={totalPayout}
                 revenueSeries={revenueSeries} byGameData={byGameData} hourlyData={hourlyData}
                 monthlyData={monthlyData} peakHour={peakHour} chart={chart}
                 activityFeed={activityFeed} allRowsCount={allRows.length}
@@ -476,7 +405,7 @@ function AdminPage() {
               />
             )}
             {adminPermissions === "all" && tab === "admins" && <AdminsSection />}
-            {can("complaints") && tab === "claims" && (\n              <ClaimsTab claimPhone={""} setClaimPhone={() => {}} claim={null} updateStatus={() => { throw new Error("claims_backend_not_connected"); }} removeDraft={() => { throw new Error("claims_backend_not_connected"); }} />\n            )}\n            {can("security_logs") && tab === "logs" && (
+            {can("complaints") && tab === "claims" && (\n              <section className="rounded-3xl border border-border bg-card p-6 shadow-soft"><h2 className="font-display text-lg font-bold">Réclamations</h2><p className="mt-2 text-sm text-muted-foreground">La source réelle des réclamations n’est pas encore connectée. Aucune action fictive n’est proposée.</p></section>\n            )}\n            {can("security_logs") && tab === "logs" && (
               <LogsTab filteredLog={filteredLog}
                 logPhone={logPhone} setLogPhone={setLogPhone}
                 logIp={logIp} setLogIp={setLogIp}
