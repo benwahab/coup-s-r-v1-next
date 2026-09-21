@@ -445,11 +445,9 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
 
 
 /**
- * Demo cash-out gate.
- *
- * The server is the only authority allowed to mark a winning coupon as paid.
- * In production this transition must happen only after a verified LONANI/payment
- * provider payout confirmation. No external money movement is performed here.
+ * Cash-out gate: the server is the only authority allowed to mark a winning
+ * coupon as paid. Until a real payout provider is configured, no money movement
+ * or paid transition is performed.
  */
 export const requestCashout = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
