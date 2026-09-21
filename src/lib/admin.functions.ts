@@ -288,10 +288,10 @@ export const adminListAdmins = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     const userIds = (roles ?? []).map((r) => r.user_id);
     if (userIds.length === 0) return { admins: [] };
-    const { data: profiles, error: e2 } = await supabaseAdmin
-      .from("profiles")
-      .select("id, phone, first_name, last_name")
-      .in("id", userIds);
+    const [{ data: profiles, error: e2 }, { data: permissionRows, error: e3 }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id, phone, first_name, last_name").in("id", userIds),
+      supabaseAdmin.from("admin_permissions").select("user_id, permission").in("user_id", userIds),
+    ]);
     if (e2) throw new Error(e2.message);
     if (e3) throw new Error(e3.message);
     const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
