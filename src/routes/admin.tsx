@@ -7,7 +7,7 @@ import { cn, formatFcfa } from "@/lib/utils";
 
 import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
 import type { PaymentIntent } from "@/lib/payments";
-import { adminGetLotoBallStatistics, adminListPlayerActivities, adminListTickets, getMyAdminPermissions, type AdminPermission, type LotoBallWagerStat, type LotoCombinationWagerStat } from "@/lib/admin.functions";
+import { adminGetLotoBallStatistics, adminListPlayerActivities, adminListTickets, adminGetRegisteredPlayerCount, getMyAdminPermissions, type AdminPermission, type LotoBallWagerStat, type LotoCombinationWagerStat } from "@/lib/admin.functions";
 import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useThemeChartColors } from "@/hooks/use-theme-chart-colors";
@@ -42,6 +42,7 @@ function AdminPage() {
   const gameColor: Record<string, string> = { pmu: chart.gold, loto: chart.teal, foot: chart.primary };
   const isAdminResult = useIsAdmin();
   const [adminPermissions, setAdminPermissions] = useState<AdminPermission[] | "all">([]);
+  const [registeredPlayers, setRegisteredPlayers] = useState(0);
   const [lotoBallWagerStats, setLotoBallWagerStats] = useState<LotoBallWagerStat[]>([]);
   const [lotoCombinationWagerStats, setLotoCombinationWagerStats] = useState<LotoCombinationWagerStat[]>([]);
   const [lotoBallStatsLive, setLotoBallStatsLive] = useState(false);
@@ -109,6 +110,12 @@ function AdminPage() {
   }, [gate, permissionsReady, adminPermissions]);
 
   useEffect(() => {
+    if (gate !== "ok" || !permissionsReady) return;
+    if (adminPermissions !== "all" && !adminPermissions.includes("player_stats")) return;
+    adminGetRegisteredPlayerCount().then((r) => setRegisteredPlayers(r.count)).catch(() => setRegisteredPlayers(0));
+  }, [gate, permissionsReady, adminPermissions]);
+
+  useEffect(() => {
     if (gate !== "ok") return;
     (async () => {
       try {
@@ -126,24 +133,12 @@ function AdminPage() {
     })();
   }, [gate, permissionsReady]);
 
-  useEffect(() => {
-    if (!autoSms) return;
-    const winners = adminTicketRows.filter((t) => t.status === "winning");
-    const known = new Set(sentLog.map((s) => s.id.split("#")[0]));
-    const fresh = winners.filter((w) => !known.has(w.id));
-    if (fresh.length === 0) return;
-    (async () => {
-      const entries = await Promise.all(fresh.map((w) => sendWinSms(w)));
-      setSentLog((prev) => [...entries, ...prev]);
-    })();
-    setCashoutRequests((prev) => Array.from(new Set([...fresh.map((w) => w.id), ...prev])));
-  }, [adminTicketRows, autoSms, sentLog]);
+
 
   // KPIs
   const totalStaked = adminTicketRows.reduce((s, t) => s + t.stake, 0);
   const totalPayout = adminTicketRows.filter((t) => t.status === "paid").reduce((s, t) => s + (t.prize ?? 0), 0);
   const winnersCount = adminTicketRows.filter((t) => t.status === "paid" || t.status === "winning").length;
-  const activePlayers = new Set(adminTicketRows.map((t) => t.userId)).size;
 
   const todayStake = adminTicketRows.filter(t => t.createdAt.slice(0, 10) === todayIso).reduce((a, b) => a + b.stake, 0);
   const yestIso = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
@@ -385,7 +380,7 @@ function AdminPage() {
           <main className="mt-3 lg:mt-0 min-w-0">
             {adminPermissions === "all" && tab === "dashboard" && (
               <DashboardTab
-                totalStaked={totalStaked} todayStake={todayStake} activePlayers={activePlayers}
+                totalStaked={totalStaked} todayStake={todayStake} activePlayers={registeredPlayers}
                 winnersCount={winnersCount} weekGrowth={weekGrowth} growth={growth}
                 ticketsCount={adminTicketRows.length} totalPayout={totalPayout}
                 revenueSeries={revenueSeries} byGameData={byGameData} hourlyData={hourlyData}
