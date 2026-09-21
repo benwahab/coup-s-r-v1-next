@@ -168,33 +168,29 @@ function AdminPage() {
     for (let i = 29; i >= 0; i--) {
       const d = new Date(now); d.setDate(d.getDate() - i);
       const iso = d.toISOString().slice(0, 10);
-      const mises = sims.filter(s => s.iso === iso).reduce((a, b) => a + b.stake, 0)
-        + tickets.filter(t => t.createdAt.slice(0, 10) === iso).reduce((a, b) => a + b.stake, 0);
-      const gains = sims.filter(s => s.iso === iso && s.status === "paid").reduce((a, b) => a + b.prize, 0)
-        + tickets.filter(t => t.createdAt.slice(0, 10) === iso && t.status === "paid").reduce((a, b) => a + (b.prize ?? 0), 0);
-      days.push({ date: iso, label: `${d.getDate()}/${d.getMonth() + 1}`, mises, gains });
+      const rows = adminTicketRows.filter(t => t.createdAt.slice(0, 10) === iso);
+      days.push({
+        date: iso, label: `${d.getDate()}/${d.getMonth() + 1}`,
+        mises: rows.reduce((a, b) => a + b.stake, 0),
+        gains: rows.filter(t => t.status === "paid").reduce((a, b) => a + (b.prize ?? 0), 0),
+      });
     }
     return days;
-  }, [sims, tickets]);
+  }, [adminTicketRows]);
 
   const byGameData = useMemo(() => {
     const acc: Record<string, number> = { pmu: 0, loto: 0, foot: 0 };
     const counts: Record<string, number> = { pmu: 0, loto: 0, foot: 0 };
-    sims.forEach(s => { acc[s.gameId] += s.stake; counts[s.gameId] += 1; });
-    tickets.forEach(t => { if (acc[t.gameId] !== undefined) { acc[t.gameId] += t.stake; counts[t.gameId] += 1; } });
+    adminTicketRows.forEach(t => { if (acc[t.gameId] !== undefined) { acc[t.gameId] += t.stake; counts[t.gameId] += 1; } });
     const total = Object.values(acc).reduce((a, b) => a + b, 0) || 1;
-    return Object.entries(acc).map(([id, value]) => ({
-      id, name: gameLabel[id], value, fill: gameColor[id],
-      count: counts[id], pct: Math.round((value / total) * 100),
-    }));
-  }, [sims, tickets, gameColor]);
+    return Object.entries(acc).map(([id, value]) => ({ id, name: gameLabel[id], value, fill: gameColor[id], count: counts[id], pct: Math.round((value / total) * 100) }));
+  }, [adminTicketRows, gameColor]);
 
   const hourlyData = useMemo(() => {
-    const hours: { hour: string; count: number }[] = Array.from({ length: 24 }, (_, h) => ({ hour: `${h}h`, count: 0 }));
-    tickets.forEach(t => { const h = new Date(t.createdAt).getHours(); hours[h].count += 1; });
-    sims.forEach((s, i) => { const h = ((i * 17 + s.stake / 100) | 0) % 24; hours[h].count += 1; });
+    const hours = Array.from({ length: 24 }, (_, h) => ({ hour: `${h}h`, count: 0 }));
+    adminTicketRows.forEach(t => { hours[new Date(t.createdAt).getHours()].count += 1; });
     return hours;
-  }, [sims, tickets]);
+  }, [adminTicketRows]);
   const peakHour = hourlyData.reduce((m, x) => x.count > m.count ? x : m, hourlyData[0]);
 
   const monthlyData = useMemo(() => {
@@ -205,14 +201,56 @@ function AdminPage() {
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       map[key] = { month: d.toLocaleDateString("fr-FR", { month: "short" }), mises: 0, gains: 0 };
     }
-    const bump = (iso: string, stake: number, prize: number) => {
-      const key = iso.slice(0, 7);
-      if (map[key]) { map[key].mises += stake; map[key].gains += prize; }
-    };
-    sims.forEach(s => bump(s.iso, s.stake, s.status === "paid" ? s.prize : 0));
-    tickets.forEach(t => bump(t.createdAt.slice(0, 10), t.stake, t.status === "paid" ? (t.prize ?? 0) : 0));
+    adminTicketRows.forEach(t => {
+      const key = t.createdAt.slice(0, 7);
+      if (map[key]) { map[key].mises += t.stake; map[key].gains += t.status === "paid" ? (t.prize ?? 0) : 0; }
+    });
     return Object.values(map);
-  }, [sims, tickets]);
+  }, [adminTicketRows]);
+
+  const allRows: TxRow[] = useMemo(() => adminTicketRows.map(t => ({
+    id: t.code, date: t.createdAt, game: t.gameId, phone: t.phone ?? "—", region: t.region ?? "—",
+    stake: t.stake, status: t.status, prize: t.prize ?? 0, kind: "live",
+  })), [adminTicketRows]);
+
+  const playerStats = useMemo(() => {
+    const map = new Map<string, { player: string; region: string; tickets: number; staked: number; won: number }>();
+    for (const t of adminTicketRows) {
+      const key = t.userId;
+      const row = map.get(key) ?? { player: t.phone ?? t.userId.slice(0, 8), region: t.region ?? "—", tickets: 0, staked: 0, won: 0 };
+      row.tickets += 1; row.staked += t.stake; row.won += t.prize ?? 0; map.set(key, row);
+    }
+    return Array.from(map.values());
+  }, [adminTicketRows]);
+
+  const regionStats = useMemo(() => {
+    const map = new Map<string, { region: string; players: number; tickets: number; staked: number; paid: number; delta7d: number }>();
+    for (const t of adminTicketRows) {
+      const key = t.region ?? "Non renseignée";
+      const row = map.get(key) ?? { region: key, players: 0, tickets: 0, staked: 0, paid: 0, delta7d: 0 };
+      row.tickets += 1; row.staked += t.stake; row.paid += t.prize ?? 0; map.set(key, row);
+    }
+    const usersByRegion = new Map<string, Set<string>>();
+    for (const t of adminTicketRows) { const s = usersByRegion.get(t.region ?? "Non renseignée") ?? new Set<string>(); s.add(t.userId); usersByRegion.set(t.region ?? "Non renseignée", s); }
+    return Array.from(map.values()).map(r => ({ ...r, players: usersByRegion.get(r.region)?.size ?? 0 }));
+  }, [adminTicketRows]);
+
+  const ballStats = useMemo(() => Array.from({ length: 90 }, (_, i) => {
+    const ball = i + 1;
+    const row = lotoBallWagerStats.find(x => x.ball === ball);
+    return { ball, total: row?.wagerCount ?? 0, solo: row?.soloWagerCount ?? 0, combo: row?.comboWagerCount ?? 0, topPairs: [] as { ball: number; count: number }[] };
+  }), [lotoBallWagerStats]);
+  const displayLotoBallWagerStats = lotoBallStatsLive ? lotoBallWagerStats : [];
+  const displayLotoCombinationWagerStats = lotoBallStatsLive ? lotoCombinationWagerStats : [];
+  const maxBall = Math.max(1, ...ballStats.map(b => b.total));
+  const maxRegion = Math.max(1, ...regionStats.map(r => r.staked));
+
+  const [searchPlayer, setSearchPlayer] = useState("");
+  const [filterRegion, setFilterRegion] = useState("all");
+  const filteredPlayers = playerStats.filter(p => (filterRegion === "all" || p.region === filterRegion) && p.player.toLowerCase().includes(searchPlayer.toLowerCase())).slice(0, 30);
+
+  const [selectedBall, setSelectedBall] = useState<number | null>(null);
+  const selBallStat = selectedBall ? ballStats.find(b => b.ball === selectedBall) ?? null : null;
 
   const [authLog, setAuthLog] = useState<AuthEvent[]>([]);
   useEffect(() => { setAuthLog(readAuthLog()); }, [tab]);
