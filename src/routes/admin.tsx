@@ -72,7 +72,6 @@ function AdminPage() {
     if (gate !== "ok" || !permissionsReady || !can("player_activity")) return;
     adminListTickets().then((r) => setAdminTicketRows(r.tickets)).catch(() => setAdminTicketRows([]));
   }, [gate, permissionsReady, adminPermissions]);
-  const tickets: Ticket[] = [];
   const [tab, setTab] = useState<Tab>("dashboard");
   useEffect(() => {
     if (!permissionsReady || adminPermissions === "all" || tab !== "dashboard") return;
@@ -133,7 +132,7 @@ function AdminPage() {
 
   useEffect(() => {
     if (!autoSms) return;
-    const winners = tickets.filter((t) => t.status === "winning");
+    const winners = adminTicketRows.filter((t) => t.status === "winning");
     const known = new Set(sentLog.map((s) => s.id.split("#")[0]));
     const fresh = winners.filter((w) => !known.has(w.id));
     if (fresh.length === 0) return;
@@ -142,7 +141,7 @@ function AdminPage() {
       setSentLog((prev) => [...entries, ...prev]);
     })();
     setCashoutRequests((prev) => Array.from(new Set([...fresh.map((w) => w.id), ...prev])));
-  }, [tickets, autoSms, sentLog]);
+  }, [adminTicketRows, autoSms, sentLog]);
 
   // KPIs
   const totalStaked = adminTicketRows.reduce((s, t) => s + t.stake, 0);
@@ -257,8 +256,6 @@ function AdminPage() {
     const body = filteredRows.map(r => [r.id,r.date,r.game,r.phone,r.region,r.stake,r.status,r.prize,r.kind].join(","));
     downloadCsv([header.join(","), ...body].join("\n"), `coupsur-transactions-${todayIso}.csv`);
   };
-
-  const can = (permission: AdminPermission) => adminPermissions === "all" || adminPermissions.includes(permission);
 
   const nav: { id: Tab; label: string; icon: LucideIcon }[] = [
     { id: "dashboard", label: t("admin.nav.dashboard"), icon: BarChart3 },
@@ -400,7 +397,7 @@ function AdminPage() {
                 csvTo={csvTo} setCsvTo={setCsvTo}
                 csvScope={csvScope} setCsvScope={setCsvScope}
                 exportCsv={exportCsv}
-                cashoutRequests={cashoutRequests} tickets={tickets}
+                cashoutRequests={cashoutRequests} tickets={[]}
                 approveCashout={() => { throw new Error("admin_cashout_ui_disabled"); }} sentLog={sentLog}
               />
             )}
