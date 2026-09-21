@@ -231,7 +231,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     }
 
     const footPickRows = data.gameId === "foot" && footPickKeys.length > 0
-      ? (() => {
+      ? (async () => {
           const byFixture = new Map<string, { marketId: string; selection: string; odds: number; status: "pending" }[]>();
           for (const key of footPickKeys) {
             const parts = key.split(":");
