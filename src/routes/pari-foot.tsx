@@ -180,7 +180,8 @@ function FootPage() {
         </div>
       </div>
 
-      <BetFlow
+      {!loading && footMatches.length > 0 && (
+        <BetFlow
         gameId="foot"
         gameName="Pari Foot"
         drawDate={new Date(Date.now() + 1000 * 60 * 60 * 36).toISOString()}
@@ -435,7 +436,6 @@ function FootPage() {
             )}
           </div>
         }
-      />
-    </>
-  );
+        />
+      )}
 }
