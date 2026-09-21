@@ -5,7 +5,6 @@ import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/AppShell";
 import { cn, formatFcfa } from "@/lib/utils";
 
-import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
 import type { PaymentIntent } from "@/lib/payments";
 import { adminGetLotoBallStatistics, adminListPlayerActivities, adminListTickets, adminGetRegisteredPlayerCount, getMyAdminPermissions, type AdminPermission, type LotoBallWagerStat, type LotoCombinationWagerStat } from "@/lib/admin.functions";
 import { useAuth } from "@/lib/auth";
@@ -34,6 +33,9 @@ export const Route = createFileRoute("/admin")({
 });
 
 type Tab = "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "results" | "logs" | "claims" | "admins";
+
+type AuthEventKind = "otp-request" | "verify-ok" | "verify-fail" | "locked" | "rate-limited" | "logout" | "session-expired";
+type AuthEvent = { at: number; phone: string; ip: string; kind: AuthEventKind; note?: string };
 
 function AdminPage() {
   const { t } = useI18n();
@@ -95,6 +97,8 @@ function AdminPage() {
 
 
   const [allIntents, setAllIntents] = useState<PaymentIntent[]>([]);
+  // No client-generated auth/IP log is presented as real telemetry. The backend security-log source is not connected yet.
+  const authLog: AuthEvent[] = [];
   useEffect(() => {
     if (gate !== "ok" || !permissionsReady) return;
     if (adminPermissions !== "all" && !adminPermissions.includes("ball_stats")) return;
