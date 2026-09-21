@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS public.admin_permissions (
     'publish_results',
     'player_stats',
     'region_stats',
-    'security_logs'
+    'security_logs',
+    'operations'
   )),
   created_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (user_id, permission)
