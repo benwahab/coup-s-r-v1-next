@@ -1,5 +1,5 @@
-// Catalogue de marchés type 1xBet pour chaque match.
-// V1 : cotes générées de manière déterministe depuis le triplet 1/X/2 pour rester crédible.
+// Marchés exposés uniquement lorsque les cotes sont fournies par le backend.
+// Tant que le schéma source ne fournit que 1X2, aucun marché synthétique n’est affiché.
 
 import type { FootMatch } from "./foot.types";
 
