@@ -52,7 +52,7 @@ function LotoPage() {
   useEffect(() => {
     void supabase.from("game_schedules").select("open_hour,close_hour,draw_hour,draw_minute,enabled").eq("game_id","loto").maybeSingle()
       .then(({ data }) => setSchedule(data ?? null));
-  }, [schedule]);
+  }, []);
 
   const drawName = drawNameForDate();
   const dateLabel = nigerDateLabel();
@@ -60,7 +60,7 @@ function LotoPage() {
     const d = new Date();
     if (!schedule) return "";\n    d.setHours(schedule.draw_hour, schedule.draw_minute, 0, 0);
     return d.toISOString();
-  }, []);
+  }, [schedule]);
 
   const changeMode = (m: Mode) => { setMode(m); setPicks((prev) => prev.slice(0, m)); };
 
