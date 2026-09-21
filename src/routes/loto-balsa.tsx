@@ -48,10 +48,10 @@ function LotoPage() {
   const [picks, setPicks] = useState<number[]>([]);
   const [stake, setStake] = useState(DEFAULT_STAKE);
   const [cart, setCart] = useState<TicketLeg[]>([]);
-  const [schedule, setSchedule] = useState<{ open_hour:number; close_hour:number; draw_hour:number; draw_minute:number; enabled:boolean } | null>(null);
+  const [schedule, setSchedule] = useState<{ open_hour:number; close_hour:number; draw_hour:number; draw_minute:number; enabled:boolean } | null>(null);\n  const [scheduleLoading, setScheduleLoading] = useState(true);
   useEffect(() => {
     void supabase.from("game_schedules").select("open_hour,close_hour,draw_hour,draw_minute,enabled").eq("game_id","loto").maybeSingle()
-      .then(({ data }) => setSchedule(data ?? null));
+      .then(({ data }) => setSchedule(data ?? null))\n      .finally(() => setScheduleLoading(false));
   }, []);
 
   const drawName = drawNameForDate();
@@ -132,16 +132,26 @@ function LotoPage() {
             <div className="font-display text-base font-extrabold text-gold leading-tight">{drawName}</div>
           </div>
           <div className="grid grid-cols-3 gap-2 text-[11px]">
-            {[
-              { l: t("closeAt"), v: formatHour(schedule?.close_hour ?? 0) },
-              { l: t("drawAt"), v: formatHour(schedule?.draw_hour ?? 0, schedule?.draw_minute ?? 0) },
-              { l: t("openAt"), v: formatHour(schedule?.open_hour ?? 0) },
-            ].map((b, i) => (
-              <div key={i} className="rounded-lg border border-border bg-background/40 px-3 py-1.5 text-center">
-                <div className="text-[9px] uppercase tracking-widest text-muted-foreground">{b.l}</div>
-                <div className="font-display text-sm font-bold tabular-nums text-foreground">{b.v}</div>
+            {scheduleLoading ? (
+              <div className="col-span-3 rounded-lg border border-border bg-background/40 px-3 py-2 text-center text-muted-foreground">
+                Horaires en cours de chargement…
               </div>
-            ))}
+            ) : schedule ? (
+              [
+                { l: t("closeAt"), v: formatHour(schedule.close_hour) },
+                { l: t("drawAt"), v: formatHour(schedule.draw_hour, schedule.draw_minute) },
+                { l: t("openAt"), v: formatHour(schedule.open_hour) },
+              ].map((b, i) => (
+                <div key={i} className="rounded-lg border border-border bg-background/40 px-3 py-1.5 text-center">
+                  <div className="text-[9px] uppercase tracking-widest text-muted-foreground">{b.l}</div>
+                  <div className="font-display text-sm font-bold tabular-nums text-foreground">{b.v}</div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-3 rounded-lg border border-border bg-background/40 px-3 py-2 text-center text-muted-foreground">
+                Aucun horaire configuré.
+              </div>
+            )}
           </div>
         </div>
       </div>
