@@ -93,37 +93,6 @@ export function OpsTab(p: Props) {
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-3xl border border-border bg-card shadow-soft">
-          <div className="flex items-center justify-between border-b border-border px-5 py-3">
-            <div className="flex items-center gap-2"><Send className="h-4 w-4 text-gold" /><h2 className="font-display text-lg font-bold">{t("cashoutRequests")}</h2></div>
-          </div>
-          <p className="px-5 py-8 text-center text-sm text-muted-foreground">Les retraits restent bloqués jusqu’à la connexion d’un fournisseur de paiement réel.</p>
-        </section>
-        <section className="rounded-3xl border border-border bg-card shadow-soft">
-          <div className="flex items-center justify-between border-b border-border px-5 py-3">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="h-4 w-4 text-primary" />
-              <h2 className="font-display text-lg font-bold">{t("sendSms")} — {t("admin.ops.autoLog")}</h2>
-            </div>
-          </div>
-          {p.sentLog.length === 0 ? (
-            <p className="px-5 py-8 text-center text-sm text-muted-foreground">{t("admin.ops.noSmsSent")}</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {p.sentLog.slice(0, 8).map((s) => (
-                <li key={s.id + s.at} className="px-5 py-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold">{s.id}</span>
-                    <span className="text-[11px] text-muted-foreground tabular-nums">{new Date(s.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
-                  </div>
-                  <p className="mt-1 break-words text-xs text-muted-foreground">→ {s.phone} : « {s.body} »</p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
     </div>
   );
 }
