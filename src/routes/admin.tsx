@@ -5,11 +5,11 @@ import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/AppShell";
 import type { Ticket } from "@/lib/tickets";
 import { cn, formatFcfa } from "@/lib/utils";
-import { computeBallStats, computePlayerStats, computeRegionStats, generateSimTickets } from "@/lib/mock-stats";
+import { supabase } from "@/integrations/supabase/client";
 import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
 import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
 import type { PaymentIntent } from "@/lib/payments";
-import { adminGetLotoBallStatistics, adminListPlayerActivities, getMyAdminPermissions, type AdminPermission, type LotoBallWagerStat, type LotoCombinationWagerStat } from "@/lib/admin.functions";
+import { adminGetLotoBallStatistics, adminListPlayerActivities, adminListTickets, getMyAdminPermissions, type AdminPermission, type LotoBallWagerStat, type LotoCombinationWagerStat } from "@/lib/admin.functions";
 import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useThemeChartColors } from "@/hooks/use-theme-chart-colors";
@@ -70,8 +70,13 @@ function AdminPage() {
   // SECURITY: the admin surface deliberately has no access to client tickets,
   // selections, legs, ticket status or prizes. Only aggregate/demo statistics
   // and sanitized player activity are available here.
+  const [adminTicketRows, setAdminTicketRows] = useState<Awaited<ReturnType<typeof adminListTickets>>["tickets"]>([]);
+  useEffect(() => {
+    if (gate !== "ok" || !permissionsReady || !can("player_activity")) return;
+    adminListTickets().then((r) => setAdminTicketRows(r.tickets)).catch(() => setAdminTicketRows([]));
+  }, [gate, permissionsReady, adminPermissions]);
   const tickets: Ticket[] = [];
-  const sims = useMemo(() => generateSimTickets(260), []);
+  const sims: never[] = [];
   const [tab, setTab] = useState<Tab>("dashboard");
   useEffect(() => {
     if (!permissionsReady || adminPermissions === "all" || tab !== "dashboard") return;
@@ -144,21 +149,17 @@ function AdminPage() {
   }, [tickets, autoSms, sentLog]);
 
   // KPIs
-  const totalStaked = sims.reduce((s, t) => s + t.stake, 0) + tickets.reduce((s, t) => s + t.stake, 0);
-  const totalPayout = sims.filter(s => s.status === "paid").reduce((s, t) => s + t.prize, 0)
-    + tickets.filter((t) => t.status === "paid").reduce((s, t) => s + (t.prize ?? 0), 0);
-  const winnersCount = sims.filter((s) => s.status === "paid" || s.status === "winning").length
-    + tickets.filter((t) => t.status === "winning" || t.status === "paid").length;
-  const activePlayers = new Set([...sims.map((s) => s.player), ...tickets.map((t) => t.phone)]).size;
+  const totalStaked = adminTicketRows.reduce((s, t) => s + t.stake, 0);
+  const totalPayout = adminTicketRows.filter((t) => t.status === "paid").reduce((s, t) => s + (t.prize ?? 0), 0);
+  const winnersCount = adminTicketRows.filter((t) => t.status === "paid" || t.status === "winning").length;
+  const activePlayers = new Set(adminTicketRows.map((t) => t.userId)).size;
 
-  const todayStake = sims.filter(s => s.iso === todayIso).reduce((a, b) => a + b.stake, 0)
-    + tickets.filter(t => t.createdAt.slice(0, 10) === todayIso).reduce((a, b) => a + b.stake, 0);
+  const todayStake = adminTicketRows.filter(t => t.createdAt.slice(0, 10) === todayIso).reduce((a, b) => a + b.stake, 0);
   const yestIso = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
-  const yestStake = sims.filter(s => s.iso === yestIso).reduce((a, b) => a + b.stake, 0)
-    + tickets.filter(t => t.createdAt.slice(0, 10) === yestIso).reduce((a, b) => a + b.stake, 0);
+  const yestStake = adminTicketRows.filter(t => t.createdAt.slice(0, 10) === yestIso).reduce((a, b) => a + b.stake, 0);
   const growth = yestStake === 0 ? 100 : Math.round(((todayStake - yestStake) / yestStake) * 100);
-  const last7 = sims.filter(s => s.daysAgo < 7).reduce((a, b) => a + b.stake, 0);
-  const prev7 = sims.filter(s => s.daysAgo >= 7 && s.daysAgo < 14).reduce((a, b) => a + b.stake, 0);
+  const last7 = adminTicketRows.filter(s => Date.now() - new Date(s.createdAt).getTime() < 7 * 86400000).reduce((a, b) => a + b.stake, 0);
+  const prev7 = adminTicketRows.filter(s => { const age = Date.now() - new Date(s.createdAt).getTime(); return age >= 7 * 86400000 && age < 14 * 86400000; }).reduce((a, b) => a + b.stake, 0);
   const weekGrowth = prev7 === 0 ? 0 : Math.round(((last7 - prev7) / prev7) * 100);
 
   const revenueSeries = useMemo(() => {
