@@ -200,13 +200,13 @@ function StatsCard({ hot, cold }: { hot: number[]; cold: number[] }) {
         <Flame className="h-3.5 w-3.5 text-gold" /> {t("hotNumbers")}
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
-        {hotNumbers.map((n) => <span key={n} className="number-ball number-ball-sm">{n}</span>)}
+        {hot.map((n) => <span key={n} className="number-ball number-ball-sm">{n}</span>)}
       </div>
       <div className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         <Snowflake className="h-3.5 w-3.5 text-teal" /> {t("coldNumbers")}
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
-        {coldNumbers.map((n) => <span key={n} className="number-ball-empty">{n}</span>)}
+        {cold.map((n) => <span key={n} className="number-ball-empty">{n}</span>)}
       </div>
     </div>
   );
