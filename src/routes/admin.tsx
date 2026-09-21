@@ -13,7 +13,6 @@ import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useThemeChartColors } from "@/hooks/use-theme-chart-colors";
 import { downloadCsv, gameLabel, type TxRow } from "@/components/admin/shared";
 import { DashboardTab, type ActivityItem } from "@/components/admin/tabs/DashboardTab";
-import { ClaimsTab } from "@/components/admin/tabs/ClaimsTab";
 import { TransactionsTab } from "@/components/admin/tabs/TransactionsTab";
 import { PlayersTab } from "@/components/admin/tabs/PlayersTab";
 import { RegionsTab } from "@/components/admin/tabs/RegionsTab";
