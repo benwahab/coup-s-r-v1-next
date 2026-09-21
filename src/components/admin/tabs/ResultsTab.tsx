@@ -64,8 +64,7 @@ export function ResultsTab() {
     <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
       <h2 className="text-xl font-extrabold">Résultats & règlement automatique</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Chaque résultat Foot publié déclenche immédiatement le recalcul des coupons
-        encore en attente. Un seul pronostic perdu suffit à rendre tout le coupon perdant.
+        Les résultats PMU et Loto sont publiés manuellement par un administrateur. Le règlement des coupons est déclenché après publication. Une future intégration API pourra automatiser cette étape, sans changer le contrôle serveur.
       </p>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
