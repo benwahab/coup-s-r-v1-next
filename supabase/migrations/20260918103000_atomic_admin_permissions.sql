@@ -39,7 +39,8 @@ BEGIN
       'publish_results',
       'player_stats',
       'region_stats',
-      'security_logs'
+      'security_logs',
+    'operations'
     ) THEN
       RAISE EXCEPTION 'invalid_admin_permission';
     END IF;
