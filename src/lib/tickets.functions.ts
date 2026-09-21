@@ -114,7 +114,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     // Integrity checks for the demo game catalog. The browser may submit any
     // JSON it wants, so PMU/Loto selections are revalidated against the same
     // canonical definitions used by the UI before a ticket is persisted.
-    const validatePicks = (gameId: string, picks: Array<string | number>) => {
+    const validatePicks = async (gameId: string, picks: Array<string | number>) => {
       const nums = picks.filter((p): p is number => typeof p === "number");
       if (gameId === "loto") {
         if (nums.length < 1 || nums.length > 5 || nums.length !== picks.length) {
@@ -157,17 +157,16 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
       }
     };
 
-    validatePicks(data.gameId, data.picks);
+    await validatePicks(data.gameId, data.picks);
     for (const leg of data.legs ?? []) {
       if (leg.gameId !== data.gameId) throw new Error("ticket_leg_game_mismatch");
-      validatePicks(leg.gameId, leg.picks);
+      await validatePicks(leg.gameId, leg.picks);
       if (leg.stake < 300 || leg.stake > 100_000) throw new Error("invalid_leg_stake");
     }
 
     if (data.gameId === "loto") {
       const count = data.picks.length;
-      const multiplier = lotoMultipliers[count];
-      if (!multiplier) throw new Error("invalid_loto_mode");
+      if (count < 1 || count > 5) throw new Error("invalid_loto_mode");
     }
 
     if (data.legs?.length) {
