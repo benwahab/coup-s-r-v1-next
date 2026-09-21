@@ -67,7 +67,7 @@ function FootPage() {
     const { data, error } = await supabase
       .from("foot_fixtures")
       .select("id,league_name,kickoff_at,home_team,away_team,odds_home,odds_draw,odds_away,status")
-      .in("status", ["scheduled", "live"])
+      .eq("status", "scheduled")
       .order("kickoff_at", { ascending: true })
       .limit(100);
 
@@ -184,7 +184,7 @@ function FootPage() {
         <BetFlow
         gameId="foot"
         gameName="Pari Foot"
-        drawDate={new Date(Date.now() + 1000 * 60 * 60 * 36).toISOString()}
+        drawDate={footMatches[0]?.kickoffAt ?? ""}
         selection={list}
         picksLabel={`[${mode === "combi" ? t("game.combined") : t("game.simple")}] ${picksLabel} | ${t("odds")} ×${totalOdds.toFixed(2)}`}
         canContinue={validation.success && stakeValid}
