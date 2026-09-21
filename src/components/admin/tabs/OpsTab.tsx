@@ -64,6 +64,14 @@ export function OpsTab(p: Props) {
               {field("draw_hour","Tirage")}
               {field("draw_minute","Minute du tirage")}
             </div>
+            <label className="mt-3 flex items-center gap-2 text-sm font-semibold">
+              <input
+                type="checkbox"
+                checked={s.enabled}
+                onChange={(e) => setSchedules((prev) => ({ ...prev, [gameId]: { ...prev[gameId]!, enabled: e.target.checked } }))}
+              />
+              Jeu actif
+            </label>
             <button type="button" onClick={() => void saveSchedule(gameId)} className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">Enregistrer</button>
           </div>;
         })}
