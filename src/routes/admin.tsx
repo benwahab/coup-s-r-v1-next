@@ -15,6 +15,7 @@ import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useThemeChartColors } from "@/hooks/use-theme-chart-colors";
 import { downloadCsv, gameLabel, type TxRow } from "@/components/admin/shared";
 import { DashboardTab, type ActivityItem } from "@/components/admin/tabs/DashboardTab";
+import { ClaimsTab } from "@/components/admin/tabs/ClaimsTab";
 import { TransactionsTab } from "@/components/admin/tabs/TransactionsTab";
 import { PlayersTab } from "@/components/admin/tabs/PlayersTab";
 import { RegionsTab } from "@/components/admin/tabs/RegionsTab";
@@ -373,6 +374,8 @@ function AdminPage() {
           case "claims": return can("complaints");
           case "logs": return can("security_logs");
           case "ops": return can("operations");
+          case "claims": return can("complaints");
+          case "ops": return can("operations");
           default: return false;
         }
       });
@@ -491,7 +494,7 @@ function AdminPage() {
               />
             )}
             {adminPermissions === "all" && tab === "admins" && <AdminsSection />}
-            {can("security_logs") && tab === "logs" && (
+            {can("complaints") && tab === "claims" && (\n              <ClaimsTab claimPhone={""} setClaimPhone={() => {}} claim={null} updateStatus={() => { throw new Error("claims_backend_not_connected"); }} removeDraft={() => { throw new Error("claims_backend_not_connected"); }} />\n            )}\n            {can("security_logs") && tab === "logs" && (
               <LogsTab filteredLog={filteredLog}
                 logPhone={logPhone} setLogPhone={setLogPhone}
                 logIp={logIp} setLogIp={setLogIp}
