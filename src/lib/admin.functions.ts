@@ -178,6 +178,42 @@ export const adminGetLotoBallStatistics = createServerFn({ method: "POST" })
     } satisfies LotoBallStatistics;
   });
 
+export interface AdminTicketRow {
+  id: string;
+  code: string;
+  userId: string;
+  gameId: string;
+  gameName: string;
+  stake: number;
+  paymentMethod: string;
+  drawDate: string | null;
+  status: "pending" | "losing" | "winning" | "paid";
+  prize: number | null;
+  phone: string | null;
+  region: string | null;
+  createdAt: string;
+}
+
+export const adminListTickets = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .handler(async ({ context }) => {
+    await assertAdminPermission(context.supabase as SB, context.userId, "player_activity");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("tickets")
+      .select("id,code,user_id,game_id,game_name,stake,payment_method,draw_date,status,prize,phone,region,created_at")
+      .order("created_at", { ascending: false })
+      .limit(5000);
+    if (error) throw new Error(error.message);
+    return {
+      tickets: (data ?? []).map((r) => ({
+        id: r.id, code: r.code, userId: r.user_id, gameId: r.game_id, gameName: r.game_name,
+        stake: r.stake, paymentMethod: r.payment_method, drawDate: r.draw_date,
+        status: r.status, prize: r.prize, phone: r.phone, region: r.region, createdAt: r.created_at,
+      })) satisfies AdminTicketRow[],
+    };
+  });
+
 export const adminListPlayerActivities = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
