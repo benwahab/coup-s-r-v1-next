@@ -1,7 +1,7 @@
 import { Dices } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
-type BallStat = { ball: number; total: number; solo: number; combo: number; topPairs: { ball: number; count: number }[] };
+type BallStat = { ball: number; total: number; solo: number | null; combo: number | null; topPairs: { ball: number; count: number }[] };
 import type { LotoBallWagerStat, LotoCombinationWagerStat } from "@/lib/admin.functions";
 
 interface Props {
@@ -26,7 +26,7 @@ export function BallsTab({ ballStats, maxBall, selectedBall, setSelectedBall, se
         </div>
         <p className="text-xs text-muted-foreground">{t("admin.balls.subtitle")}</p>
         <div className="mt-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-          {live ? "Données de mises enregistrées" : "Aperçu démo — données réelles disponibles après activation de Supabase"}
+          {live ? "Données de mises enregistrées" : "Aucune donnée de mise disponible"}
         </div>
         <div className="mt-4 grid grid-cols-9 gap-1.5 sm:grid-cols-10">
           {ballStats.map((b) => {
@@ -62,12 +62,12 @@ export function BallsTab({ ballStats, maxBall, selectedBall, setSelectedBall, se
             <div className="mt-4">
               <div className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{t("soloVsCombo")}</div>
               <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-secondary">
-                <div className="bg-gold" style={{ width: `${(selBallStat.solo / Math.max(1, selBallStat.total)) * 100}%` }} />
-                <div className="bg-primary" style={{ width: `${(selBallStat.combo / Math.max(1, selBallStat.total)) * 100}%` }} />
+                <div className="bg-gold" style={{ width: `${((selBallStat.solo ?? 0) / Math.max(1, selBallStat.total)) * 100}%` }} />
+                <div className="bg-primary" style={{ width: `${((selBallStat.combo ?? 0) / Math.max(1, selBallStat.total)) * 100}%` }} />
               </div>
               <div className="mt-1 flex justify-between text-[11px] tabular-nums">
-                <span className="text-gold">{t("admin.balls.solo")} : {selBallStat.solo}</span>
-                <span className="text-primary">{t("admin.balls.combo")} : {selBallStat.combo}</span>
+                <span className="text-gold">{t("admin.balls.solo")} : {selBallStat.solo ?? "N/D"}</span>
+                <span className="text-primary">{t("admin.balls.combo")} : {selBallStat.combo ?? "N/D"}</span>
               </div>
             </div>
             <div className="mt-5 border-t border-border pt-4">
