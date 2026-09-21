@@ -50,9 +50,25 @@ function PmuPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
+  const [raceStartAt, setRaceStartAt] = useState<string | null>(null);
+
   const loadRace = async () => {
     setLoading(true); setLoadError(false);
-    const { data, error } = await supabase.from("pmu_horses").select("number,name,intl_name,jockey,status,form,win_rate,place_rate,weight").eq("race_date", new Date().toISOString().slice(0,10)).order("number");
+    const today = new Date().toISOString().slice(0,10);
+    const { data: races, error: raceError } = await supabase
+      .from("pmu_races")
+      .select("id,start_at")
+      .eq("race_date", today)
+      .in("status", ["scheduled", "open"])
+      .order("start_at", { ascending: true })
+      .limit(1);
+    if (raceError || !races?.[0]) { setHorses([]); setRaceStartAt(null); setLoadError(Boolean(raceError)); setLoading(false); return; }
+    setRaceStartAt(races[0].start_at);
+    const { data, error } = await supabase
+      .from("pmu_horses")
+      .select("number,name,intl_name,jockey,status,form,win_rate,place_rate,weight")
+      .eq("race_id", races[0].id)
+      .order("number");
     if (error) { setHorses([]); setLoadError(true); } else setHorses((data ?? []) as PmuHorse[]);
     setLoading(false);
   };
@@ -80,7 +96,7 @@ function PmuPage() {
   const currentValid = picks.length >= bet.minPicks && picks.length <= bet.maxPicks && unitStake >= MIN_STAKE;
   const canContinue = currentValid || cart.length > 0;
 
-  const drawDateIso = useMemo(() => new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(), []);
+  const drawDateIso = raceStartAt ?? new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString();
 
   const addCurrentToCart = () => {
     if (!currentValid) return;
