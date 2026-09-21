@@ -5,7 +5,7 @@ import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
 import { PageHeader } from "@/components/AppShell";
 import { cn, formatFcfa, formatHour } from "@/lib/utils";
-import { lotoMultipliers } from "@/lib/mock-data";
+import { lotoMultipliers } from "@/lib/game-config";
 import { supabase } from "@/integrations/supabase/client";
 import { drawNameForDate, nigerDateLabel, isGameOpen } from "@/lib/schedule";
 import type { TicketLeg } from "@/lib/tickets";
