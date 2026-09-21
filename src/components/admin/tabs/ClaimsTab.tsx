@@ -2,7 +2,6 @@ import { LifeBuoy, Search, X } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import { statusColor } from "../shared";
-import type { Ticket } from "@/lib/tickets";
 import type { AuthEvent } from "@/lib/auth-logs";
 import type { PaymentIntent } from "@/lib/payments";
 
@@ -18,11 +17,9 @@ interface Claim {
 interface Props {
   claimPhone: string; setClaimPhone: (v: string) => void;
   claim: Claim | null;
-  updateStatus: (id: string, status: Ticket["status"], prize?: number) => void;
-  removeDraft: (id: string) => void;
 }
 
-export function ClaimsTab({ claimPhone, setClaimPhone, claim, updateStatus, removeDraft }: Props) {
+export function ClaimsTab({ claimPhone, setClaimPhone, claim }: Props) {
   const { t } = useI18n();
   return (
     <div className="space-y-4">
@@ -53,8 +50,7 @@ export function ClaimsTab({ claimPhone, setClaimPhone, claim, updateStatus, remo
                     <div className="flex items-center justify-between"><span className="font-mono font-bold">{tk.id}</span><span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", statusColor[tk.status])}>{tk.status}</span></div>
                     <div className="mt-0.5 text-muted-foreground truncate">{tk.gameName} · {formatFcfa(tk.stake)} FCFA</div>
                     <div className="mt-1 flex gap-1.5">
-                      <button onClick={() => updateStatus(tk.id, "paid", tk.prize ?? tk.stake * 12)} className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-bold text-success">{t("admin.claims.markPaid")}</button>
-                      <button onClick={() => updateStatus(tk.id, "losing")} className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold text-destructive">{t("admin.claims.cancel")}</button>
+                      <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">Consultation uniquement</span>
                     </div>
                   </li>
                 ))}
@@ -68,7 +64,7 @@ export function ClaimsTab({ claimPhone, setClaimPhone, claim, updateStatus, remo
                 {claim.drafts.map((d) => (
                   <li key={d.id} className="p-3 text-xs flex items-center justify-between">
                     <div className="min-w-0"><div className="font-mono font-bold">{d.id}</div><div className="text-muted-foreground truncate">{d.gameName} · {formatFcfa(d.totalStake)} FCFA</div></div>
-                    <button onClick={() => removeDraft(d.id)} className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold text-destructive">{t("admin.claims.delete")}</button>
+                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">Consultation uniquement</span>
                   </li>
                 ))}
               </ul>
