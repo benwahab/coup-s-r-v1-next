@@ -114,77 +114,94 @@ export const syncFootFixtures = createServerFn({ method: "POST" }).handler(async
  *   encore en cours.
  */
 async function settleFinishedFixtures(supabaseAdmin: SupabaseAdmin) {
-  const { data: finishedFixtures } = await supabaseAdmin
+  const { data: finishedFixtures, error: fixturesError } = await supabaseAdmin
     .from("foot_fixtures")
     .select("id, home_score, away_score")
     .eq("status", "finished")
     .not("home_score", "is", null)
     .not("away_score", "is", null);
-  if (!finishedFixtures || finishedFixtures.length === 0) return 0;
+  if (fixturesError) throw new Error("finished_fixtures_lookup_failed");
+  if (!finishedFixtures?.length) return 0;
 
-  const { data: pendingRows } = await supabaseAdmin
+  const fixtureIds = finishedFixtures.map((f) => f.id);
+  const { data: pendingRows, error: picksError } = await supabaseAdmin
     .from("foot_picks")
     .select("id, fixture_id, ticket_id, picks, status")
     .eq("status", "pending")
-    .in("fixture_id", finishedFixtures.map((f) => f.id));
-  if (!pendingRows || pendingRows.length === 0) return 0;
+    .in("fixture_id", fixtureIds);
+  if (picksError) throw new Error("pending_foot_picks_lookup_failed");
+  if (!pendingRows?.length) return 0;
 
   const fixtureById = new Map(finishedFixtures.map((f) => [f.id, f]));
+  const ticketIds = new Set<string>();
+  for (const row of pendingRows) if (row.ticket_id) ticketIds.add(row.ticket_id);
+
   let settledCount = 0;
-  const affectedTicketIds = new Set<string>();
+  for (const ticketId of ticketIds) {
+    const { data: ticket, error: ticketError } = await supabaseAdmin
+      .from("tickets")
+      .select("id,stake,status")
+      .eq("id", ticketId)
+      .eq("status", "pending")
+      .maybeSingle();
+    if (ticketError || !ticket) continue;
 
-  for (const row of pendingRows) {
-    const fx = fixtureById.get(row.fixture_id);
-    if (!fx || fx.home_score === null || fx.away_score === null) continue;
-    const result = fx.home_score > fx.away_score ? "1" : fx.home_score < fx.away_score ? "2" : "X";
-
-    const picks = row.picks as { marketId: string; selection: string; odds: number; status: string }[];
-    let changed = false;
-    const updatedPicks = picks.map((p) => {
-      if (p.marketId !== "1x2" || p.status !== "pending") return p;
-      changed = true;
-      return { ...p, status: p.selection === result ? "winning" : "losing" };
-    });
-    if (!changed) continue;
-
-    // Statut global de la ligne : perdant dès qu'un pick (1x2 ou autre)
-    // perd ; gagnant seulement si tous les picks sont gagnants ; sinon
-    // toujours en attente (des marchés étendus non-1x2 restent à régler
-    // manuellement par un admin).
-    const anyLosing = updatedPicks.some((p) => p.status === "losing");
-    const allWinning = updatedPicks.every((p) => p.status === "winning");
-    const rowStatus = anyLosing ? "losing" : allWinning ? "winning" : "pending";
-
-    await supabaseAdmin
+    const { data: rows, error: rowsError } = await supabaseAdmin
       .from("foot_picks")
-      .update({ picks: updatedPicks, status: rowStatus, settled_at: rowStatus === "pending" ? null : new Date().toISOString() })
-      .eq("id", row.id);
-    settledCount += 1;
-    if (row.ticket_id) affectedTicketIds.add(row.ticket_id);
-  }
+      .select("id,fixture_id,picks,status")
+      .eq("ticket_id", ticketId);
+    if (rowsError || !rows?.length) continue;
 
-  // Cascade sur les tickets affectés : perdant immédiat si une jambe (un
-  // match) perd, gagnant seulement si toutes les jambes foot du ticket sont
-  // gagnantes et qu'aucune autre jambe (PMU/Loto éventuel) n'est en attente.
-  for (const ticketId of affectedTicketIds) {
-    const { data: rowsForTicket } = await supabaseAdmin.from("foot_picks").select("status").eq("ticket_id", ticketId);
-    if (!rowsForTicket) continue;
-    const anyLost = rowsForTicket.some((r) => r.status === "losing");
-    const allDone = rowsForTicket.every((r) => r.status === "winning" || r.status === "losing");
-    if (anyLost) {
-      await supabaseAdmin.from("tickets").update({ status: "losing" }).eq("id", ticketId).eq("status", "pending");
-    } else if (allDone) {
-      const { data: ticketRow } = await supabaseAdmin.from("tickets").select("legs").eq("id", ticketId).maybeSingle();
-      const legs = (ticketRow?.legs as { gameId: string }[] | null) ?? [];
-      const onlyFootLeg = legs.every((l) => l.gameId === "foot");
-      if (onlyFootLeg) {
-        await supabaseAdmin.from("tickets").update({ status: "winning" }).eq("id", ticketId).eq("status", "pending");
+    let losing = false;
+    let pending = false;
+    let totalOdds = 1;
+    const updates: { id: string; status: "winning" | "losing"; settledAt: string }[] = [];
+
+    for (const row of rows) {
+      const fixture = fixtureById.get(row.fixture_id);
+      const picks = Array.isArray(row.picks) ? row.picks : [];
+      if (!picks.length) { pending = true; continue; }
+
+      for (const raw of picks) {
+        if (!raw || typeof raw !== "object") { pending = true; continue; }
+        const p = raw as { marketId?: unknown; selection?: unknown; odds?: unknown; status?: unknown };
+        if (p.marketId !== "1x2" || typeof p.selection !== "string" || typeof p.odds !== "number" || p.odds < 1 || p.odds > 1000) {
+          // Les marchés non supportés ne peuvent pas être réglés manuellement.
+          // Ils restent bloqués jusqu'à ce qu'un provider fournisse leurs données.
+          pending = true;
+          continue;
+        }
+        totalOdds *= p.odds;
+        if (!Number.isFinite(totalOdds) || totalOdds > 1e12) throw new Error("foot_payout_overflow");
+        if (!fixture || fixture.home_score == null || fixture.away_score == null) { pending = true; continue; }
+        const result = fixture.home_score > fixture.away_score ? "1" : fixture.home_score < fixture.away_score ? "2" : "X";
+        if (p.selection !== result) losing = true;
       }
-      // Ticket mixte (foot + autre jeu) : on laisse l'admin trancher le
-      // statut global, la partie foot est réglée mais l'autre jambe ne l'est
-      // peut-être pas encore.
-    }
-  }
 
+      if (fixtureById.has(row.fixture_id) && !picks.some((p) => p && typeof p === "object" && (p as { marketId?: unknown }).marketId !== "1x2")) {
+        const fixture = fixtureById.get(row.fixture_id);
+        if (fixture?.home_score != null && fixture?.away_score != null) {
+          const result = fixture.home_score > fixture.away_score ? "1" : fixture.home_score < fixture.away_score ? "2" : "X";
+          const rowPicks = picks as { marketId?: unknown; selection?: unknown }[];
+          if (rowPicks.every((p) => p.marketId === "1x2" && typeof p.selection === "string")) {
+            const rowLosing = rowPicks.some((p) => p.selection !== result);
+            updates.push({ id: row.id, status: rowLosing ? "losing" : "winning", settledAt: new Date().toISOString() });
+          }
+        }
+      }
+    }
+
+    const nextStatus = losing ? "losing" : pending ? "pending" : "winning";
+    if (nextStatus === "pending") continue;
+    const prize = nextStatus === "winning" ? Math.floor(ticket.stake * totalOdds) : 0;
+    const { data: settled, error: settlementError } = await supabaseAdmin.rpc("settle_ticket_atomic", {
+      p_ticket_id: ticket.id,
+      p_status: nextStatus,
+      p_prize: prize,
+      p_leg_updates: updates,
+      p_mark_all_foot_losing: nextStatus === "losing",
+    });
+    if (!settlementError && settled?.length) settledCount += 1;
+  }
   return settledCount;
 }
