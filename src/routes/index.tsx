@@ -80,7 +80,8 @@ function Index() {
   useEffect(() => { void supabase.from("game_schedules").select("game_id,open_hour,close_hour,draw_hour,draw_minute,enabled").in("game_id", ["pmu","loto"]).then(({ data }) => { const next: typeof schedules = {}; for (const row of data ?? []) if (row.game_id === "pmu" || row.game_id === "loto") next[row.game_id] = row; setSchedules(next); }); }, []);
   const pmuSchedule = schedules.pmu;
   const lotoSchedule = schedules.loto;
-  const pmuEvt = pmuSchedule ? useLiveStage(pmuSchedule.open_hour, pmuSchedule.close_hour, pmuSchedule.draw_hour, pmuSchedule.draw_minute) : null;
+  const pmuEvtRaw = useLiveStage(pmuSchedule?.open_hour ?? 0, pmuSchedule?.close_hour ?? 0, pmuSchedule?.draw_hour ?? 0, pmuSchedule?.draw_minute ?? 0);
+  const pmuEvt = pmuSchedule ? pmuEvtRaw : null;
   const [lastPmu, setLastPmu] = useState<{ date: string; horses: number[] } | null>(null);
   const [lastLoto, setLastLoto] = useState<{ date: string; numbers: number[] } | null>(null);
   useEffect(() => {
@@ -98,7 +99,8 @@ function Index() {
     };
     void loadResults();
   }, []);
-  const lotoEvt = lotoSchedule ? useLiveStage(lotoSchedule.open_hour, lotoSchedule.close_hour, lotoSchedule.draw_hour, lotoSchedule.draw_minute) : null;
+  const lotoEvtRaw = useLiveStage(lotoSchedule?.open_hour ?? 0, lotoSchedule?.close_hour ?? 0, lotoSchedule?.draw_hour ?? 0, lotoSchedule?.draw_minute ?? 0);
+  const lotoEvt = lotoSchedule ? lotoEvtRaw : null;
   const pmuCd = useCountdown(pmuEvt?.target ?? new Date(0));
   const lotoCd = useCountdown(lotoEvt?.target ?? new Date(0));
   const lotoDrawName = drawNameForDate();
