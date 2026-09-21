@@ -103,13 +103,15 @@ async function evaluatePmu(picks: unknown[], result: { horses: number[] }, stake
 
   const { data: race, error: raceError } = await supabaseAdmin
     .from("pmu_races")
-    .select("id")
+    .select("id,status,start_at")
     .eq("race_date", drawDate)
+    .in("status", ["finished"])
     .order("start_at", { ascending: true })
     .limit(1)
     .maybeSingle();
   if (raceError) throw new Error("pmu_race_lookup_failed: " + raceError.message);
   if (!race) return null;
+  if (new Date(race.start_at).getTime() > Date.now()) return null;
 
   const { data: starters, error: startersError } = await supabaseAdmin
     .from("pmu_horses")
@@ -121,7 +123,10 @@ async function evaluatePmu(picks: unknown[], result: { horses: number[] }, stake
   if (!winningNumbers.every((n) => validStarters.has(n))) return null;
 
   const winning = nums.every((n) => winningNumbers.includes(n));
-  return { winning, prize: winning ? stake : 0 };
+  // PMU payout amounts must come from an authoritative payout/rule source.
+  // Never credit the stake as a fictitious prize.
+  if (winning) throw new Error("pmu_payout_rule_not_configured");
+  return { winning: false, prize: 0 };
 }
 
 function finalOutcome(homeGoals: number, awayGoals: number): "1" | "X" | "2" {
