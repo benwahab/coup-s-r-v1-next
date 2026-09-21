@@ -3,7 +3,6 @@ import { ShieldCheck, Sparkles, BarChart3, ListChecks, Users, MapPin, Circle, Se
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/AppShell";
-import type { Ticket } from "@/lib/tickets";
 import { cn, formatFcfa } from "@/lib/utils";
 import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
 import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
@@ -75,7 +74,6 @@ function AdminPage() {
     adminListTickets().then((r) => setAdminTicketRows(r.tickets)).catch(() => setAdminTicketRows([]));
   }, [gate, permissionsReady, adminPermissions]);
   const tickets: Ticket[] = [];
-  const sims: never[] = [];
   const [tab, setTab] = useState<Tab>("dashboard");
   useEffect(() => {
     if (!permissionsReady || adminPermissions === "all" || tab !== "dashboard") return;
@@ -307,47 +305,6 @@ function AdminPage() {
   }, [allRows, txSearch, txGame, txStatus, txSort]);
   const pageRows = filteredRows.slice((txPage - 1) * PAGE, txPage * PAGE);
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE));
-
-  const playerStats = useMemo(() => computePlayerStats(sims), [sims]);
-  const regionStats = useMemo(() => computeRegionStats(sims), [sims]);
-  const ballStats = useMemo(() => computeBallStats(sims), [sims]);
-  const demoLotoBallWagerStats = useMemo<LotoBallWagerStat[]>(() => {
-    const byBall = new Map<number, LotoBallWagerStat>();
-    for (const row of ballStats) {
-      byBall.set(row.ball, {
-        ball: row.ball,
-        wagerCount: row.total,
-        stakedAmount: 0,
-        soloWagerCount: row.solo,
-        comboWagerCount: row.combo,
-      });
-    }
-    for (const ticket of sims) {
-      if (ticket.gameId !== "loto" || ticket.picks.length === 0) continue;
-      for (const ball of ticket.picks) {
-        const row = byBall.get(ball);
-        if (row) row.stakedAmount += ticket.stake;
-      }
-    }
-    return Array.from(byBall.values());
-  }, [ballStats, sims]);
-
-  const demoLotoCombinationWagerStats = useMemo<LotoCombinationWagerStat[]>(() => {
-    const map = new Map<string, LotoCombinationWagerStat>();
-    for (const ticket of sims) {
-      if (ticket.gameId !== "loto" || ticket.picks.length === 0) continue;
-      const combination = [...ticket.picks].sort((a, b) => a - b).map((n) => String(n).padStart(2, "0")).join(" + ");
-      const row = map.get(combination) ?? { combination, wagerCount: 0, stakedAmount: 0 };
-      row.wagerCount += 1;
-      row.stakedAmount += ticket.stake;
-      map.set(combination, row);
-    }
-    return Array.from(map.values()).sort((a, b) => b.stakedAmount - a.stakedAmount);
-  }, [sims]);
-  const displayLotoBallWagerStats = lotoBallStatsLive ? lotoBallWagerStats : demoLotoBallWagerStats;
-  const displayLotoCombinationWagerStats = lotoBallStatsLive ? lotoCombinationWagerStats : demoLotoCombinationWagerStats;
-  const maxBall = Math.max(1, ...ballStats.map((b) => b.total));
-  const maxRegion = Math.max(1, ...regionStats.map((r) => r.staked));
 
   const [searchPlayer, setSearchPlayer] = useState("");
   const [filterRegion, setFilterRegion] = useState("all");
