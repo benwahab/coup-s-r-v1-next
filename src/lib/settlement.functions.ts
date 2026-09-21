@@ -323,11 +323,16 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
     await assertPublishResultsPermission(context.supabase, context.userId);
 
     if (data.gameId === "pmu") {
+      if (new Set(data.result.horses).size !== data.result.horses.length) {
+        throw new Error("pmu_result_duplicate_horse");
+      }
       const { data: race, error: raceError } = await supabaseAdmin
-        .from("pmu_races").select("id").eq("race_date", data.drawDate)
+        .from("pmu_races").select("id,status,start_at").eq("race_date", data.drawDate)
+        .eq("status", "finished")
         .order("start_at", { ascending: true }).limit(1).maybeSingle();
       if (raceError) throw new Error("pmu_race_lookup_failed: " + raceError.message);
-      if (!race) throw new Error("pmu_race_not_found");
+      if (!race) throw new Error("pmu_finished_race_not_found");
+      if (new Date(race.start_at).getTime() > Date.now()) throw new Error("pmu_race_not_finished");
       const { data: starters, error: startersError } = await supabaseAdmin
         .from("pmu_horses").select("number").eq("race_id", race.id).eq("status", "partant");
       if (startersError) throw new Error("pmu_starters_lookup_failed: " + startersError.message);
