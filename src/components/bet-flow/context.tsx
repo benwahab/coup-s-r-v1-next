@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
-import { useTickets, type TicketLeg } from "@/lib/tickets";
+import { type TicketLeg } from "@/lib/tickets";
 import { regions, paymentMethods, type GameId } from "@/lib/game-config";
 import { useAccount } from "@/lib/account";
 import { useDrafts } from "@/lib/drafts";
