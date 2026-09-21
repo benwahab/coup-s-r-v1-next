@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/AppShell";
 import { cn, formatFcfa } from "@/lib/utils";
-import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
+
 import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
 import type { PaymentIntent } from "@/lib/payments";
 import { adminGetLotoBallStatistics, adminListPlayerActivities, adminListTickets, getMyAdminPermissions, type AdminPermission, type LotoBallWagerStat, type LotoCombinationWagerStat } from "@/lib/admin.functions";
@@ -93,11 +93,8 @@ function AdminPage() {
   const [csvTo, setCsvTo] = useState(todayIso);
   const [csvScope, setCsvScope] = useState<"all" | "winners" | "cashout">("all");
 
-  const [autoSms, setAutoSms] = useState(true);
-  const [sentLog, setSentLog] = useState<SmsEntry[]>([]);
-  const [cashoutRequests, setCashoutRequests] = useState<string[]>([]);
-
-  useEffect(() => { setSentLog(readSmsLog()); }, []);
+  const [sentLog] = useState<never[]>([]);
+  const [cashoutRequests] = useState<string[]>([]);
 
   const [allIntents, setAllIntents] = useState<PaymentIntent[]>([]);
   useEffect(() => {
@@ -428,7 +425,7 @@ function AdminPage() {
             )}
             {can("publish_results") && tab === "results" && <ResultsTab />}
             {can("operations") && tab === "ops" && (
-              <OpsTab autoSms={autoSms} setAutoSms={(fn) => setAutoSms(fn)}
+              <OpsTab autoSms={false} setAutoSms={() => undefined}
                 csvFrom={csvFrom} setCsvFrom={setCsvFrom}
                 csvTo={csvTo} setCsvTo={setCsvTo}
                 csvScope={csvScope} setCsvScope={setCsvScope}
