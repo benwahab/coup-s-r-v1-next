@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Goal, Trophy, X, ChevronDown, ChevronUp, Sparkles, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
 import { PageHeader } from "@/components/AppShell";
-import { footMatches, leagues } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
+import type { FootMatch } from "@/lib/foot.types";
 import { analyzeFootMatch, type FootAnalysis } from "@/lib/ai-foot.functions";
 import { marketsForMatch, oddForPick, labelForPick } from "@/lib/foot-markets";
 import { cn } from "@/lib/utils";
@@ -56,6 +57,40 @@ function FootPage() {
   const [mode, setMode] = useState<"combi" | "simple">("combi");
   const [stake, setStake] = useState(MIN_STAKE);
   const [aiAnalyses, setAiAnalyses] = useState<Record<string, FootAnalysis | "loading" | "error">>({});
+  const [footMatches, setFootMatches] = useState<FootMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
+  const loadFixtures = async () => {
+    setLoading(true);
+    setLoadError(false);
+    const { data, error } = await supabase
+      .from("foot_fixtures")
+      .select("id,league_name,kickoff_at,home_team,away_team,odds_home,odds_draw,odds_away,status")
+      .in("status", ["scheduled", "live"])
+      .order("kickoff_at", { ascending: true })
+      .limit(100);
+
+    if (error) {
+      setLoadError(true);
+      setFootMatches([]);
+    } else {
+      setFootMatches((data ?? []).map((m) => ({
+        id: m.id,
+        league: m.league_name,
+        leagueName: m.league_name,
+        country: "🌐",
+        home: m.home_team,
+        away: m.away_team,
+        date: m.kickoff_at,
+        kickoffAt: m.kickoff_at,
+        odds: { "1": m.odds_home ?? 0, "X": m.odds_draw ?? 0, "2": m.odds_away ?? 0 },
+      })).filter((m) => m.odds["1"] > 0 && m.odds["X"] > 0 && m.odds["2"] > 0));
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { void loadFixtures(); }, []);
 
   const loadAnalysis = async (matchId: string, homeTeam: string, awayTeam: string, leagueName: string) => {
     if (aiAnalyses[matchId] && aiAnalyses[matchId] !== "error") return;
@@ -99,12 +134,29 @@ function FootPage() {
 
   const visibleMatches = league === "all" ? footMatches : footMatches.filter((m) => m.league === league);
 
-  // Compétitions avec compteur de matchs
+  const leagues = useMemo(() => {
+    const seen = new Map<string, { id: string; name: string; country: string }>();
+    for (const m of footMatches) if (!seen.has(m.league)) seen.set(m.league, { id: m.league, name: m.leagueName, country: m.country });
+    return [...seen.values()];
+  }, [footMatches]);
+
   const leagueTabs = [{ id: "all", name: t("game.all"), country: "🌐", count: footMatches.length }, ...leagues.map((l) => ({ ...l, count: footMatches.filter((m) => m.league === l.id).length }))];
 
   return (
     <>
       <PageHeader title="Pari Foot" subtitle={t("selectMatches")} icon={<Goal className="h-5 w-5" />} />
+
+      {loadError && (
+        <div className="mx-auto max-w-3xl px-4 py-2 text-sm text-destructive">
+          Impossible de charger les matchs. <button onClick={() => void loadFixtures()} className="font-bold underline">Réessayer</button>
+        </div>
+      )}
+      {loading && (
+        <div className="mx-auto max-w-3xl px-4 py-6 text-center text-sm text-muted-foreground">Chargement des matchs…</div>
+      )}
+      {!loading && footMatches.length === 0 && !loadError && (
+        <div className="mx-auto max-w-3xl px-4 py-6 text-center text-sm text-muted-foreground">Aucun match disponible pour le moment.</div>
+      )}
 
       {/* Tabs Compétitions */}
       <div className="mx-auto max-w-3xl px-4">
