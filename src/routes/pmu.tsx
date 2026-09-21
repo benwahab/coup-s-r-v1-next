@@ -96,7 +96,7 @@ function PmuPage() {
   const currentValid = picks.length >= bet.minPicks && picks.length <= bet.maxPicks && unitStake >= MIN_STAKE;
   const canContinue = currentValid || cart.length > 0;
 
-  const drawDateIso = raceStartAt ?? new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString();
+  const drawDateIso = raceStartAt;
 
   const addCurrentToCart = () => {
     if (!currentValid) return;
@@ -104,7 +104,7 @@ function PmuPage() {
       legId: `${Date.now()}-${cart.length}`,
       gameId: "pmu", gameName: "PMU",
       picks: [...picks], picksLabel, stake: totalStake,
-      drawDate: drawDateIso, status: "pending",
+      drawDate: drawDateIso ?? "", status: "pending",
     };
     setCart((p) => [...p, leg]);
     setPicks([]);
@@ -115,7 +115,7 @@ function PmuPage() {
     legId: `cur-${Date.now()}`,
     gameId: "pmu", gameName: "PMU",
     picks: [...picks], picksLabel, stake: totalStake,
-    drawDate: drawDateIso, status: "pending",
+    drawDate: drawDateIso ?? "", status: "pending",
   } : null;
   const effectiveLegs: TicketLeg[] = cart.length > 0
     ? (liveLeg ? [...cart, liveLeg] : cart)
@@ -131,7 +131,7 @@ function PmuPage() {
       {!loading && horses.length > 0 &&      <BetFlow
         gameId="pmu"
         gameName="PMU"
-        drawDate={drawDateIso}
+        drawDate={drawDateIso ?? ""}
         legs={effectiveLegs.length ? effectiveLegs : undefined}
         selection={picks}
         picksLabel={picksLabel}
