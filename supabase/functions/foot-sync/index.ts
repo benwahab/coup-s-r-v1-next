@@ -74,10 +74,28 @@ Deno.serve(async (req) => {
 
   let settled = 0;
   for (const ticketId of ticketIds) {
-    // The application settlement function is authoritative for ticket rules.
-    // This function only refreshes provider data; it never accepts admin results.
-    const { error } = await supabase.from("foot_picks").select("id").eq("ticket_id", ticketId).limit(1);
-    if (!error) settled += 0;
+    const { data: ticket } = await supabase.from("tickets").select("id,stake,status").eq("id", ticketId).eq("status","pending").maybeSingle();
+    if (!ticket) continue;
+    const { data: picks } = await supabase.from("foot_picks").select("id,fixture_id,picks").eq("ticket_id",ticketId);
+    if (!picks?.length) continue;
+    let losing=false, pendingState=false, totalOdds=1;
+    const updates: { id:string; status:"winning"|"losing"; settledAt:string }[]=[];
+    for (const row of picks) {
+      const { data: fixture } = await supabase.from("foot_fixtures").select("home_score,away_score,status").eq("id",row.fixture_id).maybeSingle();
+      const rowPicks=Array.isArray(row.picks)?row.picks:[];
+      if (!fixture || fixture.status!=="finished" || fixture.home_score==null || fixture.away_score==null) { pendingState=true; continue; }
+      if (!rowPicks.length || rowPicks.some((p:any)=>p?.marketId!=="1x2" || typeof p?.selection!=="string" || typeof p?.odds!=="number")) { pendingState=true; continue; }
+      const result=fixture.home_score>fixture.away_score?"1":fixture.home_score<fixture.away_score?"2":"X";
+      let rowLosing=false;
+      for (const p of rowPicks as any[]) { totalOdds*=p.odds; if (p.selection!==result) rowLosing=true; }
+      losing ||= rowLosing;
+      updates.push({id:row.id,status:rowLosing?"losing":"winning",settledAt:new Date().toISOString()});
+    }
+    const status=losing?"losing":pendingState?"pending":"winning";
+    if(status==="pending") continue;
+    const prize=status==="winning"?Math.floor(ticket.stake*totalOdds):0;
+    const { data: result, error }=await supabase.rpc("settle_ticket_atomic",{p_ticket_id:ticket.id,p_status:status,p_prize:prize,p_leg_updates:updates,p_mark_all_foot_losing:status==="losing"});
+    if(!error && result?.length) settled++;
   }
 
   return Response.json({ ok: true, upserted, settled, at: now.toISOString() });
