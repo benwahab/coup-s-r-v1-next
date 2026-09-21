@@ -20,6 +20,7 @@ const PERMISSIONS: { id: AdminPermission; label: string; description: string }[]
   { id: "player_stats", label: "Statistiques joueurs", description: "Consulter les statistiques agrégées des joueurs" },
   { id: "region_stats", label: "Statistiques régions", description: "Consulter les statistiques agrégées par région" },
   { id: "security_logs", label: "Journaux sécurité", description: "Consulter les journaux de sécurité autorisés" },
+  { id: "operations", label: "Opérations", description: "Gérer les horaires et opérations autorisées" },
 ];
 
 export function AdminsSection() {
