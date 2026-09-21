@@ -3,8 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight, ShieldCheck, Smartphone, Zap, Flame, Radio, Clock, CalendarDays, Trophy, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { games, recentResults, pmuJackpot, hotNumbers, drawSchedule } from "@/lib/mock-data";
-import { generateSimTickets } from "@/lib/mock-stats";
+import { games, recentResults, drawSchedule } from "@/lib/mock-data";
 import { formatDate, formatFcfa, formatHour } from "@/lib/utils";
 import { nextDailyEvent, diffParts, drawNameForDate, nigerDateLabel } from "@/lib/schedule";
 import heroJpg from "@/assets/hero-winners.jpg";
@@ -76,19 +75,13 @@ function useLiveStage(openHour: number, closeHour: number, drawHour: number, dra
 
 function Index() {
   const { t } = useI18n();
-  const lastLoto = recentResults.find((r) => r.gameId === "loto");
-  const lastPmu = recentResults.find((r) => r.gameId === "pmu");
   const pmuEvt = useLiveStage(drawSchedule.pmu.openHour, drawSchedule.pmu.closeHour, drawSchedule.pmu.drawHour, drawSchedule.pmu.drawMinute);
   const lotoEvt = useLiveStage(drawSchedule.loto.openHour, drawSchedule.loto.closeHour, drawSchedule.loto.drawHour, drawSchedule.loto.drawMinute);
   const pmuCd = useCountdown(pmuEvt?.target ?? new Date(0));
   const lotoCd = useCountdown(lotoEvt?.target ?? new Date(0));
   const lotoDrawName = drawNameForDate();
 
-  // Gagnants du jour (mock déterministe)
-  const sims = generateSimTickets();
-  const todays = sims.filter((s) => s.daysAgo === 0 && (s.status === "winning" || s.status === "paid"));
-  const todayWinnersCount = todays.length;
-  const todayPaid = todays.reduce((s, t) => s + t.prize, 0);
+  const todayWinnersCount: number | null = null;
   const todayLabel = nigerDateLabel();
 
   return (
@@ -141,7 +134,7 @@ function Index() {
                 </span>
               </div>
               <div className="mt-2 font-display text-4xl sm:text-5xl font-extrabold tabular-nums text-white">
-                {formatFcfa(pmuJackpot)} <span className="text-lg font-semibold text-white/70">{t("fcfa")}</span>
+                — <span className="text-lg font-semibold text-white/70">{t("fcfa")}</span>
               </div>
 
               <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
@@ -207,7 +200,7 @@ function Index() {
                   <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/60">
                     <Users className="h-3 w-3" /> {t("todayWinners")}
                   </div>
-                  <div className="mt-0.5 font-display text-2xl font-extrabold tabular-nums text-primary">{todayWinnersCount}</div>
+                  <div className="mt-0.5 font-display text-2xl font-extrabold tabular-nums text-primary">{todayWinnersCount ?? "—"}</div>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-white/[0.04] p-2.5">
                   <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/60">
