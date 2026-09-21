@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Activity, Clock, Download, LifeBuoy, ListChecks, LogIn, Send, Settings, TrendingUp, Trophy, Users, Zap } from "lucide-react";
+import { Activity, Clock, Download, LifeBuoy, ListChecks, LogIn, Send, Settings, TrendingUp, Trophy, Users, Zap, MapPin, Circle, UserCog } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import { Kpi, QuickAction } from "../shared";
@@ -30,7 +30,7 @@ interface Props {
   authLogCount: number;
   csvFrom: string;
   csvTo: string;
-  setTab: (t: "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "logs" | "claims" | "admins") => void;
+  setTab: (t: "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "results" | "logs" | "claims" | "admins") => void;
   exportCsv: (scope?: "all" | "winners" | "cashout") => void;
 }
 
@@ -117,6 +117,12 @@ export function DashboardTab(p: Props) {
           </div>
           <div className="grid gap-2">
             <QuickAction onClick={() => p.setTab("transactions")} icon={ListChecks} label={t("admin.dash.viewAllTransactions")} hint={t("admin.dash.records", { count: p.allRowsCount })} />
+            <QuickAction onClick={() => p.setTab("players")} icon={Users} label="Joueurs" hint="Statistiques joueurs" />
+            <QuickAction onClick={() => p.setTab("regions")} icon={MapPin} label="Régions" hint="Statistiques régionales" />
+            <QuickAction onClick={() => p.setTab("balls")} icon={Circle} label="Statistiques des boules" hint="Mises et combinaisons" />
+            <QuickAction onClick={() => p.setTab("results")} icon={ListChecks} label="Résultats" hint="Publication PMU / Loto" />
+            <QuickAction onClick={() => p.setTab("ops")} icon={Send} label="Opérations" hint="Horaires et opérations" />
+            <QuickAction onClick={() => p.setTab("claims")} icon={LifeBuoy} label="Réclamations" hint="Suivi des réclamations" />
             <QuickAction onClick={() => p.setTab("ops")} icon={Send} label={t("cashoutRequests")} hint={t("admin.dash.requests", { count: p.cashoutRequestsCount })} tone="gold" />
             <QuickAction onClick={() => p.setTab("admins")} icon={Settings} label={t("admin.ops.title")} hint={t("admin.admins.title")} />
             <QuickAction onClick={() => p.setTab("logs")} icon={LogIn} label={t("admin.dash.connectionLog")} hint={t("admin.dash.events", { count: p.authLogCount })} />
