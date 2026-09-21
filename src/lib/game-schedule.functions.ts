@@ -10,6 +10,7 @@ const scheduleSchema = z.object({
   closeHour: z.number().int().min(0).max(23),
   drawHour: z.number().int().min(0).max(23),
   drawMinute: z.number().int().min(0).max(59),
+  enabled: z.boolean(),
 });
 
 async function assertAdmin(userId: string) {
@@ -46,7 +47,7 @@ export const adminUpdateGameSchedule = createServerFn({ method: "POST" })
         draw_hour: data.drawHour,
         draw_minute: data.drawMinute,
         timezone: "Africa/Niamey",
-        enabled: true,
+        enabled: data.enabled,
         updated_at: new Date().toISOString(),
         updated_by: context.userId,
       }, { onConflict: "game_id" })
