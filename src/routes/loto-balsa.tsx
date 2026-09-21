@@ -48,14 +48,17 @@ function LotoPage() {
   const [picks, setPicks] = useState<number[]>([]);
   const [stake, setStake] = useState(DEFAULT_STAKE);
   const [cart, setCart] = useState<TicketLeg[]>([]);
-  const [schedule, setSchedule] = useState({ open_hour: 16, close_hour: 15, draw_hour: 15, draw_minute: 30 });
-  useEffect(() => { void supabase.from("game_schedules").select("open_hour,close_hour,draw_hour,draw_minute").eq("game_id","loto").maybeSingle().then(({ data }) => { if (data) setSchedule(data); }); }, []);
+  const [schedule, setSchedule] = useState<{ open_hour:number; close_hour:number; draw_hour:number; draw_minute:number; enabled:boolean } | null>(null);
+  useEffect(() => {
+    void supabase.from("game_schedules").select("open_hour,close_hour,draw_hour,draw_minute,enabled").eq("game_id","loto").maybeSingle()
+      .then(({ data }) => setSchedule(data ?? null));
+  }, [schedule]);
 
   const drawName = drawNameForDate();
   const dateLabel = nigerDateLabel();
   const drawDateIso = useMemo(() => {
     const d = new Date();
-    d.setHours(schedule.draw_hour, schedule.draw_minute, 0, 0);
+    if (!schedule) return "";\n    d.setHours(schedule.draw_hour, schedule.draw_minute, 0, 0);
     return d.toISOString();
   }, []);
 
@@ -129,9 +132,9 @@ function LotoPage() {
           </div>
           <div className="grid grid-cols-3 gap-2 text-[11px]">
             {[
-              { l: t("closeAt"), v: formatHour(schedule.close_hour) },
-              { l: t("drawAt"), v: formatHour(drawSchedule.loto.drawHour, drawSchedule.loto.drawMinute) },
-              { l: t("openAt"), v: formatHour(schedule.open_hour) },
+              { l: t("closeAt"), v: formatHour(schedule?.close_hour ?? 0) },
+              { l: t("drawAt"), v: formatHour(schedule?.draw_hour ?? 0, schedule?.draw_minute ?? 0) },
+              { l: t("openAt"), v: formatHour(schedule?.open_hour ?? 0) },
             ].map((b, i) => (
               <div key={i} className="rounded-lg border border-border bg-background/40 px-3 py-1.5 text-center">
                 <div className="text-[9px] uppercase tracking-widest text-muted-foreground">{b.l}</div>
@@ -155,8 +158,8 @@ function LotoPage() {
         canContinue={effectiveLegs.length > 0 || picks.length === mode}
         defaultStake={stake}
         skipStake
-        gameOpen={isGameOpen(drawSchedule.loto.openHour, drawSchedule.loto.closeHour)}
-        openHour={drawSchedule.loto.openHour}
+        gameOpen={Boolean(schedule?.enabled && schedule && isGameOpen(schedule.open_hour, schedule.close_hour))}
+        openHour={schedule?.open_hour ?? 0}
         renderSelection={
           <div>
             <div className="mb-4">
