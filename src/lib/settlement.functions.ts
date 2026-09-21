@@ -9,7 +9,7 @@ const drawResultSchema = z.discriminatedUnion("gameId", [
     gameId: z.literal("loto"),
     drawDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     drawName: z.string().max(200).optional(),
-    result: z.object({ numbers: z.array(z.number().int().min(1).max(90)).min(1).max(5) }),
+    result: z.object({ numbers: z.array(z.number().int().min(1).max(90)).min(1).max(5) }).refine((v) => new Set(v.numbers).size === v.numbers.length, { message: "duplicate_loto_numbers" }),
   }),
   z.object({
     gameId: z.literal("pmu"),
