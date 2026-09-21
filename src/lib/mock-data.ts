@@ -25,6 +25,7 @@ export const leagues = [
   { id: "ng", name: "Championnat Niger", country: "🇳🇪" },
 ] as const;
 
+export const horses: Horse[] = [];
 export const footMatches: FootMatch[] = [];
 export const recentResults: DrawResult[] = [];
 export const hotNumbers: number[] = [];
