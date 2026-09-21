@@ -372,6 +372,7 @@ function AdminPage() {
           case "results": return can("publish_results");
           case "claims": return can("complaints");
           case "logs": return can("security_logs");
+          case "ops": return can("operations");
           default: return false;
         }
       });
@@ -479,7 +480,7 @@ function AdminPage() {
                 live={lotoBallStatsLive} />
             )}
             {can("publish_results") && tab === "results" && <ResultsTab />}
-            {false && tab === "ops" && (
+            {can("operations") && tab === "ops" && (
               <OpsTab autoSms={autoSms} setAutoSms={(fn) => setAutoSms(fn)}
                 csvFrom={csvFrom} setCsvFrom={setCsvFrom}
                 csvTo={csvTo} setCsvTo={setCsvTo}
@@ -490,7 +491,7 @@ function AdminPage() {
               />
             )}
             {adminPermissions === "all" && tab === "admins" && <AdminsSection />}
-            {adminPermissions === "all" && tab === "logs" && (
+            {can("security_logs") && tab === "logs" && (
               <LogsTab filteredLog={filteredLog}
                 logPhone={logPhone} setLogPhone={setLogPhone}
                 logIp={logIp} setLogIp={setLogIp}
