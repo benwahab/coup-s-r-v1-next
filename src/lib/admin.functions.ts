@@ -16,6 +16,7 @@ const AdminPermission = z.enum([
   "player_stats",
   "region_stats",
   "security_logs",
+  "operations",
 ]);
 export type AdminPermission = z.infer<typeof AdminPermission>;
 
@@ -292,7 +293,10 @@ export const adminListAdmins = createServerFn({ method: "POST" })
       .select("id, phone, first_name, last_name")
       .in("id", userIds);
     if (e2) throw new Error(e2.message);
+    if (e3) throw new Error(e3.message);
     const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
+    const permissionsByUser = new Map<string, string[]>();
+    for (const row of permissionRows ?? []) permissionsByUser.set(row.user_id, [...(permissionsByUser.get(row.user_id) ?? []), row.permission]);
     return {
       admins: (roles ?? []).map((r) => ({
         userId: r.user_id,
@@ -300,6 +304,7 @@ export const adminListAdmins = createServerFn({ method: "POST" })
         phone: profileById.get(r.user_id)?.phone ?? null,
         firstName: profileById.get(r.user_id)?.first_name ?? null,
         lastName: profileById.get(r.user_id)?.last_name ?? null,
+        permissions: permissionsByUser.get(r.user_id) ?? [],
       })),
     };
   });
