@@ -2,7 +2,7 @@ import { useState } from "react";
 import { adminCreateDrawResult, adminPublishDrawResult } from "@/lib/settlement.functions";
 
 export function ResultsTab() {
-  const [gameId, setGameId] = useState<"loto" | "pmu" | "foot">("loto");
+  const [gameId, setGameId] = useState<"loto" | "pmu">("loto");
   const [drawDate, setDrawDate] = useState(new Date().toISOString().slice(0, 10));
   const [values, setValues] = useState("");
   const [busy, setBusy] = useState(false);
@@ -30,33 +30,7 @@ export function ResultsTab() {
           throw new Error("Classement PMU invalide.");
         }
         result = { horses };
-      } else {
-        const matches = values
-          .split(/\n/)
-          .map((line) => line.trim())
-          .filter(Boolean)
-          .map((line) => {
-            // Format court : matchId:1
-            if (!line.startsWith("{")) {
-              const [matchId, outcome] = line.split(/[:=]/).map((v) => v.trim());
-              if (!matchId || !["1", "X", "2"].includes(outcome)) {
-                throw new Error("Résultat Foot invalide.");
-              }
-              return { matchId, result: outcome };
-            }
-
-            // Format complet : permet de régler les marchés 1x2, buts,
-            // mi-temps, cartons, corners et buteurs sans inventer de données.
-            const parsed = JSON.parse(line);
-            if (!parsed?.matchId || !["1", "X", "2"].includes(parsed.result)) {
-              throw new Error("Résultat Foot invalide.");
-            }
-            return parsed;
-          });
-        if (!matches.length) throw new Error("Ajoutez les résultats Foot.");
-        result = { matches };
       }
-
       const created: any = await adminCreateDrawResult({
         data: { gameId, drawDate, result } as any,
       });
@@ -97,12 +71,11 @@ export function ResultsTab() {
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <select
           value={gameId}
-          onChange={(e) => setGameId(e.target.value as "loto" | "pmu" | "foot")}
+          onChange={(e) => setGameId(e.target.value as "loto" | "pmu")}
           className="rounded-xl border bg-background px-3 py-2"
         >
           <option value="loto">Loto Balsa</option>
           <option value="pmu">PMU</option>
-          <option value="foot">Pari Foot</option>
         </select>
         <input
           type="date"
