@@ -1,4 +1,4 @@
-import { Download, Send, Settings, Clock3 } from "lucide-react";
+import { Download, Settings, Clock3 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { adminUpdateGameSchedule, getGameSchedules } from "@/lib/game-schedule.functions";
 
@@ -13,18 +13,15 @@ interface Props {
 
 export function OpsTab(p: Props) {
   const { t } = useI18n();
-  type Schedule = { open_hour: number; close_hour: number; draw_hour: number; draw_minute: number };
-  const [schedules, setSchedules] = useState<Record<"pmu" | "loto", Schedule>>({
-    pmu: { open_hour: 16, close_hour: 15, draw_hour: 15, draw_minute: 30 },
-    loto: { open_hour: 16, close_hour: 15, draw_hour: 15, draw_minute: 30 },
-  });
+  type Schedule = { open_hour: number; close_hour: number; draw_hour: number; draw_minute: number; enabled: boolean };
+  const [schedules, setSchedules] = useState<Partial<Record<"pmu" | "loto", Schedule>>>({});
   const [scheduleMsg, setScheduleMsg] = useState<string | null>(null);
   useEffect(() => {
     void getGameSchedules().then((rows) => {
       setSchedules((prev) => {
         const next = { ...prev };
         for (const row of rows) if (row.game_id === "pmu" || row.game_id === "loto") next[row.game_id] = {
-          open_hour: row.open_hour, close_hour: row.close_hour, draw_hour: row.draw_hour, draw_minute: row.draw_minute,
+          open_hour: row.open_hour, close_hour: row.close_hour, draw_hour: row.draw_hour, draw_minute: row.draw_minute, enabled: row.enabled,
         };
         return next;
       });
@@ -50,7 +47,7 @@ export function OpsTab(p: Props) {
         <p className="mt-1 text-xs text-muted-foreground">Les horaires PMU et Loto sont définis manuellement par l'administration. Fuseau : Africa/Niamey.</p>
         {(["pmu", "loto"] as const).map((gameId) => {
           const s = schedules[gameId];
-          if (!s) return null;
+          if (!s) return <div key={gameId} className="mt-4 rounded-2xl border border-border p-4 text-sm text-muted-foreground">Aucun horaire configuré pour {gameId === "pmu" ? "PMU" : "Loto Balsa"}.</div>;
           const field = (key: "open_hour"|"close_hour"|"draw_hour"|"draw_minute", label: string) => (
             <label className="block">
               <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</span>
