@@ -20,6 +20,33 @@ interface Props {
 
 export function OpsTab(p: Props) {
   const { t } = useI18n();
+  type Schedule = { open_hour: number; close_hour: number; draw_hour: number; draw_minute: number };
+  const [schedules, setSchedules] = useState<Record<"pmu" | "loto", Schedule>>({
+    pmu: { open_hour: 16, close_hour: 15, draw_hour: 15, draw_minute: 30 },
+    loto: { open_hour: 16, close_hour: 15, draw_hour: 15, draw_minute: 30 },
+  });
+  const [scheduleMsg, setScheduleMsg] = useState<string | null>(null);
+  useEffect(() => {
+    void getGameSchedules().then((rows) => {
+      setSchedules((prev) => {
+        const next = { ...prev };
+        for (const row of rows) if (row.game_id === "pmu" || row.game_id === "loto") next[row.game_id] = {
+          open_hour: row.open_hour, close_hour: row.close_hour, draw_hour: row.draw_hour, draw_minute: row.draw_minute,
+        };
+        return next;
+      });
+    }).catch(() => setScheduleMsg("Impossible de charger les horaires configurés."));
+  }, []);
+  const saveSchedule = async (gameId: "pmu" | "loto") => {
+    const s = schedules[gameId];
+    try {
+      await adminUpdateGameSchedule({ data: { gameId, ...s } });
+      setScheduleMsg(`${gameId === "pmu" ? "PMU" : "Loto Balsa"} : horaires enregistrés.`);
+    } catch (e) {
+      setScheduleMsg((e as Error).message || "Échec de l'enregistrement.");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
