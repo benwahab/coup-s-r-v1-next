@@ -419,7 +419,7 @@ function AdminPage() {
             )}
             {can("publish_results") && tab === "results" && <ResultsTab />}
             {can("operations") && tab === "ops" && (
-              <OpsTab autoSms={false} setAutoSms={() => undefined}
+              <OpsTab
                 csvFrom={csvFrom} setCsvFrom={setCsvFrom}
                 csvTo={csvTo} setCsvTo={setCsvTo}
                 csvScope={csvScope} setCsvScope={setCsvScope}
