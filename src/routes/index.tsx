@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight, ShieldCheck, Smartphone, Zap, Radio, Clock, CalendarDays, Trophy, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { games, drawSchedule } from "@/lib/mock-data";
+
 import { supabase } from "@/integrations/supabase/client";
 import { formatFcfa, formatHour } from "@/lib/utils";
 import { nextDailyEvent, diffParts, drawNameForDate, nigerDateLabel } from "@/lib/schedule";
@@ -76,7 +76,11 @@ function useLiveStage(openHour: number, closeHour: number, drawHour: number, dra
 
 function Index() {
   const { t } = useI18n();
-  const pmuEvt = useLiveStage(drawSchedule.pmu.openHour, drawSchedule.pmu.closeHour, drawSchedule.pmu.drawHour, drawSchedule.pmu.drawMinute);
+  const [schedules, setSchedules] = useState<Partial<Record<"pmu" | "loto", { open_hour:number; close_hour:number; draw_hour:number; draw_minute:number; enabled:boolean }>>>({});
+  useEffect(() => { void supabase.from("game_schedules").select("game_id,open_hour,close_hour,draw_hour,draw_minute,enabled").in("game_id", ["pmu","loto"]).then(({ data }) => { const next: typeof schedules = {}; for (const row of data ?? []) if (row.game_id === "pmu" || row.game_id === "loto") next[row.game_id] = row; setSchedules(next); }); }, []);
+  const pmuSchedule = schedules.pmu;
+  const lotoSchedule = schedules.loto;
+  const pmuEvt = pmuSchedule ? useLiveStage(pmuSchedule.open_hour, pmuSchedule.close_hour, pmuSchedule.draw_hour, pmuSchedule.draw_minute) : null;
   const [lastPmu, setLastPmu] = useState<{ date: string; horses: number[] } | null>(null);
   const [lastLoto, setLastLoto] = useState<{ date: string; numbers: number[] } | null>(null);
   useEffect(() => {
@@ -94,7 +98,7 @@ function Index() {
     };
     void loadResults();
   }, []);
-  const lotoEvt = useLiveStage(drawSchedule.loto.openHour, drawSchedule.loto.closeHour, drawSchedule.loto.drawHour, drawSchedule.loto.drawMinute);
+  const lotoEvt = lotoSchedule ? useLiveStage(lotoSchedule.open_hour, lotoSchedule.close_hour, lotoSchedule.draw_hour, lotoSchedule.draw_minute) : null;
   const pmuCd = useCountdown(pmuEvt?.target ?? new Date(0));
   const lotoCd = useCountdown(lotoEvt?.target ?? new Date(0));
   const lotoDrawName = drawNameForDate();
@@ -158,9 +162,9 @@ function Index() {
 
               <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
                 {[
-                  { l: t("closeAt"), v: formatHour(drawSchedule.pmu.closeHour) },
-                  { l: t("drawAt"), v: formatHour(drawSchedule.pmu.drawHour, drawSchedule.pmu.drawMinute) },
-                  { l: t("openAt"), v: formatHour(drawSchedule.pmu.openHour) },
+                  { l: t("closeAt"), v: pmuSchedule ? formatHour(pmuSchedule.close_hour) : "—" },
+                  { l: t("drawAt"), v: pmuSchedule ? formatHour(pmuSchedule.draw_hour, pmuSchedule.draw_minute) : "—" },
+                  { l: t("openAt"), v: pmuSchedule ? formatHour(pmuSchedule.open_hour) : "—" },
                 ].map((b, i) => (
                   <div key={i} className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1.5 text-center">
                     <div className="text-[9px] uppercase tracking-widest text-white/55">{b.l}</div>
@@ -173,7 +177,7 @@ function Index() {
                 <div className="text-[10px] font-bold uppercase tracking-widest text-white/60 min-h-4">
                   {pmuEvt
                     ? pmuEvt.stage === "openAt"
-                      ? `${t("openAt")} ${formatHour(drawSchedule.pmu.openHour)}`
+                      ? `${t("openAt")} ${pmuSchedule ? formatHour(pmuSchedule.open_hour) : "—"}`
                       : t(pmuEvt.stage)
                     : "\u00A0"}
                 </div>
@@ -231,9 +235,9 @@ function Index() {
 
               <div className="mt-3 grid grid-cols-3 gap-1.5 text-[11px]">
                 {[
-                  { l: t("closeAt"), v: formatHour(drawSchedule.loto.closeHour) },
-                  { l: t("drawAt"), v: formatHour(drawSchedule.loto.drawHour, drawSchedule.loto.drawMinute) },
-                  { l: t("openAt"), v: formatHour(drawSchedule.loto.openHour) },
+                  { l: t("closeAt"), v: lotoSchedule ? formatHour(lotoSchedule.close_hour) : "—" },
+                  { l: t("drawAt"), v: lotoSchedule ? formatHour(lotoSchedule.draw_hour, lotoSchedule.draw_minute) : "—" },
+                  { l: t("openAt"), v: lotoSchedule ? formatHour(lotoSchedule.open_hour) : "—" },
                 ].map((b, i) => (
                   <div key={i} className="rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1 text-center">
                     <div className="text-[9px] uppercase tracking-widest text-white/55">{b.l}</div>
@@ -245,7 +249,7 @@ function Index() {
               <div className="mt-3 text-[10px] font-bold uppercase tracking-widest text-white/60 min-h-4">
                 {lotoEvt
                   ? lotoEvt.stage === "openAt"
-                    ? `${t("openAt")} ${formatHour(drawSchedule.loto.openHour)}`
+                    ? `${t("openAt")} ${lotoSchedule ? formatHour(lotoSchedule.open_hour) : "—"}`
                     : t(lotoEvt.stage)
                   : "\u00A0"}
               </div>
@@ -294,7 +298,11 @@ function Index() {
         <p className="mt-1 text-sm text-muted-foreground">Sélectionnez un jeu pour commencer à parier.</p>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {games.map((g) => (
+          {[
+  { id: "pmu" as const, name: "PMU", emoji: "🐎", color: "from-gold/80 to-gold/30" },
+  { id: "loto" as const, name: "Loto Balsa", emoji: "🎱", color: "from-primary/80 to-primary/30" },
+  { id: "foot" as const, name: "Pari Foot", emoji: "⚽", color: "from-teal-500/80 to-teal-500/30" },
+].map((g) => (
             <Link
               key={g.id}
               to={gameLinks[g.id]}
@@ -309,7 +317,7 @@ function Index() {
                 {g.id === "pmu" ? t("pmuDesc") : g.id === "loto" ? t("lotoDesc") : t("footDesc")}
               </div>
               <div className="mt-6 flex items-center justify-between">
-                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">{t("closes")} : {g.closes}</span>
+                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">{t("closes")} : {g.id === "pmu" ? (pmuSchedule ? formatHour(pmuSchedule.close_hour) : "—") : g.id === "loto" ? (lotoSchedule ? formatHour(lotoSchedule.close_hour) : "—") : "—"}</span>
                 <span className="inline-flex items-center gap-1 text-sm font-bold text-primary group-hover:translate-x-0.5 transition">
                   {t("playNow")} <ArrowRight className="h-4 w-4" />
                 </span>
