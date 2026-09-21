@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { writeAuditLog } from "./audit.server";
-import { lotoMultipliers } from "./mock-data";
 
 const drawResultSchema = z.discriminatedUnion("gameId", [
   z.object({
@@ -78,11 +77,22 @@ async function assertPublishResultsPermission(supabase: typeof supabaseAdmin, us
   if (data !== true) throw new Error("Forbidden: publish_results permission required");
 }
 
-function evaluateLoto(picks: unknown[], result: { numbers: number[] }, stake: number) {
+async function evaluateLoto(picks: unknown[], result: { numbers: number[] }, stake: number) {
   const nums = picks.filter((p): p is number => typeof p === "number");
   if (nums.length < 1 || nums.length > 5) return null;
+  const { data: rule, error } = await supabaseAdmin
+    .from("game_rules")
+    .select("multiplier")
+    .eq("game_id", "loto")
+    .eq("pick_count", nums.length)
+    .eq("active", true)
+    .maybeSingle();
+  if (error) throw new Error("loto_rule_lookup_failed: " + error.message);
+  if (!rule || !Number.isFinite(Number(rule.multiplier)) || Number(rule.multiplier) < 1) {
+    throw new Error("loto_rule_not_configured");
+  }
   const winning = nums.every((n) => result.numbers.includes(n));
-  return { winning, prize: winning ? Math.floor(stake * (lotoMultipliers[nums.length] ?? 1)) : 0 };
+  return { winning, prize: winning ? Math.floor(stake * Number(rule.multiplier)) : 0 };
 }
 
 function evaluatePmu(picks: unknown[], result: { horses: number[] }, stake: number) {
@@ -258,7 +268,7 @@ async function settleTicket(ticket: TicketRow, publishedResults: any[]) {
 
   const result = publishedResults[0];
   let evaluation: { winning: boolean; prize: number } | null = null;
-  if (ticket.game_id === "loto") evaluation = evaluateLoto(Array.isArray(ticket.picks) ? ticket.picks : [], result?.result, ticket.stake);
+  if (ticket.game_id === "loto") evaluation = await evaluateLoto(Array.isArray(ticket.picks) ? ticket.picks : [], result?.result, ticket.stake);
   if (ticket.game_id === "pmu") evaluation = evaluatePmu(Array.isArray(ticket.picks) ? ticket.picks : [], result?.result, ticket.stake);
   if (!evaluation) return { changed: false, reason: "unsupported_rule" };
 
@@ -436,7 +446,7 @@ export const requestCashout = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: ticket, error } = await supabaseAdmin
       .from("tickets")
-      .select("id,code,user_id,status,prize,phone")
+      .select("id,code,user_id,status,prize")
       .eq("code", data.code)
       .eq("user_id", context.userId)
       .maybeSingle();
@@ -445,30 +455,5 @@ export const requestCashout = createServerFn({ method: "POST" })
     if (!ticket) throw new Error("ticket_not_found");
     if (ticket.status !== "winning") throw new Error("cashout_not_available");
     if (!Number.isInteger(ticket.prize) || ticket.prize <= 0) throw new Error("invalid_prize");
-
-    const { data: paid, error: updateError } = await supabaseAdmin
-      .from("tickets")
-      .update({ status: "paid" })
-      .eq("id", ticket.id)
-      .eq("user_id", context.userId)
-      .eq("status", "winning")
-      .select("id,status,prize")
-      .maybeSingle();
-
-    if (updateError) throw new Error(updateError.message);
-    if (!paid) throw new Error("cashout_conflict");
-
-    await writeAuditLog(supabaseAdmin, {
-      userId: context.userId,
-      action: "ticket.cashout.demo",
-      detail: {
-        ticketId: ticket.id,
-        code: ticket.code,
-        prize: ticket.prize,
-        destinationPhone: ticket.phone,
-        mode: "demo",
-      },
-    });
-
-    return { ok: true as const, status: "paid" as const, prize: paid.prize };
+    throw new Error("cashout_provider_not_configured");
   });
