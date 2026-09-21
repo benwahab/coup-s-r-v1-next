@@ -438,7 +438,9 @@ function AdminPage() {
               />
             )}
             {adminPermissions === "all" && tab === "admins" && <AdminsSection />}
-            {can("complaints") && tab === "claims" && (\n              <section className="rounded-3xl border border-border bg-card p-6 shadow-soft"><h2 className="font-display text-lg font-bold">Réclamations</h2><p className="mt-2 text-sm text-muted-foreground">La source réelle des réclamations n’est pas encore connectée. Aucune action fictive n’est proposée.</p></section>\n            )}\n            {can("security_logs") && tab === "logs" && (
+            {can("complaints") && tab === "claims" && (
+              <section className="rounded-3xl border border-border bg-card p-6 shadow-soft"><h2 className="font-display text-lg font-bold">Réclamations</h2><p className="mt-2 text-sm text-muted-foreground">La source réelle des réclamations n’est pas encore connectée. Aucune action fictive n’est proposée.</p></section>
+            )}\n            {can("security_logs") && tab === "logs" && (
               <LogsTab filteredLog={filteredLog}
                 logPhone={logPhone} setLogPhone={setLogPhone}
                 logIp={logIp} setLogIp={setLogIp}
