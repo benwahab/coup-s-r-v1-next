@@ -31,7 +31,7 @@ type PeriodFilter = "7d" | "30d" | "all";
 
 function TicketsPage() {
   const { t } = useI18n();
-  const { tickets, loading } = useTickets();
+  const { tickets, loading, error, refresh } = useTickets();
 
   const [status, setStatus] = useState<StatusFilter>("all");
   const [game, setGame] = useState<GameFilter>("all");
@@ -140,6 +140,7 @@ function TicketsPage() {
         </div>
 
         {loading ? (
+
           <ul className="space-y-3" aria-busy="true">
             {[0, 1, 2, 3].map((i) => (
               <li key={i} className="animate-pulse rounded-2xl border border-border bg-card p-4">
@@ -152,6 +153,17 @@ function TicketsPage() {
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("account.loadingTickets")}
             </li>
           </ul>
+        ) : error ? (
+          <div className="rounded-3xl border border-destructive/30 bg-destructive/5 p-8 text-center">
+            <p className="text-sm font-semibold text-destructive">{t("account.loadTicketsError")}</p>
+            <button
+              type="button"
+              onClick={refresh}
+              className="mt-4 inline-flex rounded-full border border-border bg-card px-4 py-2 text-xs font-bold text-primary hover:border-primary/60"
+            >
+              {t("account.retry")}
+            </button>
+          </div>
         ) : tickets.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
             <Inbox className="mx-auto h-8 w-8 text-muted-foreground" />
