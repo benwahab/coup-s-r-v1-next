@@ -51,6 +51,8 @@ function PmuPage() {
   const [loadError, setLoadError] = useState(false);
 
   const [raceStartAt, setRaceStartAt] = useState<string | null>(null);
+  const [schedule, setSchedule] = useState({ open_hour: 16, close_hour: 15, draw_hour: 15, draw_minute: 30 });
+  useEffect(() => { void supabase.from("game_schedules").select("open_hour,close_hour,draw_hour,draw_minute").eq("game_id","pmu").maybeSingle().then(({ data }) => { if (data) setSchedule(data); }); }, []);
 
   const loadRace = async () => {
     setLoading(true); setLoadError(false);
