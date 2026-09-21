@@ -331,7 +331,8 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
     }
 
     if (data.gameId === "foot") {
-      const createdIds: string[] = [];
+      throw new Error("foot_results_are_provider_managed");
+    }
       for (const match of data.result.matches) {
         const { data: existing, error: existingError } = await supabaseAdmin
           .from("draw_results")
