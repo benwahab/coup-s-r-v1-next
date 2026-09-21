@@ -6,28 +6,11 @@ export interface Horse {
   intlName: string;
   jockey: string;
   status: "partant" | "non-partant";
-  form: string;       // ex. "1a2a3p"
-  winRate: number;    // 0..1
-  placeRate: number;  // 0..1
-  weight: number;     // kg
+  form: string;
+  winRate: number;
+  placeRate: number;
+  weight: number;
 }
-export interface FootMatch { id: string; league: string; home: string; away: string; date: string; odds: { "1": number; "X": number; "2": number } }
-export interface DrawResult { id: string; gameId: GameId; date: string; numbers?: number[]; horses?: number[]; matches?: { matchId: string; result: "1" | "X" | "2" }[] }
-
-export const horses: Horse[] = [
-  { number: 1,  name: "Sahara Wind",      intlName: "Desert Breeze",   jockey: "M. Ousmane",  status: "partant",     form: "1a2a3p", winRate: 0.22, placeRate: 0.55, weight: 56 },
-  { number: 2,  name: "Niamey Star",      intlName: "Capital Star",    jockey: "A. Idrissa",  status: "partant",     form: "3a1a2a", winRate: 0.18, placeRate: 0.48, weight: 57 },
-  { number: 3,  name: "Tahoua Flash",     intlName: "Northern Flash",  jockey: "B. Saidou",   status: "partant",     form: "1a1a2p", winRate: 0.28, placeRate: 0.62, weight: 58 },
-  { number: 4,  name: "Zinder King",      intlName: "Eastern King",    jockey: "M. Abdou",    status: "non-partant", form: "4a5a6a", winRate: 0.08, placeRate: 0.25, weight: 55 },
-  { number: 5,  name: "Agadez Pride",     intlName: "Pride of Sahel",  jockey: "S. Issa",     status: "partant",     form: "2a3a1a", winRate: 0.20, placeRate: 0.52, weight: 56 },
-  { number: 6,  name: "Maradi Lightning", intlName: "Lightning Bolt",  jockey: "H. Moussa",   status: "partant",     form: "5a4a3p", winRate: 0.12, placeRate: 0.36, weight: 54 },
-  { number: 7,  name: "Niger Gold",       intlName: "Golden River",    jockey: "T. Ali",      status: "partant",     form: "1a3a1a", winRate: 0.24, placeRate: 0.58, weight: 57 },
-  { number: 8,  name: "Sahel Spirit",     intlName: "Spirit of Sahel", jockey: "R. Hama",     status: "partant",     form: "6a5a4a", winRate: 0.09, placeRate: 0.28, weight: 55 },
-  { number: 9,  name: "Dosso Express",    intlName: "Express South",   jockey: "K. Boubacar", status: "partant",     form: "2a2a1p", winRate: 0.17, placeRate: 0.50, weight: 56 },
-  { number: 10, name: "Tillabéri Storm",  intlName: "River Storm",     jockey: "L. Maman",    status: "partant",     form: "3a4a2a", winRate: 0.14, placeRate: 0.42, weight: 56 },
-  { number: 11, name: "Diffa Dream",      intlName: "Eastern Dream",   jockey: "Y. Garba",    status: "non-partant", form: "7a6a8a", winRate: 0.05, placeRate: 0.18, weight: 54 },
-  { number: 12, name: "Sahara Queen",     intlName: "Desert Queen",    jockey: "F. Souley",   status: "partant",     form: "1a2a1a", winRate: 0.26, placeRate: 0.60, weight: 57 },
-];
 
 export const leagues = [
   { id: "epl", name: "Premier League", country: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
