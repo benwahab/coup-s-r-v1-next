@@ -79,7 +79,7 @@ async function assertPublishResultsPermission(supabase: typeof supabaseAdmin, us
 
 async function evaluateLoto(picks: unknown[], result: { numbers: number[] }, stake: number) {
   const nums = picks.filter((p): p is number => typeof p === "number");
-  if (nums.length < 1 || nums.length > 5) return null;
+  if (nums.length < 1 || nums.length > 5 || new Set(nums).size !== nums.length) return null;
   const { data: rule, error } = await supabaseAdmin
     .from("game_rules")
     .select("multiplier")
@@ -95,10 +95,33 @@ async function evaluateLoto(picks: unknown[], result: { numbers: number[] }, sta
   return { winning, prize: winning ? Math.floor(stake * Number(rule.multiplier)) : 0 };
 }
 
-function evaluatePmu(picks: unknown[], result: { horses: number[] }, stake: number) {
+async function evaluatePmu(picks: unknown[], result: { horses: number[] }, stake: number, drawDate: string) {
   const nums = picks.filter((p): p is number => typeof p === "number");
-  if (nums.length < 1 || nums.length > 8) return null;
-  const winning = nums.every((n) => result.horses.includes(n));
+  if (nums.length < 1 || nums.length > 8 || new Set(nums).size !== nums.length) return null;
+  const winningNumbers = result.horses;
+  if (new Set(winningNumbers).size !== winningNumbers.length) return null;
+
+  const { data: race, error: raceError } = await supabaseAdmin
+    .from("pmu_races")
+    .select("id")
+    .eq("race_date", drawDate)
+    .in("status", ["scheduled", "open"])
+    .order("start_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (raceError) throw new Error("pmu_race_lookup_failed: " + raceError.message);
+  if (!race) return null;
+
+  const { data: starters, error: startersError } = await supabaseAdmin
+    .from("pmu_horses")
+    .select("number")
+    .eq("race_id", race.id)
+    .eq("status", "partant");
+  if (startersError) throw new Error("pmu_starters_lookup_failed: " + startersError.message);
+  const validStarters = new Set((starters ?? []).map((row) => Number(row.number)).filter(Number.isInteger));
+  if (!winningNumbers.every((n) => validStarters.has(n))) return null;
+
+  const winning = nums.every((n) => winningNumbers.includes(n));
   return { winning, prize: winning ? stake : 0 };
 }
 
@@ -269,7 +292,7 @@ async function settleTicket(ticket: TicketRow, publishedResults: any[]) {
   const result = publishedResults[0];
   let evaluation: { winning: boolean; prize: number } | null = null;
   if (ticket.game_id === "loto") evaluation = await evaluateLoto(Array.isArray(ticket.picks) ? ticket.picks : [], result?.result, ticket.stake);
-  if (ticket.game_id === "pmu") evaluation = evaluatePmu(Array.isArray(ticket.picks) ? ticket.picks : [], result?.result, ticket.stake);
+  if (ticket.game_id === "pmu") evaluation = await evaluatePmu(Array.isArray(ticket.picks) ? ticket.picks : [], result?.result, ticket.stake, ticket.draw_date ?? "");
   if (!evaluation) return { changed: false, reason: "unsupported_rule" };
 
   const nextStatus = evaluation.winning ? "winning" : "losing";
