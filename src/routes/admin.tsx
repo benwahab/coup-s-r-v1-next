@@ -94,7 +94,6 @@ function AdminPage() {
   const [csvTo, setCsvTo] = useState(todayIso);
   const [csvScope, setCsvScope] = useState<"all" | "winners" | "cashout">("all");
 
-  const sentLog: never[] = [];
 
   const [allIntents, setAllIntents] = useState<PaymentIntent[]>([]);
   useEffect(() => {
@@ -386,7 +385,7 @@ function AdminPage() {
                 revenueSeries={revenueSeries} byGameData={byGameData} hourlyData={hourlyData}
                 monthlyData={monthlyData} peakHour={peakHour} chart={chart}
                 activityFeed={activityFeed} allRowsCount={allRows.length}
-                cashoutRequestsCount={cashoutRequests.length} authLogCount={authLog.length}
+                cashoutRequestsCount={0} authLogCount={authLog.length}
                 csvFrom={csvFrom} csvTo={csvTo} setTab={setTab} exportCsv={exportCsv}
               />
             )}
@@ -424,8 +423,7 @@ function AdminPage() {
                 csvTo={csvTo} setCsvTo={setCsvTo}
                 csvScope={csvScope} setCsvScope={setCsvScope}
                 exportCsv={exportCsv}
-                cashoutRequests={cashoutRequests} tickets={[]}
-                approveCashout={() => { throw new Error("admin_cashout_ui_disabled"); }} sentLog={sentLog}
+
               />
             )}
             {adminPermissions === "all" && tab === "admins" && <AdminsSection />}
