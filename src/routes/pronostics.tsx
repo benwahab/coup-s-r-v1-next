@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Sparkles, ArrowRight, Loader2, Brain } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/AppShell";
-import { horses, recentResults, hotNumbers } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
 import { analyzePmu, analyzeLoto } from "@/lib/ai-pronos.functions";
 import { cn } from "@/lib/utils";
 import ogAsset from "@/assets/og-pronostics.jpg.asset.json";
@@ -65,10 +65,6 @@ function Pronos() {
           </div>
         </section>
       </div>
-            ))}
-          </div>
-        </section>
-      </div>
     </>
   );
 }
@@ -94,6 +90,30 @@ function AiSection() {
   const { t } = useI18n();
   const runPmu = useServerFn(analyzePmu);
   const runLoto = useServerFn(analyzeLoto);
+  const [horses, setHorses] = useState<{ number: number; name: string; jockey: string }[]>([]);
+  const [history, setHistory] = useState<number[][]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoadingData(true);
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: races } = await supabase.from("pmu_races").select("id").eq("race_date", today).in("status", ["scheduled", "open"]).order("start_at").limit(1);
+      if (races?.[0]) {
+        const { data } = await supabase.from("pmu_horses").select("number,name,jockey").eq("race_id", races[0].id).eq("status", "partant").order("number");
+        setHorses((data ?? []) as typeof horses);
+      } else setHorses([]);
+      const { data: draws } = await supabase.from("draw_results").select("result").eq("game_id", "loto").eq("status", "published").order("draw_date", { ascending: false }).limit(8);
+      const parsed = (draws ?? []).map((d) => {
+        const r = d.result as Record<string, unknown>;
+        const nums = Array.isArray(r?.numbers) ? r.numbers.filter((n): n is number => typeof n === "number") : [];
+        return nums;
+      }).filter((n) => n.length > 0);
+      setHistory(parsed);
+      setLoadingData(false);
+    };
+    void load();
+  }, []);
   const [pmu, setPmu] = useState<PmuOut | null>(null);
   const [loto, setLoto] = useState<LotoOut | null>(null);
   const [loadingPmu, setLoadingPmu] = useState(false);
@@ -103,6 +123,7 @@ function AiSection() {
   const doPmu = async () => {
     setLoadingPmu(true); setErr(null);
     try {
+      if (horses.length === 0) throw new Error("Aucune course PMU réelle disponible.");
       const r = await runPmu({ data: { horses } });
       setPmu(r as PmuOut);
     } catch (e) { setErr((e as Error).message); }
@@ -112,8 +133,11 @@ function AiSection() {
   const doLoto = async () => {
     setLoadingLoto(true); setErr(null);
     try {
-      const history = recentResults.filter((r) => r.gameId === "loto" && r.numbers).map((r) => r.numbers!).slice(0, 8);
-      const r = await runLoto({ data: { history, hotSeed: hotNumbers } });
+      if (history.length === 0) throw new Error("Aucun tirage Loto Balsa réel disponible.");
+      const counts = new Map<number, number>();
+      for (const draw of history) for (const n of draw) counts.set(n, (counts.get(n) ?? 0) + 1);
+      const hotSeed = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([n]) => n);
+      const r = await runLoto({ data: { history, hotSeed } });
       setLoto(r as LotoOut);
     } catch (e) { setErr((e as Error).message); }
     finally { setLoadingLoto(false); }
@@ -131,10 +155,10 @@ function AiSection() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button onClick={doPmu} disabled={loadingPmu} className={cn("inline-flex items-center gap-2 rounded-full bg-gold-gradient px-4 py-2 text-sm font-bold text-[var(--gold-foreground)] shadow-gold disabled:opacity-60")}>
+            <button onClick={doPmu} disabled={loadingPmu || loadingData || horses.length === 0} className={cn("inline-flex items-center gap-2 rounded-full bg-gold-gradient px-4 py-2 text-sm font-bold text-[var(--gold-foreground)] shadow-gold disabled:opacity-60")}>
               {loadingPmu ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} PMU
             </button>
-            <button onClick={doLoto} disabled={loadingLoto} className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-green disabled:opacity-60">
+            <button onClick={doLoto} disabled={loadingLoto || loadingData || history.length === 0} className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground shadow-green disabled:opacity-60">
               {loadingLoto ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} Loto
             </button>
           </div>
