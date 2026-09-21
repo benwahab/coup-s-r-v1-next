@@ -51,7 +51,7 @@ function PmuPage() {
   const [loadError, setLoadError] = useState(false);
 
   const [raceStartAt, setRaceStartAt] = useState<string | null>(null);
-  const [schedule, setSchedule] = useState({ open_hour: 16, close_hour: 15, draw_hour: 15, draw_minute: 30 });
+  const [schedule, setSchedule] = useState({ open_hour: 16, close_hour: 15, draw_hour: 15, draw_minute: 30, enabled: true });
   useEffect(() => { void supabase.from("game_schedules").select("open_hour,close_hour,draw_hour,draw_minute").eq("game_id","pmu").maybeSingle().then(({ data }) => { if (data) setSchedule(data); }); }, []);
 
   const loadRace = async () => {
@@ -141,8 +141,8 @@ function PmuPage() {
         lockedStake={effectiveLegs.length ? undefined : totalStake}
         defaultStake={unitStake}
         minStake={MIN_STAKE}
-        gameOpen={isGameOpen(drawSchedule.pmu.openHour, drawSchedule.pmu.closeHour)}
-        openHour={drawSchedule.pmu.openHour}
+        gameOpen={schedule.enabled && isGameOpen(schedule.open_hour, schedule.close_hour)}
+        openHour={schedule.open_hour}
         renderSelection={
           <div>
             {/* Sélecteur type de pari */}
@@ -267,7 +267,7 @@ function PmuPage() {
                 </div>
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("potentialWin")}</div>
-                  <div className="font-display text-xl font-extrabold tabular-nums text-success">{Math.round(totalStake * bet.odds).toLocaleString()}</div>
+                  <div className="font-display text-sm font-extrabold text-success">{t("game.calculatedAtSettlement")}</div>
                 </div>
               </div>
             </div>
