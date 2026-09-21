@@ -25,7 +25,7 @@ export interface TicketLeg {
   prize?: number;
 }
 
-export interface Ticket {
+export interface FootPickStatus {\n  fixtureId: string | null;\n  marketId: string;\n  selection: string;\n  odds: number;\n  status: string | null;\n}\n\nexport interface Ticket {
   id: string;
   gameId: GameId;
   gameName: string;
