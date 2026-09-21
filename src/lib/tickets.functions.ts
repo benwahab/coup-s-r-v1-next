@@ -3,8 +3,6 @@ import { z } from "zod";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
-import { footMatches, horses, lotoMultipliers } from "@/lib/mock-data";
-import { oddForPick } from "@/lib/foot-markets";
 
 const TicketStatus = z.literal("pending");
 
@@ -72,10 +70,8 @@ function ticketCodeFromPayment(paymentId: string): string {
  * Ticket creation is deliberately server-only and requires an already
  * confirmed payment belonging to the authenticated user.
  *
- * DEMO NOTE: the current payment confirmation itself is still simulated.
- * Once Mobile Money/LONANI is integrated, the confirmation authority must
- * move to a verified provider webhook/API; this function remains the
- * server-side gate that creates the ticket only after that confirmation.
+ * Payment confirmation is NOT simulated. A ticket can only be created after
+ * the payment record has been confirmed by the real payment integration.
  */
 export const createTicketAfterPayment = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
@@ -131,11 +127,32 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
         if (nums.length < 1 || nums.length > 8 || nums.length !== picks.length) {
           throw new Error("invalid_pmu_selection");
         }
-        const validPartants = new Set(horses.filter((h) => h.status === "partant").map((h) => h.number));
         const unique = new Set(nums);
-        if (unique.size !== nums.length || nums.some((n) => !Number.isInteger(n) || !validPartants.has(n))) {
+        if (unique.size !== nums.length || nums.some((n) => !Number.isInteger(n) || n < 1)) {
           throw new Error("invalid_pmu_selection");
         }
+        // PMU starters are validated against the real scheduled race, never
+        // against a client-side/mock catalog.
+        const pmuDb = supabaseAdmin as any;
+        const today = new Date().toISOString().slice(0, 10);
+        const { data: races, error: raceError } = await pmuDb
+          .from("pmu_races")
+          .select("id,start_at,status")
+          .eq("race_date", today)
+          .in("status", ["scheduled", "open"])
+          .order("start_at", { ascending: true })
+          .limit(1);
+        if (raceError || !races?.[0]) throw new Error("pmu_race_not_found");
+        if (new Date(races[0].start_at).getTime() <= Date.now()) throw new Error("pmu_race_closed");
+        const { data: starters, error: startersError } = await pmuDb
+          .from("pmu_horses")
+          .select("number,status")
+          .eq("race_id", races[0].id);
+        if (startersError) throw new Error("pmu_starters_lookup_failed");
+        const validPartants = new Set((starters ?? [])
+          .filter((h: { status: string }) => h.status === "partant")
+          .map((h: { number: number }) => h.number));
+        if (nums.some((n) => !validPartants.has(n))) throw new Error("invalid_pmu_selection");
       }
     };
 
@@ -222,10 +239,22 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
             const fixtureId = parts[0];
             const marketId = parts[1];
             const selection = parts.slice(2).join(":");
-            const catalogMatch = footMatches.find((m) => m.id === fixtureId);
-            if (!catalogMatch) throw new Error("fixture_catalog_mismatch");
-            const odds = oddForPick(key, catalogMatch);
-            if (!Number.isFinite(odds) || odds < 1 || odds > 1000) throw new Error("invalid_frozen_odds");
+            const { data: fixture, error: oddsError } = await supabaseAdmin
+              .from("foot_fixtures")
+              .select("id,odds_home,odds_draw,odds_away,status,kickoff_at")
+              .eq("id", fixtureId)
+              .maybeSingle();
+            if (oddsError) throw new Error("fixture_odds_lookup_failed");
+            if (!fixture) throw new Error("fixture_not_found");
+            const oddsByOption: Record<string, number | null> = {
+              "1": fixture.odds_home,
+              "X": fixture.odds_draw,
+              "2": fixture.odds_away,
+            };
+            const odds = oddsByOption[selection];
+            if (!Number.isFinite(odds) || (odds as number) < 1 || (odds as number) > 1000) {
+              throw new Error("invalid_backend_odds");
+            }
             const list = byFixture.get(fixtureId) ?? [];
             list.push({ marketId, selection, odds, status: "pending" });
             byFixture.set(fixtureId, list);
