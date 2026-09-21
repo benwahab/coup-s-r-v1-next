@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { isGameOpen } from "@/lib/schedule";
+
 
 const paymentInput = z.object({
   key: z.string().min(3).max(200),
@@ -33,8 +33,23 @@ export const beginPayment = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => paymentInput.parse(data))
   .handler(async ({ data, context }) => {
-    if ((data.gameId === "pmu" || data.gameId === "loto") && !isGameOpen(16, 15)) {
-      throw new Error("game_closed");
+    if (data.gameId === "pmu" || data.gameId === "loto") {
+      const { data: schedule, error: scheduleError } = await supabaseAdmin
+        .from("game_schedules")
+        .select("open_hour,close_hour,enabled")
+        .eq("game_id", data.gameId)
+        .maybeSingle();
+      if (scheduleError) throw new Error("schedule_lookup_failed: " + scheduleError.message);
+      if (!schedule?.enabled) throw new Error("game_schedule_disabled");
+      const { nigerParts, nigerInstant } = await import("@/lib/schedule");
+      const now = new Date();
+      const p = nigerParts(now);
+      const open = nigerInstant(p.year, p.month, p.day, schedule.open_hour);
+      const close = nigerInstant(p.year, p.month, p.day, schedule.close_hour);
+      const isOpen = schedule.open_hour > schedule.close_hour
+        ? !(now >= close && now < open)
+        : now >= open && now < close;
+      if (!isOpen) throw new Error("game_closed");
     }
     if (!PAYMENT_METHODS.has(data.method)) throw new Error("invalid_payment_method");
 
