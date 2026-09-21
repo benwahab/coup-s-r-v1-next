@@ -1,13 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Trophy, Info, Plus, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
 import { isGameOpen } from "@/lib/schedule";
-import { drawSchedule, horses } from "@/lib/mock-data";
+import { drawSchedule } from "@/lib/schedule";
+import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { pmuBets, findBet, type PmuBetId } from "@/lib/pmu-bets";
 import type { TicketLeg } from "@/lib/tickets";
+
+interface PmuHorse { number:number; name:string; intlName:string|null; jockey:string; status:"partant"|"non-partant"; form:string|null; winRate:number|null; placeRate:number|null; weight:number|null; }
 import { cn } from "@/lib/utils";
 import ogAsset from "@/assets/og-pmu.jpg.asset.json";
 import { SITE_ORIGIN, absoluteOgUrl } from "@/lib/og";
@@ -44,6 +47,17 @@ function PmuPage() {
   const [picks, setPicks] = useState<number[]>([]);
   const [cart, setCart] = useState<TicketLeg[]>([]);
   const [unitStake, setUnitStake] = useState(MIN_STAKE);
+  const [horses, setHorses] = useState<PmuHorse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
+  const loadRace = async () => {
+    setLoading(true); setLoadError(false);
+    const { data, error } = await supabase.from("pmu_horses").select("number,name,intl_name,jockey,status,form,win_rate,place_rate,weight").eq("race_date", new Date().toISOString().slice(0,10)).order("number");
+    if (error) { setHorses([]); setLoadError(true); } else setHorses((data ?? []) as PmuHorse[]);
+    setLoading(false);
+  };
+  useEffect(() => { void loadRace(); }, []);
   const bet = findBet(betId);
   const partants = useMemo(() => horses.filter((h) => h.status === "partant"), []);
   const nonPartants = useMemo(() => horses.filter((h) => h.status === "non-partant"), []);
@@ -96,7 +110,10 @@ function PmuPage() {
   return (
     <>
       <PageHeader title="PMU" subtitle={t("selectHorses")} icon={<Trophy className="h-5 w-5" />} />
-      <BetFlow
+      {loadError && <div className="mx-auto max-w-3xl px-4 py-4 text-sm text-destructive">Impossible de charger la course PMU. <button onClick={() => void loadRace()} className="font-bold underline">Réessayer</button></div>}
+      {loading && <div className="mx-auto max-w-3xl px-4 py-6 text-center text-sm text-muted-foreground">Chargement de la course PMU…</div>}
+      {!loading && !loadError && horses.length === 0 && <div className="mx-auto max-w-3xl px-4 py-6 text-center text-sm text-muted-foreground">Aucune course PMU disponible actuellement.</div>}
+      {!loading && horses.length > 0 &&      <BetFlow
         gameId="pmu"
         gameName="PMU"
         drawDate={drawDateIso}
@@ -275,6 +292,7 @@ function PmuPage() {
           </div>
         }
       />
+      }
     </>
   );
 }
