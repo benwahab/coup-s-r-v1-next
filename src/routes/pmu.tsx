@@ -136,7 +136,6 @@ function PmuPage() {
         selection={picks}
         picksLabel={picksLabel}
         canContinue={canContinue}
-        odds={bet.odds}
         lockedStake={effectiveLegs.length ? undefined : totalStake}
         defaultStake={unitStake}
         minStake={MIN_STAKE}
@@ -172,7 +171,7 @@ function PmuPage() {
                     {bet.minPicks === bet.maxPicks
                       ? `${bet.minPicks} ${bet.minPicks > 1 ? t("horses").toLowerCase() : t("game.horse")}`
                       : `${bet.minPicks}–${bet.maxPicks} ${t("horses").toLowerCase()}`
-                    } · {t("game.base")} {bet.baseStake} {t("fcfa")} · {t("odds")} ×{bet.odds}
+                    } · {t("game.base")} {bet.baseStake} {t("fcfa")}
                   </div>
                 </div>
               </div>
