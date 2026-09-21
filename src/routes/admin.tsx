@@ -65,9 +65,8 @@ function AdminPage() {
       .finally(() => setPermissionsReady(true));
   }, [gate]);
 
-  // SECURITY: the admin surface deliberately has no access to client tickets,
-  // selections, legs, ticket status or prizes. Only aggregate/demo statistics
-  // and sanitized player activity are available here.
+  // SECURITY: the admin surface deliberately avoids exposing client selections or
+  // sensitive ticket internals. Only authorized aggregates and sanitized activity are available here.
   const [adminTicketRows, setAdminTicketRows] = useState<Awaited<ReturnType<typeof adminListTickets>>["tickets"]>([]);
   useEffect(() => {
     if (gate !== "ok" || !permissionsReady || !can("player_activity")) return;
@@ -429,7 +428,8 @@ function AdminPage() {
             {adminPermissions === "all" && tab === "admins" && <AdminsSection />}
             {can("complaints") && tab === "claims" && (
               <section className="rounded-3xl border border-border bg-card p-6 shadow-soft"><h2 className="font-display text-lg font-bold">Réclamations</h2><p className="mt-2 text-sm text-muted-foreground">La source réelle des réclamations n’est pas encore connectée. Aucune action fictive n’est proposée.</p></section>
-            )}\n            {can("security_logs") && tab === "logs" && (
+            )}
+            {can("security_logs") && tab === "logs" && (
               <LogsTab filteredLog={filteredLog}
                 logPhone={logPhone} setLogPhone={setLogPhone}
                 logIp={logIp} setLogIp={setLogIp}
