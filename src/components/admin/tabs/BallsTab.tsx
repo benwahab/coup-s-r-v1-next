@@ -1,7 +1,7 @@
 import { Dices } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
-import type { BallStat } from "@/lib/mock-stats";
+type BallStat = { ball: number; total: number; solo: number; combo: number; topPairs: { ball: number; count: number }[] };
 import type { LotoBallWagerStat, LotoCombinationWagerStat } from "@/lib/admin.functions";
 
 interface Props {
