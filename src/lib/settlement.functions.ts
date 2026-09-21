@@ -335,41 +335,6 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
     }
 
     const { data: existing, error: existingError } = await supabaseAdmin
-          .from("draw_results")
-          .select("id,status,result")
-          .eq("game_id", "foot")
-          .eq("draw_date", data.drawDate)
-          .filter("result->>matchId", "eq", match.matchId)
-          .maybeSingle();
-
-        if (existingError) throw new Error(existingError.message);
-        if (existing?.status === "published") throw new Error("foot_match_result_already_published");
-        if (existing) throw new Error("foot_match_result_draft_exists");
-
-        const { data: row, error } = await supabaseAdmin
-          .from("draw_results")
-          .insert({
-            game_id: "foot",
-            draw_date: data.drawDate,
-            draw_name: data.drawName ?? null,
-            result: match,
-            status: "draft",
-          })
-          .select("id,game_id,draw_date,status")
-          .single();
-        if (error) throw new Error(error.message);
-        createdIds.push(row.id);
-      }
-
-      await writeAuditLog(supabaseAdmin, {
-        userId: context.userId,
-        action: "admin.foot_results.created",
-        detail: { drawDate: data.drawDate, count: createdIds.length, resultIds: createdIds },
-      });
-      return { result: { id: createdIds[0] }, resultIds: createdIds };
-    }
-
-    const { data: existing, error: existingError } = await supabaseAdmin
       .from("draw_results")
       .select("id,status")
       .eq("game_id", data.gameId)
