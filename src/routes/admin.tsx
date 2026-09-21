@@ -233,6 +233,42 @@ function AdminPage() {
   const pageRows = filteredRows.slice((txPage - 1) * PAGE, txPage * PAGE);
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE));
 
+  type RegionStat = { region: string; players: number; tickets: number; staked: number; paid: number; delta7d: number };
+  type PlayerStat = { player: string; region: string; tickets: number; staked: number; won: number };
+  type BallStat = { ball: number; total: number; solo: number; combo: number; topPairs: { ball: number; count: number }[] };
+
+  const regionStats: RegionStat[] = useMemo(() => {
+    const map = new Map<string, { players: Set<string>; tickets: number; staked: number; paid: number }>();
+    adminTicketRows.forEach(t => {
+      const region = t.region || "Non renseignée";
+      const row = map.get(region) ?? { players: new Set<string>(), tickets: 0, staked: 0, paid: 0 };
+      row.players.add(t.userId); row.tickets += 1; row.staked += t.stake;
+      if (t.status === "paid") row.paid += t.prize ?? 0;
+      map.set(region, row);
+    });
+    return Array.from(map, ([region, v]) => ({ region, players: v.players.size, tickets: v.tickets, staked: v.staked, paid: v.paid, delta7d: 0 })).sort((a,b) => b.staked-a.staked);
+  }, [adminTicketRows]);
+  const maxRegion = Math.max(1, ...regionStats.map(r => r.staked));
+
+  const playerStats: PlayerStat[] = useMemo(() => {
+    const map = new Map<string, PlayerStat>();
+    adminTicketRows.forEach(t => {
+      const key = t.userId;
+      const row = map.get(key) ?? { player: t.phone || t.userId.slice(0, 8), region: t.region || "Non renseignée", tickets: 0, staked: 0, won: 0 };
+      row.tickets += 1; row.staked += t.stake; if (t.status === "paid") row.won += t.prize ?? 0;
+      map.set(key, row);
+    });
+    return Array.from(map.values()).sort((a,b) => b.staked-a.staked);
+  }, [adminTicketRows]);
+
+  const ballStats: BallStat[] = useMemo(() => Array.from({ length: 90 }, (_, i) => {
+    const live = lotoBallWagerStats.find(s => s.ball === i + 1);
+    return { ball: i + 1, total: live?.wagerCount ?? 0, solo: live?.wagerCount ?? 0, combo: 0, topPairs: [] };
+  }), [lotoBallWagerStats]);
+  const maxBall = Math.max(1, ...ballStats.map(b => b.total));
+  const displayLotoBallWagerStats = lotoBallWagerStats;
+  const displayLotoCombinationWagerStats = lotoCombinationWagerStats;
+
   const [searchPlayer, setSearchPlayer] = useState("");
   const [filterRegion, setFilterRegion] = useState("all");
   const filteredPlayers = playerStats.filter(
