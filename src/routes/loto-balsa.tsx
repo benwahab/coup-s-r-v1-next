@@ -52,7 +52,7 @@ function LotoPage() {
   const dateLabel = nigerDateLabel();
   const drawDateIso = useMemo(() => {
     const d = new Date();
-    d.setHours(drawSchedule.loto.drawHour, 0, 0, 0);
+    d.setHours(drawSchedule.loto.drawHour, drawSchedule.loto.drawMinute, 0, 0);
     return d.toISOString();
   }, []);
 
