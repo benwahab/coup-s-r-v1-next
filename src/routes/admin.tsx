@@ -5,7 +5,6 @@ import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/AppShell";
 import type { Ticket } from "@/lib/tickets";
 import { cn, formatFcfa } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 import { sendWinSms, readSmsLog, type SmsEntry } from "@/lib/sms";
 import { readAuthLog, type AuthEvent, type AuthEventKind } from "@/lib/auth-logs";
 import type { PaymentIntent } from "@/lib/payments";
@@ -361,30 +360,18 @@ function AdminPage() {
 
   const exportCsv = (scope: "all" | "winners" | "cashout" = csvScope) => {
     const from = csvFrom; const to = csvTo;
-    const inRange = (iso: string) => iso.slice(0, 10) >= from && iso.slice(0, 10) <= to;
-    const live = tickets.filter((t) => inRange(t.createdAt));
-    const simRows = sims.filter((s) => s.iso >= from && s.iso <= to);
-    const filtered = [
-      ...live.map((t) => ({ id: t.id, date: t.createdAt.slice(0, 10), game: t.gameName, phone: t.phone, region: t.region ?? "", picks: t.picksLabel, stake: t.stake, status: t.status, payment: t.payment, prize: t.prize ?? 0 })),
-      ...simRows.map((s) => ({ id: s.id, date: s.iso, game: s.gameId, phone: "—", region: s.region, picks: s.picks.join(" · "), stake: s.stake, status: s.status, payment: "sim", prize: s.prize })),
-    ];
-    const rows = filtered.filter((r) =>
-      scope === "all" ? true : scope === "winners" ? (r.status === "winning" || r.status === "paid") : r.status === "paid",
-    );
-    const header = ["id", "date", "jeu", "telephone", "region", "selections", "mise_fcfa", "statut", "paiement", "gain_fcfa"];
-    const csvBody = rows.map((r) => [r.id, r.date, r.game, r.phone, r.region, `"${r.picks.replace(/"/g, "''")}"`, r.stake, r.status, r.payment, r.prize].join(","));
-    downloadCsv([header.join(","), ...csvBody].join("
-"), `coupsur-${scope}-${from}_${to}.csv`);
+    const rows = adminTicketRows.filter(t => t.createdAt.slice(0, 10) >= from && t.createdAt.slice(0, 10) <= to)
+      .filter(t => scope === "all" ? true : scope === "winners" ? (t.status === "winning" || t.status === "paid") : t.status === "paid")
+      .map(t => ({ id: t.code, date: t.createdAt.slice(0, 10), game: t.gameName, phone: t.phone ?? "", region: t.region ?? "", picks: "", stake: t.stake, status: t.status, payment: t.paymentMethod, prize: t.prize ?? 0 }));
+    const header = ["id","date","jeu","telephone","region","selections","mise_fcfa","statut","paiement","gain_fcfa"];
+    downloadCsv([header.join(","), ...rows.map(r => [r.id,r.date,r.game,r.phone,r.region,r.picks,r.stake,r.status,r.payment,r.prize].join(","))].join("\n"), `coupsur-${scope}-${from}_${to}.csv`);
   };
 
   const exportTransactionsCsv = () => {
-    const header = ["id", "date", "jeu", "telephone", "region", "mise", "statut", "gain", "source"];
-    const body = filteredRows.map(r => [r.id, r.date, r.game, r.phone, r.region, r.stake, r.status, r.prize, r.kind].join(","));
-    downloadCsv([header.join(","), ...body].join("
-"), `coupsur-transactions-${todayIso}.csv`);
+    const header = ["id","date","jeu","telephone","region","mise","statut","gain","source"];
+    const body = filteredRows.map(r => [r.id,r.date,r.game,r.phone,r.region,r.stake,r.status,r.prize,r.kind].join(","));
+    downloadCsv([header.join(","), ...body].join("\n"), `coupsur-transactions-${todayIso}.csv`);
   };
-
-
 
   const can = (permission: AdminPermission) => adminPermissions === "all" || adminPermissions.includes(permission);
 
