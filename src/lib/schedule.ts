@@ -113,13 +113,6 @@ export function detectOperator(phone: string): { id: string; name: string; color
   return { id: "airtel", name: "Airtel Money", color: "#E40000" };
 }
 
-/** Nom mock d'un titulaire de compte selon le numéro (déterministe). */
-export function mockAccountHolder(phone: string): string {
-  const noms = ["M. Souley", "Mme Aïcha", "M. Oumarou", "Mme Hadiza", "M. Boubacar", "Mme Mariama", "M. Hassane", "Mme Fatima"];
-  const sum = phone.replace(/\D/g, "").split("").reduce((a, c) => a + Number(c), 0);
-  return noms[sum % noms.length];
-}
-
 /** Indique si un jeu est ouvert à la prise de paris à l'instant t (Niger TZ).
  *  Gère le cas d'un cycle traversant minuit (ex : ouverture 16h, fermeture
  *  15h le lendemain) — le jeu n'est alors fermé que sur la courte fenêtre
