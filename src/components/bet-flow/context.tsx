@@ -5,7 +5,6 @@ import { useI18n } from "@/lib/i18n";
 import { useTickets, type TicketLeg } from "@/lib/tickets";
 import { regions, paymentMethods, type GameId } from "@/lib/mock-data";
 import { useAccount } from "@/lib/account";
-import { mockAccountHolder } from "@/lib/schedule";
 import { useDrafts } from "@/lib/drafts";
 import { beginPayment, checkDuplicate, confirmPayment, failPayment, paymentKey } from "@/lib/payments";
 import { createTicketAfterPayment } from "@/lib/tickets.functions";
@@ -85,7 +84,7 @@ function useProviderValue(cfg: BetFlowConfig) {
 
   const phoneOk = /^[+\d][\d\s]{6,}$/.test(phone);
   const selectedPayment = paymentMethods.find((p) => p.id === paymentId) ?? paymentMethods[0];
-  const holder = phone ? mockAccountHolder(phone) : "";
+  const holder = "";
 
   const allLegs: TicketLeg[] = legs?.length
     ? legs
@@ -95,11 +94,6 @@ function useProviderValue(cfg: BetFlowConfig) {
       }];
   const totalStake = allLegs.reduce((s, l) => s + l.stake, 0);
   const potentialWin = Math.round(totalStake * odds);
-
-  const simulatedFundsOk = (() => {
-    const last = Number((phone.match(/\d/g) ?? ["9"]).slice(-1)[0]);
-    return last >= 3;
-  })();
 
   const finish = async () => {
     setMmError(null);
@@ -125,19 +119,15 @@ function useProviderValue(cfg: BetFlowConfig) {
         method: selectedPayment.id,
       });
       setPaying(true);
-      await new Promise((r) => setTimeout(r, 1400));
-      if (!simulatedFundsOk) {
-        await failPayment(intent.txRef);
-        setPaying(false);
-        setMmError(t("insufficientFunds"));
-        toast.error(t("insufficientFunds"));
-        return;
-      }
-
-      // Demo payment confirmation happens before ticket creation. The ticket
-      // itself is then created only by a server function that re-checks the
-      // authenticated user, payment ownership/state, amount and game.
-      await confirmPayment(intent.txRef);
+      // A payment intent is not a payment. Until the configured mobile-money
+      // provider confirms the transaction server-side, no balance simulation,
+      // fake success, or ticket issuance is allowed.
+      await failPayment(intent.txRef);
+      setPaying(false);
+      const unavailable = "Le paiement mobile n'est pas encore connecté à un fournisseur réel.";
+      setMmError(unavailable);
+      toast.error(unavailable);
+      return;
 
       const first = allLegs[0];
       const ticketRes = await createTicketAfterPayment({
