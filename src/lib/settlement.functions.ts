@@ -317,6 +317,19 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertPublishResultsPermission(context.supabase, context.userId);
 
+    if (data.gameId === "pmu") {
+      const { data: race, error: raceError } = await supabaseAdmin
+        .from("pmu_races").select("id").eq("race_date", data.drawDate)
+        .order("start_at", { ascending: true }).limit(1).maybeSingle();
+      if (raceError) throw new Error("pmu_race_lookup_failed: " + raceError.message);
+      if (!race) throw new Error("pmu_race_not_found");
+      const { data: starters, error: startersError } = await supabaseAdmin
+        .from("pmu_horses").select("number").eq("race_id", race.id).eq("status", "partant");
+      if (startersError) throw new Error("pmu_starters_lookup_failed: " + startersError.message);
+      const validStarters = new Set((starters ?? []).map((row) => Number(row.number)).filter(Number.isInteger));
+      if (!data.result.horses.every((n) => validStarters.has(n))) throw new Error("pmu_result_contains_non_starter");
+    }
+
     if (data.gameId === "foot") {
       const createdIds: string[] = [];
       for (const match of data.result.matches) {
