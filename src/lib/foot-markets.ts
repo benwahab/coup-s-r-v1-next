@@ -1,7 +1,7 @@
 // Catalogue de marchés type 1xBet pour chaque match.
 // V1 : cotes générées de manière déterministe depuis le triplet 1/X/2 pour rester crédible.
 
-import type { FootMatch } from "./mock-data";
+import type { FootMatch } from "./foot.types";
 
 export interface MarketOption { key: string; label: string; odd: number }
 export interface Market {
