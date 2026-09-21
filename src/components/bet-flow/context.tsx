@@ -3,11 +3,10 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 import { useTickets, type TicketLeg } from "@/lib/tickets";
-import { regions, paymentMethods, type GameId } from "@/lib/mock-data";
+import { regions, paymentMethods, type GameId } from "@/lib/game-config";
 import { useAccount } from "@/lib/account";
 import { useDrafts } from "@/lib/drafts";
-import { beginPayment, checkDuplicate, confirmPayment, failPayment, paymentKey } from "@/lib/payments";
-import { createTicketAfterPayment } from "@/lib/tickets.functions";
+import { beginPayment, checkDuplicate, failPayment, paymentKey } from "@/lib/payments";
 
 export interface BetFlowConfig {
   gameId: GameId;
@@ -129,35 +128,6 @@ function useProviderValue(cfg: BetFlowConfig) {
       toast.error(unavailable);
       return;
 
-      const first = allLegs[0];
-      const ticketRes = await createTicketAfterPayment({
-        data: {
-          paymentReference: intent.txRef,
-          gameId: first.gameId,
-          gameName: first.gameName,
-          firstName: account?.firstName,
-          lastName: account?.lastName,
-          phone,
-          region,
-          picks: first.picks,
-          picksLabel: allLegs.map(l => l.picksLabel).join(" | "),
-          stake: totalStake,
-          payment: selectedPayment.id,
-          drawDate: first.drawDate,
-          drawName,
-          legs: allLegs,
-        },
-      });
-      const ticket = ticketRes.ticket;
-
-      // Les foot_picks sont désormais créés par createTicketAfterPayment
-      // côté serveur, avec vérification du propriétaire, du match, du marché,
-      // du statut et de l'heure de coup d'envoi.
-
-
-      toast.success("Paiement confirmé, ticket enregistré ✓");
-      setPaying(false);
-      navigate({ to: "/ticket/$id", params: { id: ticket.code } });
     } catch (e) {
       setPaying(false);
       const msg = e instanceof Error ? e.message : "Erreur réseau — réessayez.";
