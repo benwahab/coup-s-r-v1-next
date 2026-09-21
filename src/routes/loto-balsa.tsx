@@ -58,7 +58,8 @@ function LotoPage() {
   const dateLabel = nigerDateLabel();
   const drawDateIso = useMemo(() => {
     const d = new Date();
-    if (!schedule) return "";\n    d.setHours(schedule.draw_hour, schedule.draw_minute, 0, 0);
+    if (!schedule) return "";
+    d.setHours(schedule.draw_hour, schedule.draw_minute, 0, 0);
     return d.toISOString();
   }, [schedule]);
 
