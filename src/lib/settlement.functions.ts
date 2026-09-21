@@ -105,7 +105,6 @@ async function evaluatePmu(picks: unknown[], result: { horses: number[] }, stake
     .from("pmu_races")
     .select("id")
     .eq("race_date", drawDate)
-    .in("status", ["scheduled", "open"])
     .order("start_at", { ascending: true })
     .limit(1)
     .maybeSingle();
