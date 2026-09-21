@@ -115,7 +115,8 @@ function AdminPage() {
   }, [gate, permissionsReady, adminPermissions]);
 
   useEffect(() => {
-    if (gate !== "ok") return;
+    if (gate !== "ok" || !permissionsReady) return;
+    if (adminPermissions !== "all" && !adminPermissions.includes("player_activity")) return;
     (async () => {
       try {
         const { payments } = await adminListPlayerActivities();
@@ -130,7 +131,7 @@ function AdminPage() {
         })));
       } catch { setAllIntents([]); }
     })();
-  }, [gate, permissionsReady]);
+  }, [gate, permissionsReady, adminPermissions]);
 
 
 
