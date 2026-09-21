@@ -259,7 +259,7 @@ function AdminPage() {
 
   const ballStats: BallStat[] = useMemo(() => Array.from({ length: 90 }, (_, i) => {
     const live = lotoBallWagerStats.find(s => s.ball === i + 1);
-    return { ball: i + 1, total: live?.wagerCount ?? 0, solo: live?.wagerCount ?? 0, combo: 0, topPairs: [] };
+    return { ball: i + 1, total: live?.wagerCount ?? 0, solo: live ? live.soloWagerCount : null, combo: live ? live.comboWagerCount : null, topPairs: [] };
   }), [lotoBallWagerStats]);
   const maxBall = Math.max(1, ...ballStats.map(b => b.total));
   const displayLotoBallWagerStats = lotoBallWagerStats;
