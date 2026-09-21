@@ -20,7 +20,10 @@ function mapStatus(short: string) {
 
 Deno.serve(async (req) => {
   const expected = Deno.env.get("FOOT_SYNC_CRON_SECRET");
-  if (expected && req.headers.get("x-cron-secret") !== expected) {
+  if (!expected) {
+    return Response.json({ error: "missing_cron_configuration" }, { status: 503 });
+  }
+  if (req.headers.get("x-cron-secret") !== expected) {
     return new Response("unauthorized", { status: 401 });
   }
 
