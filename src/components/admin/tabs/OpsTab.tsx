@@ -1,4 +1,4 @@
-import { BellRing, Check, Download, MessageCircle, Send, Settings, Clock3 } from "lucide-react";
+import { Download, MessageCircle, Send, Settings, Clock3 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { adminUpdateGameSchedule, getGameSchedules } from "@/lib/game-schedule.functions";
 import { cn, formatFcfa } from "@/lib/utils";
@@ -85,21 +85,7 @@ export function OpsTab(p: Props) {
           <Settings className="h-4 w-4 text-primary" />
           <h2 className="font-display text-lg font-bold">{t("admin.ops.title")}</h2>
         </div>
-        <div className="mt-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-          <div className="flex items-start gap-3">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/20 text-primary"><BellRing className="h-4 w-4" /></div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-bold">{t("autoSmsTitle")}</span>
-                <button type="button" onClick={() => p.setAutoSms((v) => !v)} className={cn("relative h-6 w-11 rounded-full transition", p.autoSms ? "bg-primary" : "bg-muted")} aria-pressed={p.autoSms}>
-                  <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition", p.autoSms ? "left-5" : "left-0.5")} />
-                </button>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{t("autoSmsDesc")}</p>
-            </div>
-          </div>
-        </div>
-        <div className="mt-4 flex flex-wrap items-center gap-1.5">
+        <div className="mt-3 rounded-2xl border border-border bg-muted/30 p-4">\n          <p className="text-sm font-semibold">SMS automatiques désactivés</p>\n          <p className="mt-1 text-xs text-muted-foreground">Aucun SMS de gain n’est envoyé ou simulé tant qu’un fournisseur SMS réel n’est pas configuré.</p>\n        </div>\n        <div className="mt-4 flex flex-wrap items-center gap-1.5">
           <input type="date" value={p.csvFrom} onChange={(e) => p.setCsvFrom(e.target.value)} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]" />
           <input type="date" value={p.csvTo} onChange={(e) => p.setCsvTo(e.target.value)} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]" />
           <select value={p.csvScope} onChange={(e) => p.setCsvScope(e.target.value as "all" | "winners" | "cashout")} className="rounded-full border border-border bg-background px-2 py-1 text-[11px]">
@@ -113,40 +99,7 @@ export function OpsTab(p: Props) {
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-3xl border border-border bg-card shadow-soft">
-          <div className="flex items-center justify-between border-b border-border px-5 py-3">
-            <div className="flex items-center gap-2">
-              <Send className="h-4 w-4 text-gold" />
-              <h2 className="font-display text-lg font-bold">{t("cashoutRequests")}</h2>
-            </div>
-            <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gold">{p.cashoutRequests.length}</span>
-          </div>
-          {p.cashoutRequests.length === 0 ? (
-            <p className="px-5 py-8 text-center text-sm text-muted-foreground">{t("noRequests")}</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {p.cashoutRequests.map((id) => {
-                const tk = p.tickets.find((x) => x.id === id);
-                if (!tk) return null;
-                return (
-                  <li key={id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
-                    <div className="min-w-0">
-                      <div className="font-mono text-xs font-bold">{tk.id}</div>
-                      <div className="truncate text-sm">{tk.phone} • {tk.gameName}</div>
-                      <div className="text-xs text-success font-bold">{formatFcfa(tk.prize ?? 0)} FCFA</div>
-                    </div>
-                    <button onClick={() => p.approveCashout(id)} className="inline-flex items-center gap-1.5 rounded-full bg-gold-gradient px-3 py-1.5 text-xs font-bold text-[var(--gold-foreground)] shadow-gold">
-                      <Check className="h-3.5 w-3.5" /> {t("approve")}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-
-        <section className="rounded-3xl border border-border bg-card shadow-soft">
+      <div className="grid gap-4 lg:grid-cols-2">\n        <section className="rounded-3xl border border-border bg-card shadow-soft">\n          <div className="flex items-center justify-between border-b border-border px-5 py-3">\n            <div className="flex items-center gap-2"><Send className="h-4 w-4 text-gold" /><h2 className="font-display text-lg font-bold">{t("cashoutRequests")}</h2></div>\n          </div>\n          <p className="px-5 py-8 text-center text-sm text-muted-foreground">Les retraits restent bloqués jusqu’à la connexion d’un fournisseur de paiement réel.</p>\n        </section>\n        <section className="rounded-3xl border border-border bg-card shadow-soft">
           <div className="flex items-center justify-between border-b border-border px-5 py-3">
             <div className="flex items-center gap-2">
               <MessageCircle className="h-4 w-4 text-primary" />
