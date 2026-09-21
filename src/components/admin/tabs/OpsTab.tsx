@@ -1,4 +1,6 @@
-import { BellRing, Check, Download, MessageCircle, Send, Settings } from "lucide-react";
+import { BellRing, Check, Download, MessageCircle, Send, Settings, Clock3 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { adminUpdateGameSchedule, getGameSchedules } from "@/lib/game-schedule.functions";
 import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import type { Ticket } from "@/lib/tickets";
@@ -20,6 +22,37 @@ export function OpsTab(p: Props) {
   const { t } = useI18n();
   return (
     <div className="space-y-4">
+      <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
+        <div className="flex items-center gap-2">
+          <Clock3 className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-lg font-bold">Horaires des jeux</h2>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">Les horaires PMU et Loto sont définis manuellement par l'administration. Fuseau : Africa/Niamey.</p>
+        {(["pmu", "loto"] as const).map((gameId) => {
+          const s = schedules[gameId];
+          if (!s) return null;
+          const field = (key: "open_hour"|"close_hour"|"draw_hour"|"draw_minute", label: string) => (
+            <label className="block">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</span>
+              <input type="number" min={0} max={key === "draw_minute" ? 59 : 23} value={s[key]}
+                onChange={(e) => setSchedules((prev) => ({...prev, [gameId]: {...prev[gameId], [key]: Number(e.target.value)}}))}
+                className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm" />
+            </label>
+          );
+          return <div key={gameId} className="mt-4 rounded-2xl border border-border p-4">
+            <div className="mb-3 font-bold">{gameId === "pmu" ? "PMU" : "Loto Balsa"}</div>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              {field("open_hour","Ouverture")}
+              {field("close_hour","Clôture")}
+              {field("draw_hour","Tirage")}
+              {field("draw_minute","Minute du tirage")}
+            </div>
+            <button type="button" onClick={() => void saveSchedule(gameId)} className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">Enregistrer</button>
+          </div>;
+        })}
+        {scheduleMsg && <p className="mt-3 text-xs font-semibold text-primary">{scheduleMsg}</p>}
+      </section>
+
       <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
         <div className="flex items-center gap-2">
           <Settings className="h-4 w-4 text-primary" />
