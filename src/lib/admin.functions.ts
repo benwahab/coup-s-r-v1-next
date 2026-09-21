@@ -214,6 +214,16 @@ export const adminListTickets = createServerFn({ method: "POST" })
     };
   });
 
+export const adminGetRegisteredPlayerCount = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .handler(async ({ context }) => {
+    await assertAdminPermission(context.supabase as SB, context.userId, "player_stats");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { count, error } = await supabaseAdmin.from("profiles").select("id", { count: "exact", head: true });
+    if (error) throw new Error("registered_player_count_failed: " + error.message);
+    return { count: count ?? 0 };
+  });
+
 export const adminListPlayerActivities = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
