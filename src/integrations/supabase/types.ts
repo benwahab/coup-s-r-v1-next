@@ -14,1550 +14,756 @@ export type Database = {
   }
   public: {
     Tables: {
-      agent_login_challenges: {
+      admin_permissions: {
         Row: {
-          agent_user_id: string
-          challenge_hash: string
-          consumed_at: string | null
           created_at: string
-          expires_at: string
           id: string
+          permission: string
+          user_id: string
         }
         Insert: {
-          agent_user_id: string
-          challenge_hash: string
-          consumed_at?: string | null
           created_at?: string
-          expires_at: string
           id?: string
+          permission: string
+          user_id: string
         }
         Update: {
-          agent_user_id?: string
-          challenge_hash?: string
-          consumed_at?: string | null
           created_at?: string
-          expires_at?: string
           id?: string
+          permission?: string
+          user_id?: string
         }
         Relationships: []
       }
       audit_logs: {
         Row: {
           action: string
-          actor_id: string | null
           created_at: string
-          entity_id: string | null
-          entity_type: string
+          detail: Json | null
           id: string
-          metadata: Json | null
+          ip: string | null
+          user_id: string | null
         }
         Insert: {
           action: string
-          actor_id?: string | null
           created_at?: string
-          entity_id?: string | null
-          entity_type: string
+          detail?: Json | null
           id?: string
-          metadata?: Json | null
+          ip?: string | null
+          user_id?: string | null
         }
         Update: {
           action?: string
-          actor_id?: string | null
           created_at?: string
-          entity_id?: string | null
-          entity_type?: string
+          detail?: Json | null
           id?: string
-          metadata?: Json | null
+          ip?: string | null
+          user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "audit_logs_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      categories: {
+      auth_login_attempts: {
         Row: {
           created_at: string
-          description: string | null
           id: string
-          is_active: boolean
-          name: string
-          slug: string
+          phone_hash: string
+          success: boolean
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phone_hash: string
+          success?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phone_hash?: string
+          success?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      draw_results: {
+        Row: {
+          created_at: string
+          draw_date: string
+          draw_name: string | null
+          game_id: string
+          id: string
+          published_at: string | null
+          published_by: string | null
+          result: Json
+          status: string
           updated_at: string
         }
         Insert: {
           created_at?: string
-          description?: string | null
+          draw_date: string
+          draw_name?: string | null
+          game_id: string
           id?: string
-          is_active?: boolean
-          name: string
-          slug: string
+          published_at?: string | null
+          published_by?: string | null
+          result: Json
+          status?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
-          description?: string | null
+          draw_date?: string
+          draw_name?: string | null
+          game_id?: string
           id?: string
-          is_active?: boolean
-          name?: string
-          slug?: string
+          published_at?: string | null
+          published_by?: string | null
+          result?: Json
+          status?: string
           updated_at?: string
         }
         Relationships: []
       }
-      communes: {
+      financial_ledger: {
         Row: {
-          boundary: unknown
+          amount: number | null
           created_at: string
+          event_type: string
           id: string
-          is_active: boolean
-          name: string
-          region_id: string
-          updated_at: string
+          metadata: Json
+          method: string | null
+          payment_id: string | null
+          prize: number | null
+          provider_reference: string | null
+          reference: string | null
+          ticket_id: string | null
+          user_id: string | null
         }
         Insert: {
-          boundary?: unknown
+          amount?: number | null
           created_at?: string
+          event_type: string
           id?: string
-          is_active?: boolean
-          name: string
-          region_id: string
-          updated_at?: string
+          metadata?: Json
+          method?: string | null
+          payment_id?: string | null
+          prize?: number | null
+          provider_reference?: string | null
+          reference?: string | null
+          ticket_id?: string | null
+          user_id?: string | null
         }
         Update: {
-          boundary?: unknown
+          amount?: number | null
           created_at?: string
+          event_type?: string
           id?: string
-          is_active?: boolean
-          name?: string
-          region_id?: string
-          updated_at?: string
+          metadata?: Json
+          method?: string | null
+          payment_id?: string | null
+          prize?: number | null
+          provider_reference?: string | null
+          reference?: string | null
+          ticket_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "communes_region_id_fkey"
-            columns: ["region_id"]
+            foreignKeyName: "financial_ledger_payment_id_fkey"
+            columns: ["payment_id"]
             isOneToOne: false
-            referencedRelation: "regions"
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
             referencedColumns: ["id"]
           },
         ]
       }
-      departments: {
+      foot_ai_analyses: {
         Row: {
-          code: string | null
+          analysis: Json
           created_at: string
-          description: string | null
+          fixture_id: string
+          model_used: string
+        }
+        Insert: {
+          analysis: Json
+          created_at?: string
+          fixture_id: string
+          model_used: string
+        }
+        Update: {
+          analysis?: Json
+          created_at?: string
+          fixture_id?: string
+          model_used?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "foot_ai_analyses_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: true
+            referencedRelation: "foot_fixtures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      foot_fixtures: {
+        Row: {
+          away_score: number | null
+          away_team: string
+          away_team_logo: string | null
+          created_at: string
+          external_id: number
+          home_score: number | null
+          home_team: string
+          home_team_logo: string | null
           id: string
-          is_active: boolean
-          name: string
+          kickoff_at: string
+          league_external_id: number
+          league_name: string
+          odds_away: number | null
+          odds_draw: number | null
+          odds_home: number | null
+          season: number | null
+          settled_at: string | null
+          status: string
           updated_at: string
         }
         Insert: {
-          code?: string | null
+          away_score?: number | null
+          away_team: string
+          away_team_logo?: string | null
           created_at?: string
-          description?: string | null
+          external_id: number
+          home_score?: number | null
+          home_team: string
+          home_team_logo?: string | null
           id?: string
-          is_active?: boolean
-          name: string
+          kickoff_at: string
+          league_external_id: number
+          league_name: string
+          odds_away?: number | null
+          odds_draw?: number | null
+          odds_home?: number | null
+          season?: number | null
+          settled_at?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
-          code?: string | null
+          away_score?: number | null
+          away_team?: string
+          away_team_logo?: string | null
           created_at?: string
-          description?: string | null
+          external_id?: number
+          home_score?: number | null
+          home_team?: string
+          home_team_logo?: string | null
           id?: string
-          is_active?: boolean
-          name?: string
+          kickoff_at?: string
+          league_external_id?: number
+          league_name?: string
+          odds_away?: number | null
+          odds_draw?: number | null
+          odds_home?: number | null
+          season?: number | null
+          settled_at?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: []
       }
-      field_agents: {
+      foot_picks: {
         Row: {
           created_at: string
-          first_name: string
+          fixture_id: string
           id: string
-          is_active: boolean
-          last_name: string
-          mairie_id: string | null
-          matricule: string
-          organization_id: string | null
-          organization_unit_id: string | null
-          phone: string | null
-          phone_normalized: string | null
-          qualification: string
-          updated_at: string
+          picks: Json
+          settled_at: string | null
+          status: Database["public"]["Enums"]["ticket_status"]
+          ticket_id: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
-          first_name: string
+          fixture_id: string
           id?: string
-          is_active?: boolean
-          last_name: string
-          mairie_id?: string | null
-          matricule: string
-          organization_id?: string | null
-          organization_unit_id?: string | null
-          phone?: string | null
-          phone_normalized?: string | null
-          qualification: string
-          updated_at?: string
+          picks: Json
+          settled_at?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          ticket_id?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
-          first_name?: string
+          fixture_id?: string
           id?: string
-          is_active?: boolean
-          last_name?: string
-          mairie_id?: string | null
-          matricule?: string
-          organization_id?: string | null
-          organization_unit_id?: string | null
-          phone?: string | null
-          phone_normalized?: string | null
-          qualification?: string
+          picks?: Json
+          settled_at?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          ticket_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "foot_picks_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "foot_fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "foot_picks_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_rules: {
+        Row: {
+          active: boolean
+          game_id: string
+          id: string
+          multiplier: number
+          pick_count: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          game_id: string
+          id?: string
+          multiplier: number
+          pick_count: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          game_id?: string
+          id?: string
+          multiplier?: number
+          pick_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      game_schedules: {
+        Row: {
+          close_hour: number
+          draw_hour: number
+          draw_minute: number
+          enabled: boolean
+          game_id: string
+          open_hour: number
+          timezone: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          close_hour: number
+          draw_hour: number
+          draw_minute: number
+          enabled?: boolean
+          game_id: string
+          open_hour: number
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          close_hour?: number
+          draw_hour?: number
+          draw_minute?: number
+          enabled?: boolean
+          game_id?: string
+          open_hour?: number
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      otp_codes: {
+        Row: {
+          attempts: number
+          code_hash: string
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          ip: string | null
+          phone: string
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          ip?: string | null
+          phone: string
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip?: string | null
+          phone?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          game_id: string | null
+          id: string
+          method: string
+          payment_key: string | null
+          reference: string
+          status: Database["public"]["Enums"]["payment_status"]
+          ticket_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          game_id?: string | null
+          id?: string
+          method: string
+          payment_key?: string | null
+          reference: string
+          status?: Database["public"]["Enums"]["payment_status"]
+          ticket_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          game_id?: string | null
+          id?: string
+          method?: string
+          payment_key?: string | null
+          reference?: string
+          status?: Database["public"]["Enums"]["payment_status"]
+          ticket_id?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "field_agents_mairie_id_fkey"
-            columns: ["mairie_id"]
+            foreignKeyName: "payments_ticket_id_fkey"
+            columns: ["ticket_id"]
             isOneToOne: false
-            referencedRelation: "mairies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "field_agents_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "field_agents_organization_unit_id_fkey"
-            columns: ["organization_unit_id"]
-            isOneToOne: false
-            referencedRelation: "organization_units"
+            referencedRelation: "tickets"
             referencedColumns: ["id"]
           },
         ]
       }
-      mairies: {
+      pmu_horses: {
         Row: {
-          account_user_id: string | null
-          commune_id: string
           created_at: string
+          external_id: string
+          form: string | null
           id: string
-          is_active: boolean
-          latitude: number | null
-          location_label: string | null
-          longitude: number | null
-          mayor_name: string | null
+          intl_name: string | null
+          jockey: string
           name: string
-          phone: string | null
-          region_id: string
+          number: number
+          odds: number | null
+          place_rate: number | null
+          race_id: string
+          source: string
+          source_updated_at: string | null
+          status: string
+          trainer: string | null
           updated_at: string
+          weight: number | null
+          win_rate: number | null
         }
         Insert: {
-          account_user_id?: string | null
-          commune_id: string
           created_at?: string
+          external_id: string
+          form?: string | null
           id?: string
-          is_active?: boolean
-          latitude?: number | null
-          location_label?: string | null
-          longitude?: number | null
-          mayor_name?: string | null
+          intl_name?: string | null
+          jockey: string
           name: string
-          phone?: string | null
-          region_id: string
+          number: number
+          odds?: number | null
+          place_rate?: number | null
+          race_id: string
+          source: string
+          source_updated_at?: string | null
+          status?: string
+          trainer?: string | null
           updated_at?: string
+          weight?: number | null
+          win_rate?: number | null
         }
         Update: {
-          account_user_id?: string | null
-          commune_id?: string
           created_at?: string
+          external_id?: string
+          form?: string | null
           id?: string
-          is_active?: boolean
-          latitude?: number | null
-          location_label?: string | null
-          longitude?: number | null
-          mayor_name?: string | null
+          intl_name?: string | null
+          jockey?: string
           name?: string
-          phone?: string | null
-          region_id?: string
+          number?: number
+          odds?: number | null
+          place_rate?: number | null
+          race_id?: string
+          source?: string
+          source_updated_at?: string | null
+          status?: string
+          trainer?: string | null
           updated_at?: string
+          weight?: number | null
+          win_rate?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "mairies_commune_id_fkey"
-            columns: ["commune_id"]
+            foreignKeyName: "pmu_horses_race_id_fkey"
+            columns: ["race_id"]
             isOneToOne: false
-            referencedRelation: "communes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "mairies_commune_region_fk"
-            columns: ["commune_id", "region_id"]
-            isOneToOne: false
-            referencedRelation: "communes"
-            referencedColumns: ["id", "region_id"]
-          },
-          {
-            foreignKeyName: "mairies_region_id_fkey"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "regions"
+            referencedRelation: "pmu_races"
             referencedColumns: ["id"]
           },
         ]
       }
-      notifications: {
+      pmu_races: {
         Row: {
-          body: string
           created_at: string
+          external_id: string
           id: string
-          read_at: string | null
-          report_id: string | null
-          title: string
-          type: string
-          user_id: string
-        }
-        Insert: {
-          body: string
-          created_at?: string
-          id?: string
-          read_at?: string | null
-          report_id?: string | null
-          title: string
-          type: string
-          user_id: string
-        }
-        Update: {
-          body?: string
-          created_at?: string
-          id?: string
-          read_at?: string | null
-          report_id?: string | null
-          title?: string
-          type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "public_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_units: {
-        Row: {
-          code: string
-          created_at: string
-          description: string | null
-          email: string | null
-          id: string
-          is_active: boolean
-          latitude: number | null
-          location_label: string | null
-          longitude: number | null
-          name: string
-          organization_id: string
-          parent_unit_id: string | null
-          phone: string | null
-          region_id: string | null
-          unit_type: string
+          name: string | null
+          race_date: string
+          race_number: number
+          source: string
+          source_updated_at: string | null
+          start_at: string
+          status: string
           updated_at: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          description?: string | null
-          email?: string | null
-          id?: string
-          is_active?: boolean
-          latitude?: number | null
-          location_label?: string | null
-          longitude?: number | null
-          name: string
-          organization_id: string
-          parent_unit_id?: string | null
-          phone?: string | null
-          region_id?: string | null
-          unit_type: string
-          updated_at?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          description?: string | null
-          email?: string | null
-          id?: string
-          is_active?: boolean
-          latitude?: number | null
-          location_label?: string | null
-          longitude?: number | null
-          name?: string
-          organization_id?: string
-          parent_unit_id?: string | null
-          phone?: string | null
-          region_id?: string | null
-          unit_type?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_units_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_units_parent_unit_id_fkey"
-            columns: ["parent_unit_id"]
-            isOneToOne: false
-            referencedRelation: "organization_units"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_units_region_id_fkey"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "regions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organization_users: {
-        Row: {
-          created_at: string
-          id: string
-          is_active: boolean
-          organization_id: string
-          role: string
-          unit_id: string | null
-          updated_at: string
-          user_id: string
+          venue: string
         }
         Insert: {
           created_at?: string
+          external_id: string
           id?: string
-          is_active?: boolean
-          organization_id: string
-          role: string
-          unit_id?: string | null
+          name?: string | null
+          race_date: string
+          race_number: number
+          source: string
+          source_updated_at?: string | null
+          start_at: string
+          status?: string
           updated_at?: string
-          user_id: string
+          venue: string
         }
         Update: {
           created_at?: string
+          external_id?: string
           id?: string
-          is_active?: boolean
-          organization_id?: string
-          role?: string
-          unit_id?: string | null
+          name?: string | null
+          race_date?: string
+          race_number?: number
+          source?: string
+          source_updated_at?: string | null
+          start_at?: string
+          status?: string
           updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_users_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_users_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "organization_units"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organizations: {
-        Row: {
-          code: string
-          created_at: string
-          description: string | null
-          email: string | null
-          id: string
-          is_active: boolean
-          logo_url: string | null
-          name: string
-          phone: string | null
-          type: string
-          updated_at: string
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          description?: string | null
-          email?: string | null
-          id?: string
-          is_active?: boolean
-          logo_url?: string | null
-          name: string
-          phone?: string | null
-          type?: string
-          updated_at?: string
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          description?: string | null
-          email?: string | null
-          id?: string
-          is_active?: boolean
-          logo_url?: string | null
-          name?: string
-          phone?: string | null
-          type?: string
-          updated_at?: string
+          venue?: string
         }
         Relationships: []
       }
       profiles: {
         Row: {
-          avatar_url: string | null
           created_at: string
-          full_name: string | null
+          first_name: string | null
           id: string
+          last_name: string | null
+          password_setup_required: boolean
           phone: string | null
+          region: string | null
           updated_at: string
         }
         Insert: {
-          avatar_url?: string | null
           created_at?: string
-          full_name?: string | null
+          first_name?: string | null
           id: string
+          last_name?: string | null
+          password_setup_required?: boolean
           phone?: string | null
+          region?: string | null
           updated_at?: string
         }
         Update: {
-          avatar_url?: string | null
           created_at?: string
-          full_name?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
+          password_setup_required?: boolean
           phone?: string | null
+          region?: string | null
           updated_at?: string
         }
         Relationships: []
       }
-      regions: {
-        Row: {
-          code: string | null
-          created_at: string
-          geoname_id: number | null
-          id: string
-          name: string
-        }
-        Insert: {
-          code?: string | null
-          created_at?: string
-          geoname_id?: number | null
-          id?: string
-          name: string
-        }
-        Update: {
-          code?: string | null
-          created_at?: string
-          geoname_id?: number | null
-          id?: string
-          name?: string
-        }
-        Relationships: []
-      }
-      report_assignments: {
-        Row: {
-          agent_id: string | null
-          assigned_at: string
-          assigned_by: string | null
-          assignment_status: string
-          completed_at: string | null
-          department_id: string | null
-          id: string
-          mission_note: string | null
-          report_id: string
-          started_at: string | null
-          unassigned_at: string | null
-          unit_assignment_id: string | null
-        }
-        Insert: {
-          agent_id?: string | null
-          assigned_at?: string
-          assigned_by?: string | null
-          assignment_status?: string
-          completed_at?: string | null
-          department_id?: string | null
-          id?: string
-          mission_note?: string | null
-          report_id: string
-          started_at?: string | null
-          unassigned_at?: string | null
-          unit_assignment_id?: string | null
-        }
-        Update: {
-          agent_id?: string | null
-          assigned_at?: string
-          assigned_by?: string | null
-          assignment_status?: string
-          completed_at?: string | null
-          department_id?: string | null
-          id?: string
-          mission_note?: string | null
-          report_id?: string
-          started_at?: string | null
-          unassigned_at?: string | null
-          unit_assignment_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "report_assignments_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_assignments_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "departments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_assignments_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "public_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_assignments_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_assignments_unit_assignment_id_fkey"
-            columns: ["unit_assignment_id"]
-            isOneToOne: false
-            referencedRelation: "report_unit_assignments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      report_comments: {
-        Row: {
-          author_id: string
-          body: string
-          created_at: string
-          id: string
-          report_id: string
-          visibility: string
-        }
-        Insert: {
-          author_id: string
-          body: string
-          created_at?: string
-          id?: string
-          report_id: string
-          visibility?: string
-        }
-        Update: {
-          author_id?: string
-          body?: string
-          created_at?: string
-          id?: string
-          report_id?: string
-          visibility?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "report_comments_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_comments_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "public_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_comments_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "reports"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      report_confirmations: {
-        Row: {
-          citizen_id: string
-          created_at: string
-          id: string
-          report_id: string
-        }
-        Insert: {
-          citizen_id: string
-          created_at?: string
-          id?: string
-          report_id: string
-        }
-        Update: {
-          citizen_id?: string
-          created_at?: string
-          id?: string
-          report_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "report_confirmations_citizen_id_fkey"
-            columns: ["citizen_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_confirmations_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "public_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_confirmations_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "reports"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      report_field_verifications: {
-        Row: {
-          accuracy_m: number | null
-          agent_id: string
-          assignment_id: string
-          id: string
-          latitude: number
-          longitude: number
-          report_id: string
-          verified_at: string
-        }
-        Insert: {
-          accuracy_m?: number | null
-          agent_id: string
-          assignment_id: string
-          id?: string
-          latitude: number
-          longitude: number
-          report_id: string
-          verified_at?: string
-        }
-        Update: {
-          accuracy_m?: number | null
-          agent_id?: string
-          assignment_id?: string
-          id?: string
-          latitude?: number
-          longitude?: number
-          report_id?: string
-          verified_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "report_field_verifications_assignment_id_fkey"
-            columns: ["assignment_id"]
-            isOneToOne: false
-            referencedRelation: "report_assignments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_field_verifications_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "public_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_field_verifications_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "reports"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      report_media: {
-        Row: {
-          captured_latitude: number | null
-          captured_longitude: number | null
-          created_at: string
-          file_size: number | null
-          id: string
-          media_role: string
-          media_type: string
-          report_id: string
-          storage_path: string
-          uploaded_by: string | null
-        }
-        Insert: {
-          captured_latitude?: number | null
-          captured_longitude?: number | null
-          created_at?: string
-          file_size?: number | null
-          id?: string
-          media_role?: string
-          media_type: string
-          report_id: string
-          storage_path: string
-          uploaded_by?: string | null
-        }
-        Update: {
-          captured_latitude?: number | null
-          captured_longitude?: number | null
-          created_at?: string
-          file_size?: number | null
-          id?: string
-          media_role?: string
-          media_type?: string
-          report_id?: string
-          storage_path?: string
-          uploaded_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "report_media_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "public_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_media_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "reports"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      report_organization_transfers: {
-        Row: {
-          created_at: string
-          from_mairie_id: string
-          id: string
-          organization_id: string
-          report_id: string
-          responded_at: string | null
-          responded_by: string | null
-          response_note: string | null
-          status: string
-          transmitted_at: string
-          transmitted_by: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          from_mairie_id: string
-          id?: string
-          organization_id: string
-          report_id: string
-          responded_at?: string | null
-          responded_by?: string | null
-          response_note?: string | null
-          status?: string
-          transmitted_at?: string
-          transmitted_by: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          from_mairie_id?: string
-          id?: string
-          organization_id?: string
-          report_id?: string
-          responded_at?: string | null
-          responded_by?: string | null
-          response_note?: string | null
-          status?: string
-          transmitted_at?: string
-          transmitted_by?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "report_organization_transfers_from_mairie_id_fkey"
-            columns: ["from_mairie_id"]
-            isOneToOne: false
-            referencedRelation: "mairies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_organization_transfers_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_organization_transfers_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "public_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_organization_transfers_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "reports"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      report_status_history: {
-        Row: {
-          actor_id: string | null
-          created_at: string
-          id: string
-          new_status: string
-          old_status: string | null
-          reason: string | null
-          report_id: string
-        }
-        Insert: {
-          actor_id?: string | null
-          created_at?: string
-          id?: string
-          new_status: string
-          old_status?: string | null
-          reason?: string | null
-          report_id: string
-        }
-        Update: {
-          actor_id?: string | null
-          created_at?: string
-          id?: string
-          new_status?: string
-          old_status?: string | null
-          reason?: string | null
-          report_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "report_status_history_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_status_history_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "public_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_status_history_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "reports"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      report_unit_assignments: {
-        Row: {
-          assigned_at: string
-          assigned_by: string
-          completed_at: string | null
-          created_at: string
-          id: string
-          mission_note: string | null
-          organization_id: string
-          report_id: string
-          started_at: string | null
-          status: string
-          unassigned_at: string | null
-          unit_id: string
-          updated_at: string
-        }
-        Insert: {
-          assigned_at?: string
-          assigned_by: string
-          completed_at?: string | null
-          created_at?: string
-          id?: string
-          mission_note?: string | null
-          organization_id: string
-          report_id: string
-          started_at?: string | null
-          status?: string
-          unassigned_at?: string | null
-          unit_id: string
-          updated_at?: string
-        }
-        Update: {
-          assigned_at?: string
-          assigned_by?: string
-          completed_at?: string | null
-          created_at?: string
-          id?: string
-          mission_note?: string | null
-          organization_id?: string
-          report_id?: string
-          started_at?: string | null
-          status?: string
-          unassigned_at?: string | null
-          unit_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "report_unit_assignments_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_unit_assignments_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "public_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_unit_assignments_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_unit_assignments_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "organization_units"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      reports: {
-        Row: {
-          category_id: string
-          citizen_id: string
-          commune_id: string
-          created_at: string
-          department_id: string | null
-          description: string
-          id: string
-          is_public: boolean
-          latitude: number | null
-          location_label: string | null
-          longitude: number | null
-          priority: string
-          reference_code: string
-          region_id: string | null
-          resolution_note: string | null
-          resolved_at: string | null
-          status: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          category_id: string
-          citizen_id: string
-          commune_id: string
-          created_at?: string
-          department_id?: string | null
-          description: string
-          id?: string
-          is_public?: boolean
-          latitude?: number | null
-          location_label?: string | null
-          longitude?: number | null
-          priority?: string
-          reference_code: string
-          region_id?: string | null
-          resolution_note?: string | null
-          resolved_at?: string | null
-          status?: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          category_id?: string
-          citizen_id?: string
-          commune_id?: string
-          created_at?: string
-          department_id?: string | null
-          description?: string
-          id?: string
-          is_public?: boolean
-          latitude?: number | null
-          location_label?: string | null
-          longitude?: number | null
-          priority?: string
-          reference_code?: string
-          region_id?: string | null
-          resolution_note?: string | null
-          resolved_at?: string | null
-          status?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reports_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reports_citizen_id_fkey"
-            columns: ["citizen_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reports_commune_id_fkey"
-            columns: ["commune_id"]
-            isOneToOne: false
-            referencedRelation: "communes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reports_commune_region_fk"
-            columns: ["commune_id", "region_id"]
-            isOneToOne: false
-            referencedRelation: "communes"
-            referencedColumns: ["id", "region_id"]
-          },
-          {
-            foreignKeyName: "reports_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "departments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reports_region_id_fkey"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "regions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      roles: {
+      tickets: {
         Row: {
           code: string
           created_at: string
+          draw_date: string | null
+          draw_name: string | null
+          game_id: string
+          game_name: string
           id: string
-          name: string
+          legs: Json | null
+          payment_method: string
+          phone: string | null
+          picks: Json
+          picks_label: string
+          prize: number | null
+          region: string | null
+          stake: number
+          status: Database["public"]["Enums"]["ticket_status"]
+          updated_at: string
+          user_id: string
         }
         Insert: {
           code: string
           created_at?: string
+          draw_date?: string | null
+          draw_name?: string | null
+          game_id: string
+          game_name: string
           id?: string
-          name: string
+          legs?: Json | null
+          payment_method: string
+          phone?: string | null
+          picks: Json
+          picks_label: string
+          prize?: number | null
+          region?: string | null
+          stake: number
+          status?: Database["public"]["Enums"]["ticket_status"]
+          updated_at?: string
+          user_id: string
         }
         Update: {
           code?: string
           created_at?: string
+          draw_date?: string | null
+          draw_name?: string | null
+          game_id?: string
+          game_name?: string
           id?: string
-          name?: string
+          legs?: Json | null
+          payment_method?: string
+          phone?: string | null
+          picks?: Json
+          picks_label?: string
+          prize?: number | null
+          region?: string | null
+          stake?: number
+          status?: Database["public"]["Enums"]["ticket_status"]
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
-      }
-      unit_communes: {
-        Row: {
-          commune_id: string
-          created_at: string
-          unit_id: string
-        }
-        Insert: {
-          commune_id: string
-          created_at?: string
-          unit_id: string
-        }
-        Update: {
-          commune_id?: string
-          created_at?: string
-          unit_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "unit_communes_commune_id_fkey"
-            columns: ["commune_id"]
-            isOneToOne: false
-            referencedRelation: "communes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "unit_communes_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "organization_units"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       user_roles: {
         Row: {
           created_at: string
-          role_id: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
-          role_id: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
-          role_id?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_role_id_fkey"
-            columns: ["role_id"]
-            isOneToOne: false
-            referencedRelation: "roles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_roles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
-      public_report_media: {
-        Row: {
-          captured_latitude: number | null
-          captured_longitude: number | null
-          created_at: string | null
-          file_size: number | null
-          id: string | null
-          media_role: string | null
-          media_type: string | null
-          report_id: string | null
-          storage_path: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "report_media_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "public_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_media_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "reports"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      public_report_status_history: {
-        Row: {
-          created_at: string | null
-          id: string | null
-          new_status: string | null
-          old_status: string | null
-          reason: string | null
-          report_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "report_status_history_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "public_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "report_status_history_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "reports"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      public_reports: {
-        Row: {
-          category_id: string | null
-          commune_id: string | null
-          created_at: string | null
-          department_id: string | null
-          description: string | null
-          id: string | null
-          latitude: number | null
-          location_label: string | null
-          longitude: number | null
-          priority: string | null
-          reference_code: string | null
-          region_id: string | null
-          resolution_note: string | null
-          resolved_at: string | null
-          status: string | null
-          title: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          category_id?: string | null
-          commune_id?: string | null
-          created_at?: string | null
-          department_id?: string | null
-          description?: string | null
-          id?: string | null
-          latitude?: number | null
-          location_label?: string | null
-          longitude?: number | null
-          priority?: string | null
-          reference_code?: string | null
-          region_id?: string | null
-          resolution_note?: string | null
-          resolved_at?: string | null
-          status?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          category_id?: string | null
-          commune_id?: string | null
-          created_at?: string | null
-          department_id?: string | null
-          description?: string | null
-          id?: string | null
-          latitude?: number | null
-          location_label?: string | null
-          longitude?: number | null
-          priority?: string | null
-          reference_code?: string | null
-          region_id?: string | null
-          resolution_note?: string | null
-          resolved_at?: string | null
-          status?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reports_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reports_commune_id_fkey"
-            columns: ["commune_id"]
-            isOneToOne: false
-            referencedRelation: "communes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reports_commune_region_fk"
-            columns: ["commune_id", "region_id"]
-            isOneToOne: false
-            referencedRelation: "communes"
-            referencedColumns: ["id", "region_id"]
-          },
-          {
-            foreignKeyName: "reports_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "departments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reports_region_id_fkey"
-            columns: ["region_id"]
-            isOneToOne: false
-            referencedRelation: "regions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
-      agency_assign_report_to_agent: {
+      create_ticket_with_payment: {
         Args: {
-          p_agent_id: string
-          p_mission_note?: string
-          p_unit_assignment_id: string
+          p_actor_user_id: string
+          p_foot_picks?: Json
+          p_payment_id: string
+          p_ticket: Json
         }
         Returns: string
       }
-      agency_attach_agent: { Args: { p_agent_id: string }; Returns: string }
-      agency_can_manage_agent: {
-        Args: { p_agent_id: string }
+      get_loto_ball_statistics: { Args: never; Returns: Json }
+      has_admin_permission: {
+        Args: { _permission: string; _user_id: string }
         Returns: boolean
       }
-      agent_confirm_field_verification: {
+      has_role: {
         Args: {
-          p_accuracy_m: number
-          p_latitude: number
-          p_longitude: number
-          p_report_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      set_admin_permissions_atomic: {
+        Args: {
+          p_actor_user_id: string
+          p_permissions: string[]
+          p_target_user_id: string
+        }
+        Returns: undefined
+      }
+      settle_ticket_atomic: {
+        Args: {
+          p_leg_updates?: Json
+          p_mark_all_foot_losing?: boolean
+          p_prize: number
+          p_status: Database["public"]["Enums"]["ticket_status"]
+          p_ticket_id: string
         }
         Returns: {
-          accuracy_m: number | null
-          agent_id: string
-          assignment_id: string
           id: string
-          latitude: number
-          longitude: number
-          report_id: string
-          verified_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "report_field_verifications"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+          prize: number
+          status: Database["public"]["Enums"]["ticket_status"]
+        }[]
       }
-      agent_resolve_report: {
-        Args: {
-          p_media_id: string
-          p_report_id: string
-          p_resolution_note?: string
-        }
-        Returns: {
-          category_id: string
-          citizen_id: string
-          commune_id: string
-          created_at: string
-          department_id: string | null
-          description: string
-          id: string
-          is_public: boolean
-          latitude: number | null
-          location_label: string | null
-          longitude: number | null
-          priority: string
-          reference_code: string
-          region_id: string | null
-          resolution_note: string | null
-          resolved_at: string | null
-          status: string
-          title: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "reports"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      has_role: { Args: { required_role: string }; Returns: boolean }
-      is_staff: { Args: never; Returns: boolean }
-      mairie_transmit_report: {
-        Args: {
-          p_note?: string
-          p_organization_id: string
-          p_report_id: string
-        }
-        Returns: string
-      }
-      organization_accept_transfer: {
-        Args: { p_note?: string; p_transfer_id: string }
-        Returns: string
-      }
-      organization_assign_agency: {
-        Args: {
-          p_agency_unit_id: string
-          p_note?: string
-          p_transfer_id: string
-        }
-        Returns: string
-      }
-      organization_create_agency: {
-        Args: {
-          p_admin_email?: string
-          p_admin_password?: string
-          p_code: string
-          p_email?: string
-          p_latitude?: number
-          p_location_label?: string
-          p_longitude?: number
-          p_name: string
-          p_organization_id: string
-          p_phone?: string
-          p_region_id?: string
-        }
-        Returns: string
-      }
-      organization_decline_transfer: {
-        Args: { p_note: string; p_transfer_id: string }
-        Returns: string
-      }
-      resolve_commune_from_gps: {
-        Args: { p_latitude: number; p_longitude: number }
-        Returns: string
+      transfer_super_admin_ownership: {
+        Args: { p_actor_user_id: string; p_target_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "player" | "super_admin"
+      payment_status: "pending" | "confirmed" | "failed"
+      ticket_status: "pending" | "losing" | "winning" | "paid"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1684,6 +890,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "player", "super_admin"],
+      payment_status: ["pending", "confirmed", "failed"],
+      ticket_status: ["pending", "losing", "winning", "paid"],
+    },
   },
 } as const
