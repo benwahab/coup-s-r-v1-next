@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 // Rate limiting et journalisation de sécurité sont appliqués côté serveur
 // (otp.functions / audit_logs). Aucun journal client n'est présenté comme télémétrie.
-type RateCheck = { ok: true } | { ok: false; reason: "phone" | "ip"; retryInMs: number };
+type RateCheck = { ok: boolean; reason?: "phone" | "ip"; retryInMs?: number };
 const checkRate = (_phone: string): RateCheck => ({ ok: true });
 const pushAttempt = (_phone: string) => {};
 const logAuthEvent = (_kind: string, _phone: string, _note?: string) => {};
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await sendOtp({ data: { phone } });
     if (!res.ok) {
       logAuthEvent("rate-limited", phone, `server blocked (${res.reason})`);
-      return { ok: false as const, rate: { ok: false, reason: "phone" as const, retryInMs: 15 * 60 * 1000 } };
+      return { ok: false as const, rate: { ok: false, reason: "phone" as const, retryInMs: 15 * 60 * 1000 } as RateCheck };
     }
     return { ok: true as const, code: res.code };
   }, []);

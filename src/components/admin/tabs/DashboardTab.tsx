@@ -125,7 +125,6 @@ export function DashboardTab(p: Props) {
             <QuickAction onClick={() => p.setTab("claims")} icon={LifeBuoy} label="Réclamations" hint="Suivi des réclamations" />
             <QuickAction onClick={() => p.setTab("ops")} icon={Send} label={t("cashoutRequests")} hint={t("admin.dash.requests", { count: p.cashoutRequestsCount })} tone="gold" />
             <QuickAction onClick={() => p.setTab("admins")} icon={Settings} label={t("admin.ops.title")} hint={t("admin.admins.title")} />
-            <QuickAction onClick={() => p.setTab("logs")} icon={LogIn} label={t("admin.dash.connectionLog")} hint={t("admin.dash.events", { count: p.authLogCount })} />
             <QuickAction onClick={() => p.setTab("claims")} icon={LifeBuoy} label={t("admin.dash.openClaim")} hint={t("admin.dash.searchByNumber")} />
             <QuickAction onClick={() => p.exportCsv("all")} icon={Download} label={t("admin.dash.exportAll")} hint={`${p.csvFrom} → ${p.csvTo}`} />
           </div>
