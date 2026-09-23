@@ -2,10 +2,6 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { GameId } from "./game-config";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./auth";
-import {
-  adminUpdateTicketStatus,
-  adminUpdateTicketLegStatus,
-} from "./admin.functions";
 import { createTicketAfterPayment } from "./tickets.functions";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -51,6 +47,7 @@ export interface Ticket {
   status: TicketStatus;
   prize?: number;
   legs?: TicketLeg[];
+  footPickStatuses?: FootPickStatus[];
   drawName?: string;
 }
 
@@ -61,8 +58,6 @@ interface Ctx {
   refresh: () => void;
   addTicket: (t: Omit<Ticket, "id" | "createdAt" | "status"> & { paymentReference: string }) => Promise<Ticket>;
   getTicket: (id: string) => Ticket | undefined;
-  updateStatus: (id: string, status: TicketStatus, prize?: number) => Promise<void>;
-  updateLegStatus: (ticketId: string, legId: string, status: TicketStatus, prize?: number) => Promise<void>;
 }
 
 const TicketsCtx = createContext<Ctx | null>(null);
@@ -200,26 +195,8 @@ export function TicketsProvider({ children }: { children: ReactNode }) {
 
   const getTicket = (id: string) => tickets.find((t) => t.id === id);
 
-  const updateStatus: Ctx["updateStatus"] = async (id, status, prize) => {
-    await adminUpdateTicketStatus({
-      data: { code: id, status, prize: prize ?? null },
-    });
-    setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, status, prize } : t)));
-  };
-
-  const updateLegStatus: Ctx["updateLegStatus"] = async (ticketId, legId, status, prize) => {
-    const res = await adminUpdateTicketLegStatus({
-      data: { code: ticketId, legId, status, prize: prize ?? null },
-    });
-    setTickets((prev) => prev.map((t) => {
-      if (t.id !== ticketId || !t.legs) return t;
-      const legs = t.legs.map((l) => (l.legId === legId ? { ...l, status, prize } : l));
-      return { ...t, legs, status: res.status, prize: res.prize ?? undefined };
-    }));
-  };
-
   return (
-    <TicketsCtx.Provider value={{ tickets, loading, error, refresh, addTicket, getTicket, updateStatus, updateLegStatus }}>
+    <TicketsCtx.Provider value={{ tickets, loading, error, refresh, addTicket, getTicket }}>
       {children}
     </TicketsCtx.Provider>
   );

@@ -99,17 +99,8 @@ export function diffParts(target: Date, now: Date = new Date()) {
   };
 }
 
-/** Détecte l'opérateur Mobile Money depuis un numéro nigérien. */
-export function detectOperator(phone: string): { id: string; name: string; color: string } {
-  const clean = phone.replace(/\D/g, "").replace(/^227/, "");
-  const first = clean.charAt(0);
-  // Préfixes simulés calés sur l'écosystème Niger.
-  if (["9"].includes(first)) return { id: "airtel", name: "Airtel Money", color: "#E40000" };
-  if (["8"].includes(first)) return { id: "moov", name: "Moov Flooz", color: "#005EB8" };
-  if (["7"].includes(first)) return { id: "zamani", name: "Zamani Cash", color: "#1A6B5E" };
-  if (["6"].includes(first)) return { id: "mynita", name: "MyNita", color: "#7C3AED" };
-  if (["5"].includes(first)) return { id: "amanata", name: "Amanata", color: "#0F766E" };
-  if (["4"].includes(first)) return { id: "mynita", name: "MyNita", color: "#7C3AED" };
+/** V1 : Airtel Money est le seul moyen de paiement supporté par le backend. */
+export function detectOperator(_phone: string): { id: string; name: string; color: string } {
   return { id: "airtel", name: "Airtel Money", color: "#E40000" };
 }
 

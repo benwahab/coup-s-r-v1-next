@@ -166,6 +166,7 @@ export const adminGetLotoBallStatistics = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
     await assertAdminPermission(context.supabase as SB, context.userId, "ball_stats");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin.rpc("get_loto_ball_statistics");
     if (error) throw new Error("ball_statistics_failed: " + error.message);
     const payload = (data ?? { balls: [], combinations: [] }) as unknown as {

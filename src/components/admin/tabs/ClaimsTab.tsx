@@ -2,7 +2,9 @@ import { LifeBuoy, Search, X } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import { statusColor } from "../shared";
-import type { AuthEvent } from "@/lib/auth-logs";
+import type { Ticket } from "@/lib/tickets";
+
+type AuthEvent = { at: number; phone: string; ip: string; kind: string; note?: string };
 import type { PaymentIntent } from "@/lib/payments";
 
 interface Draft { id: string; gameName: string; totalStake: number }

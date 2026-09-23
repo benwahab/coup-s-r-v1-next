@@ -41,7 +41,7 @@ export function SiteFooter() {
     ) },
     { id: "partners", label: t("shell.footer.partners"), icon: Users, content: (
       <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm text-white/80">
-        {["Airtel Money", "Moov Money", "Zamani Cash", "Nita", "Amanata", "MyNita"].map((p) => (
+        {["Airtel Money"].map((p) => (
           <li key={p} className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-center text-xs font-semibold">{p}</li>
         ))}
       </ul>

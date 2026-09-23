@@ -482,6 +482,6 @@ export const requestCashout = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!ticket) throw new Error("ticket_not_found");
     if (ticket.status !== "winning") throw new Error("cashout_not_available");
-    if (!Number.isInteger(ticket.prize) || ticket.prize <= 0) throw new Error("invalid_prize");
+    if (ticket.prize == null || !Number.isInteger(ticket.prize) || ticket.prize <= 0) throw new Error("invalid_prize");
     throw new Error("cashout_provider_not_configured");
   });

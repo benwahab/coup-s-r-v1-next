@@ -71,7 +71,7 @@ function PmuPage() {
       .select("number,name,intl_name,jockey,status,form,win_rate,place_rate,weight")
       .eq("race_id", races[0].id)
       .order("number");
-    if (error) { setHorses([]); setLoadError(true); } else setHorses((data ?? []) as PmuHorse[]);
+    if (error) { setHorses([]); setLoadError(true); } else setHorses((data ?? []).map((h) => ({ number: h.number, name: h.name, intlName: h.intl_name, jockey: h.jockey, status: h.status === "non-partant" ? "non-partant" : "partant", form: h.form, winRate: h.win_rate, placeRate: h.place_rate, weight: h.weight })));
     setLoading(false);
   };
   useEffect(() => { void loadRace(); }, []);
@@ -201,9 +201,9 @@ function PmuPage() {
                       active ? "bg-gold-gradient text-[var(--gold-foreground)] shadow-gold" : "bg-secondary text-secondary-foreground",
                     )}>{h.number}</span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-bold">{h.name} <span className="ml-1 text-[10px] font-normal italic text-muted-foreground">/ {h.intlName}</span></span>
-                      <span className="block truncate text-xs text-muted-foreground">{h.jockey} · {h.weight}kg</span>
-                      <span className="block text-[10px] font-bold text-primary tabular-nums">★ V:{Math.round(h.winRate*100)}% · P:{Math.round(h.placeRate*100)}% · {h.form}</span>
+                      <span className="block truncate font-bold">{h.name} <span className="ml-1 text-[10px] font-normal italic text-muted-foreground">/ {h.intlName ?? "—"}</span></span>
+                      <span className="block truncate text-xs text-muted-foreground">{h.jockey} · {h.weight ?? "—"}kg</span>
+                      <span className="block text-[10px] font-bold text-primary tabular-nums">★ V:{h.winRate == null ? "—" : `${Math.round(h.winRate*100)}%`} · P:{h.placeRate == null ? "—" : `${Math.round(h.placeRate*100)}%`} · {h.form ?? "—"}</span>
                     </span>
                     {active && (
                       <span className="grid h-7 w-7 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
@@ -268,7 +268,7 @@ function PmuPage() {
                 </div>
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("potentialWin")}</div>
-                  <div className="font-display text-sm font-extrabold text-success">{t("game.calculatedAtSettlement")}</div>
+                  <div className="font-display text-sm font-extrabold text-success">Calculé au règlement</div>
                 </div>
               </div>
             </div>
