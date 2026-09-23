@@ -13,12 +13,13 @@ const scheduleSchema = z.object({
   enabled: z.boolean(),
 });
 
-async function assertAdmin(userId: string) {
-  const { data, error } = await supabaseAdmin.rpc("has_role", { _user_id: userId, _role: "admin" });
-  if (error || data !== true) {
-    const { data: superAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: userId, _role: "super_admin" });
-    if (superAdmin !== true) throw new Error("Forbidden: admin role required");
-  }
+async function assertOperationsPermission(userId: string) {
+  const { data, error } = await supabaseAdmin.rpc("has_admin_permission", {
+    _user_id: userId,
+    _permission: "operations",
+  });
+  if (error) throw new Error("permission_check_failed");
+  if (data !== true) throw new Error("Forbidden: operations permission required");
 }
 
 export const getGameSchedules = createServerFn({ method: "POST" })
@@ -36,7 +37,7 @@ export const adminUpdateGameSchedule = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => scheduleSchema.parse(data))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.userId);
+    await assertOperationsPermission(context.userId);
 
     const { data: row, error } = await supabaseAdmin
       .from("game_schedules")
