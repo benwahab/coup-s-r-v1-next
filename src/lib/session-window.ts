@@ -4,7 +4,7 @@
 // Foot : session = date du jour
 
 import { nigerParts } from "./schedule";
-import type { GameId } from "./mock-data";
+import type { GameId } from "./game-config";
 
 export function currentSessionId(gameId: GameId, now: Date = new Date()): string {
   const p = nigerParts(now);

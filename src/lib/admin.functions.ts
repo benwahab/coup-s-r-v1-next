@@ -82,7 +82,7 @@ export const getMyAdminPermissions = createServerFn({ method: "POST" })
     });
     if (superError) throw new Error("role_check_failed");
     if (superAdmin === true) {
-      return { isSuperAdmin: true as const, permissions: AdminPermission[] | "all" };
+      return { isSuperAdmin: true as const, permissions: "all" as AdminPermission[] | "all" };
     }
     const { data, error } = await context.supabase
       .from("admin_permissions")

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { TicketLeg } from "./tickets";
-import type { GameId } from "./mock-data";
+import type { GameId } from "./game-config";
 import { currentSessionId } from "./session-window";
 
 /** Un brouillon = pari sauvegardé pour paiement ultérieur (jeu fermé au moment du choix). */

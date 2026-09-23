@@ -1,6 +1,6 @@
 import { Check, Smartphone } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { regions, paymentMethods } from "@/lib/mock-data";
+import { regions, paymentMethods } from "@/lib/game-config";
 import { cn } from "@/lib/utils";
 import { useBetFlow } from "./context";
 import { Card, Footer } from "./atoms";

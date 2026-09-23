@@ -60,7 +60,8 @@ function AuthPage() {
 
   const lockMs = remainingLockMs();
   const permanent = isPermanent();
-  // The legacy OTP lock is only a local UX safeguard for the OTP flow.\n  // It must never block a valid password login or password setup.\n  const locked = step === "otp" && (permanent || lockMs > 0);
+  // The legacy OTP lock is only a local UX safeguard for the OTP flow.
+  // It must never block a valid password login or password setup.\n  const locked = step === "otp" && (permanent || lockMs > 0);
 
   useEffect(() => {
     if (step !== "otp") return;

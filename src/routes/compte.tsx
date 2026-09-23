@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { checkPhoneAccount } from "@/lib/account.functions";
-import { regions } from "@/lib/mock-data";
+import { regions } from "@/lib/game-config";
 import { TERMS_VERSION, PRIVACY_VERSION, mockIp, makeUserId } from "@/lib/legal";
 import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";

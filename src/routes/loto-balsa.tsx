@@ -48,10 +48,12 @@ function LotoPage() {
   const [picks, setPicks] = useState<number[]>([]);
   const [stake, setStake] = useState(DEFAULT_STAKE);
   const [cart, setCart] = useState<TicketLeg[]>([]);
-  const [schedule, setSchedule] = useState<{ open_hour:number; close_hour:number; draw_hour:number; draw_minute:number; enabled:boolean } | null>(null);\n  const [scheduleLoading, setScheduleLoading] = useState(true);
+  const [schedule, setSchedule] = useState<{ open_hour:number; close_hour:number; draw_hour:number; draw_minute:number; enabled:boolean } | null>(null);
+  const [scheduleLoading, setScheduleLoading] = useState(true);
   useEffect(() => {
     void supabase.from("game_schedules").select("open_hour,close_hour,draw_hour,draw_minute,enabled").eq("game_id","loto").maybeSingle()
-      .then(({ data }) => setSchedule(data ?? null))\n      .finally(() => setScheduleLoading(false));
+      .then(({ data }) => setSchedule(data ?? null))
+      .finally(() => setScheduleLoading(false));
   }, []);
 
   const drawName = drawNameForDate();
