@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { useTickets } from "@/lib/tickets";
 import { signTicketToken } from "@/lib/ticket-token.functions";
 import { requestCashout } from "@/lib/settlement.functions";
-import { footMatches } from "@/lib/mock-data";
+import { useFootFixtures } from "@/lib/foot-fixtures";
 import { labelForPick } from "@/lib/foot-markets";
 import { cn } from "@/lib/utils";
 import { WinConfetti } from "@/components/WinConfetti";
@@ -22,6 +22,7 @@ function TicketPage() {
   const { t } = useI18n();
   const { getTicket } = useTickets();
   const ticket = getTicket(id);
+  const { matches: footMatches } = useFootFixtures();
   const [qr, setQr] = useState<string>("");
   const [cashoutBusy, setCashoutBusy] = useState(false);
 
