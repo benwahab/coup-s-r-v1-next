@@ -106,7 +106,12 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     if (!payment.method || payment.method !== data.payment) throw new Error("payment_method_mismatch");
     const drawDate = data.drawDate ? data.drawDate.slice(0, 10) : "";
     if (drawDate && !/^\d{4}-\d{2}-\d{2}$/.test(drawDate)) throw new Error("invalid_draw_date");
-    if (drawDate && drawDate < new Date().toISOString().slice(0, 10)) throw new Error("draw_closed");
+    if (drawDate) {
+      const { nigerParts } = await import("@/lib/schedule");
+      const nowParts = nigerParts(new Date());
+      const todayNiger = [nowParts.year, String(nowParts.month).padStart(2, "0"), String(nowParts.day).padStart(2, "0")].join("-");
+      if (drawDate < todayNiger) throw new Error("draw_closed");
+    }
 
     const code = ticketCodeFromPayment(payment.id);
 
@@ -245,6 +250,11 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
               .maybeSingle();
             if (oddsError) throw new Error("fixture_odds_lookup_failed");
             if (!fixture) throw new Error("fixture_not_found");
+            // The canonical fixture table currently stores only 1X2 odds.
+            // Never trust client-supplied odds for other markets. Until a
+            // provider-backed odds source is persisted server-side for a market,
+            // fail closed rather than creating a ticket with unverifiable odds.
+            if (marketId !== "1x2") throw new Error("foot_market_odds_not_configured");
             const oddsByOption: Record<string, number | null> = {
               "1": fixture.odds_home,
               "X": fixture.odds_draw,
