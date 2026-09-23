@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 type SB = SupabaseClient<Database>;
 
@@ -15,7 +15,7 @@ export async function writeAuditLog(
   const { error } = await supabaseAdmin.from("audit_logs").insert({
     user_id: input.userId ?? null,
     action: input.action,
-    detail: input.detail ?? null,
+    detail: (input.detail ?? null) as Json,
     ip: input.ip ?? null,
   });
   if (error) {

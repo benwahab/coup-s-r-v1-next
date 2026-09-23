@@ -89,7 +89,7 @@ export function ResultsTab() {
         onChange={(e) => setValues(e.target.value)}
         rows={8}
         placeholder={
-          gameId === "foot"
+          (gameId as string) === "foot"
             ? 'match-id:1\nmatch-id:X\nou JSON: {"matchId":"match-id","result":"1","homeGoals":2,"awayGoals":1,"halfTimeHomeGoals":1,"halfTimeAwayGoals":0,"yellowCards":4,"corners":8,"scorers":["home_star"]}'
             : gameId === "loto"
               ? "7, 12, 19, 28, 34"

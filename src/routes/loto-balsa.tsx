@@ -52,8 +52,7 @@ function LotoPage() {
   const [scheduleLoading, setScheduleLoading] = useState(true);
   useEffect(() => {
     void supabase.from("game_schedules").select("open_hour,close_hour,draw_hour,draw_minute,enabled").eq("game_id","loto").maybeSingle()
-      .then(({ data }) => setSchedule(data ?? null))
-      .finally(() => setScheduleLoading(false));
+      .then(({ data }) => { setSchedule(data ?? null); setScheduleLoading(false); }, () => setScheduleLoading(false));
   }, []);
 
   const drawName = drawNameForDate();

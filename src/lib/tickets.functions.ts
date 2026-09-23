@@ -279,7 +279,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
               "2": fixture.odds_away,
             };
             const odds = oddsByOption[selection];
-            if (!Number.isFinite(odds) || (odds as number) < 1 || (odds as number) > 1000) {
+            if (typeof odds !== "number" || !Number.isFinite(odds) || odds < 1 || (odds as number) > 1000) {
               throw new Error("invalid_backend_odds");
             }
             const list = byFixture.get(fixtureId) ?? [];

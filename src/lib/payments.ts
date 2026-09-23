@@ -11,7 +11,7 @@ const WINDOW_MS = 30_000; // fenêtre anti-doublon : 30s
 export interface PaymentIntent {
   key: string;
   txRef: string;
-  gameId: string;
+  gameId: string | null;
   phone: string;
   amount: number;
   createdAt: number;
@@ -48,7 +48,7 @@ export async function checkDuplicate(key: string): Promise<{ duplicate: boolean;
 
 export async function beginPayment(input: {
   key: string;
-  gameId: string;
+  gameId: string | null;
   phone: string;
   amount: number;
   method?: string;

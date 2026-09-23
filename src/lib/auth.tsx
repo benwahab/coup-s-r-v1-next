@@ -1,5 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { checkRate, logAuthEvent, pushAttempt, type RateCheck } from "./auth-logs";
+// Rate limiting et journalisation de sécurité sont appliqués côté serveur
+// (otp.functions / audit_logs). Aucun journal client n'est présenté comme télémétrie.
+type RateCheck = { ok: true } | { ok: false; reason: "phone" | "ip"; retryInMs: number };
+const checkRate = (_phone: string): RateCheck => ({ ok: true });
+const pushAttempt = (_phone: string) => {};
+const logAuthEvent = (_kind: string, _phone: string, _note?: string) => {};
 import { supabase } from "@/integrations/supabase/client";
 import { sendOtp, verifyOtp as verifyOtpFn } from "./otp.functions";
 import { useAccount } from "./account";

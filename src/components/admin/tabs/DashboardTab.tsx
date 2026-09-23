@@ -30,7 +30,7 @@ interface Props {
   authLogCount: number;
   csvFrom: string;
   csvTo: string;
-  setTab: (t: "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "results" | "logs" | "claims" | "admins") => void;
+  setTab: (t: "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "results" | "claims" | "admins") => void;
   exportCsv: (scope?: "all" | "winners" | "cashout") => void;
 }
 
