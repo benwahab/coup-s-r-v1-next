@@ -32,7 +32,9 @@ export function AdminsSection() {
   const [busy, setBusy] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState<string | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<AdminPermission[]>([]);
-  const [message, setMessage] = useState<{ kind: "error" | "success"; text: string } | null>(null);\n  const [transferTarget, setTransferTarget] = useState<AdminRow | null>(null);\n  const [transferConfirmation, setTransferConfirmation] = useState("");
+  const [message, setMessage] = useState<{ kind: "error" | "success"; text: string } | null>(null);
+  const [transferTarget, setTransferTarget] = useState<AdminRow | null>(null);
+  const [transferConfirmation, setTransferConfirmation] = useState("");
 
   const load = async () => {
     setLoading(true);
