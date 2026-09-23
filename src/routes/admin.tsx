@@ -363,7 +363,7 @@ function AdminPage() {
                 revenueSeries={revenueSeries} byGameData={byGameData} hourlyData={hourlyData}
                 monthlyData={monthlyData} peakHour={peakHour} chart={chart}
                 activityFeed={[]} allRowsCount={allRows.length}
-                cashoutRequestsCount={0} authLogCount={0}
+                cashoutRequestsCount={0}
                 csvFrom={csvFrom} csvTo={csvTo} setTab={setTab} exportCsv={exportCsv}
               />
             )}
