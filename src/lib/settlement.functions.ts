@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { writeAuditLog } from "./audit.server";
+import { nigerParts, nigerInstant } from "@/lib/schedule";
 
 const drawResultSchema = z.discriminatedUnion("gameId", [
   z.object({
@@ -321,6 +322,24 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => drawResultSchema.parse(data))
   .handler(async ({ data, context }) => {
     await assertPublishResultsPermission(context.supabase, context.userId);
+
+    if (data.gameId === "loto") {
+      const now = new Date();
+      const today = nigerParts(now);
+      const drawDateToday = `${today.year}-${String(today.month).padStart(2, "0")}-${String(today.day).padStart(2, "0")}`;
+      if (data.drawDate > drawDateToday) throw new Error("loto_result_future_date");
+      if (data.drawDate === drawDateToday) {
+        const { data: schedule, error: scheduleError } = await supabaseAdmin
+          .from("game_schedules")
+          .select("draw_hour,draw_minute,enabled")
+          .eq("game_id", "loto")
+          .maybeSingle();
+        if (scheduleError) throw new Error("schedule_lookup_failed: " + scheduleError.message);
+        if (!schedule?.enabled) throw new Error("game_schedule_disabled");
+        const drawAt = nigerInstant(today.year, today.month, today.day, schedule.draw_hour, schedule.draw_minute);
+        if (now < drawAt) throw new Error("loto_draw_not_reached");
+      }
+    }
 
     if (data.gameId === "pmu") {
       if (new Set(data.result.horses).size !== data.result.horses.length) {
