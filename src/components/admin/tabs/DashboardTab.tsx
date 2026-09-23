@@ -27,7 +27,6 @@ interface Props {
   activityFeed: ActivityItem[];
   allRowsCount: number;
   cashoutRequestsCount: number;
-  authLogCount: number;
   csvFrom: string;
   csvTo: string;
   setTab: (t: "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "results" | "claims" | "admins") => void;
