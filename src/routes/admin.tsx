@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { ShieldCheck, Sparkles, BarChart3, ListChecks, Users, MapPin, Circle, Send, LogIn, Settings, type LucideIcon } from "lucide-react";
+import { ShieldCheck, Sparkles, BarChart3, ListChecks, Users, MapPin, Circle, Send, Settings, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/AppShell";
@@ -11,13 +11,12 @@ import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useThemeChartColors } from "@/hooks/use-theme-chart-colors";
 import { downloadCsv, gameLabel, type TxRow } from "@/components/admin/shared";
-import { DashboardTab, type ActivityItem } from "@/components/admin/tabs/DashboardTab";
+import { DashboardTab } from "@/components/admin/tabs/DashboardTab";
 import { TransactionsTab } from "@/components/admin/tabs/TransactionsTab";
 import { PlayersTab } from "@/components/admin/tabs/PlayersTab";
 import { RegionsTab } from "@/components/admin/tabs/RegionsTab";
 import { BallsTab } from "@/components/admin/tabs/BallsTab";
 import { OpsTab } from "@/components/admin/tabs/OpsTab";
-import { LogsTab } from "@/components/admin/tabs/LogsTab";
 import { ResultsTab } from "@/components/admin/tabs/ResultsTab";
 import { AdminsSection } from "@/components/admin/AdminsSection";
 
@@ -32,10 +31,8 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-type Tab = "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "results" | "logs" | "claims" | "admins";
+type Tab = "dashboard" | "transactions" | "players" | "regions" | "balls" | "ops" | "results" | "claims" | "admins";
 
-type AuthEventKind = "otp-request" | "verify-ok" | "verify-fail" | "locked" | "rate-limited" | "logout" | "session-expired";
-type AuthEvent = { at: number; phone: string; ip: string; kind: AuthEventKind; note?: string };
 
 function AdminPage() {
   const { t } = useI18n();
@@ -49,6 +46,7 @@ function AdminPage() {
   const [lotoCombinationWagerStats, setLotoCombinationWagerStats] = useState<LotoCombinationWagerStat[]>([]);
   const [lotoBallStatsLive, setLotoBallStatsLive] = useState(false);
   const [permissionsReady, setPermissionsReady] = useState(false);
+  const can = (p: AdminPermission) => adminPermissions === "all" || adminPermissions.includes(p);
   const gate: "checking" | "ok" | "denied" | "anon" =
     !authed || !session
       ? "anon"
@@ -84,7 +82,6 @@ function AdminPage() {
       adminPermissions.includes("ball_stats") ? "balls" :
       adminPermissions.includes("publish_results") ? "results" :
       adminPermissions.includes("complaints") ? "claims" :
-      adminPermissions.includes("security_logs") ? "logs" :
       "dashboard";
     setTab(first);
   }, [permissionsReady, adminPermissions, tab]);
@@ -97,8 +94,6 @@ function AdminPage() {
 
 
   const [allIntents, setAllIntents] = useState<PaymentIntent[]>([]);
-  // No client-generated auth/IP log is presented as real telemetry. The backend security-log source is not connected yet.
-  const authLog: AuthEvent[] = [];
   useEffect(() => {
     if (gate !== "ok" || !permissionsReady) return;
     if (adminPermissions !== "all" && !adminPermissions.includes("ball_stats")) return;
@@ -297,7 +292,6 @@ function AdminPage() {
     { id: "results", label: "Résultats", icon: ListChecks },
     { id: "claims", label: "Réclamations", icon: ShieldCheck },
     { id: "admins", label: t("admin.ops.title"), icon: Settings },
-    { id: "logs", label: t("admin.nav.logs"), icon: LogIn },
       ];
 
   const visibleNav = adminPermissions === "all"
@@ -310,29 +304,10 @@ function AdminPage() {
           case "balls": return can("ball_stats");
           case "results": return can("publish_results");
           case "claims": return can("complaints");
-          case "logs": return can("security_logs");
-          case "ops": return can("operations");
-          case "claims": return can("complaints");
           case "ops": return can("operations");
           default: return false;
         }
       });
-
-  // Logs filters
-  const [logPhone, setLogPhone] = useState("");
-  const [logIp, setLogIp] = useState("");
-  const [logKind, setLogKind] = useState<AuthEventKind | "all">("all");
-  const filteredLog = useMemo(() => authLog.filter((e) =>
-    (logKind === "all" || e.kind === logKind) &&
-    (!logPhone || e.phone.includes(logPhone)) &&
-    (!logIp || e.ip.includes(logIp)),
-  ), [authLog, logPhone, logIp, logKind]);
-
-  const exportLogsCsv = () => {
-    const header = ["horodatage", "telephone", "ip", "evenement", "note"];
-    const body = filteredLog.map((e) => [new Date(e.at).toISOString(), e.phone, e.ip, e.kind, `"${(e.note ?? "").replace(/"/g, "''")}"`].join(","));
-    downloadCsv([header.join(","), ...body].join("\n"), "coupsur-auth-logs.csv");
-  };
 
   if (gate === "checking" || !permissionsReady) return <div className="min-h-[60vh]" aria-hidden />;
   if (gate === "anon") return <Navigate to="/auth" replace />;
@@ -387,8 +362,8 @@ function AdminPage() {
                 ticketsCount={adminTicketRows.length} totalPayout={totalPayout}
                 revenueSeries={revenueSeries} byGameData={byGameData} hourlyData={hourlyData}
                 monthlyData={monthlyData} peakHour={peakHour} chart={chart}
-                activityFeed={activityFeed} allRowsCount={allRows.length}
-                cashoutRequestsCount={0} authLogCount={authLog.length}
+                activityFeed={[]} allRowsCount={allRows.length}
+                cashoutRequestsCount={0} authLogCount={0}
                 csvFrom={csvFrom} csvTo={csvTo} setTab={setTab} exportCsv={exportCsv}
               />
             )}
@@ -432,14 +407,6 @@ function AdminPage() {
             {adminPermissions === "all" && tab === "admins" && <AdminsSection />}
             {can("complaints") && tab === "claims" && (
               <section className="rounded-3xl border border-border bg-card p-6 shadow-soft"><h2 className="font-display text-lg font-bold">Réclamations</h2><p className="mt-2 text-sm text-muted-foreground">La source réelle des réclamations n’est pas encore connectée. Aucune action fictive n’est proposée.</p></section>
-            )}
-            {can("security_logs") && tab === "logs" && (
-              <LogsTab filteredLog={filteredLog}
-                logPhone={logPhone} setLogPhone={setLogPhone}
-                logIp={logIp} setLogIp={setLogIp}
-                logKind={logKind} setLogKind={setLogKind}
-                exportLogsCsv={exportLogsCsv}
-              />
             )}
 
           </main>
