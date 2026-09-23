@@ -106,11 +106,29 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     if (!payment.method || payment.method !== data.payment) throw new Error("payment_method_mismatch");
     const drawDate = data.drawDate ? data.drawDate.slice(0, 10) : "";
     if (drawDate && !/^\d{4}-\d{2}-\d{2}$/.test(drawDate)) throw new Error("invalid_draw_date");
-    if (drawDate) {
-      const { nigerParts } = await import("@/lib/schedule");
-      const nowParts = nigerParts(new Date());
-      const todayNiger = [nowParts.year, String(nowParts.month).padStart(2, "0"), String(nowParts.day).padStart(2, "0")].join("-");
-      if (drawDate < todayNiger) throw new Error("draw_closed");
+    const { nigerParts, nigerInstant } = await import("@/lib/schedule");
+    const now = new Date();
+    const nowParts = nigerParts(now);
+    const todayNiger = [nowParts.year, String(nowParts.month).padStart(2, "0"), String(nowParts.day).padStart(2, "0")].join("-");
+    if (drawDate && drawDate < todayNiger) throw new Error("draw_closed");
+
+    // Re-check the authoritative PMU/Loto schedule at ticket creation time.
+    // A payment may have been confirmed earlier while the game was open; that
+    // must never allow a ticket to slip through after the closing boundary.
+    if (data.gameId === "pmu" || data.gameId === "loto") {
+      const { data: schedule, error: scheduleError } = await supabaseAdmin
+        .from("game_schedules")
+        .select("open_hour,close_hour,enabled")
+        .eq("game_id", data.gameId)
+        .maybeSingle();
+      if (scheduleError) throw new Error("schedule_lookup_failed: " + scheduleError.message);
+      if (!schedule?.enabled) throw new Error("game_schedule_disabled");
+      const open = nigerInstant(nowParts.year, nowParts.month, nowParts.day, schedule.open_hour);
+      const close = nigerInstant(nowParts.year, nowParts.month, nowParts.day, schedule.close_hour);
+      const isOpen = schedule.open_hour > schedule.close_hour
+        ? !(now >= close && now < open)
+        : now >= open && now < close;
+      if (!isOpen) throw new Error("game_closed");
     }
 
     const code = ticketCodeFromPayment(payment.id);
@@ -139,7 +157,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
         // PMU starters are validated against the real scheduled race, never
         // against a client-side/mock catalog.
         const pmuDb = supabaseAdmin as any;
-        const today = new Date().toISOString().slice(0, 10);
+        const today = [nowParts.year, String(nowParts.month).padStart(2, "0"), String(nowParts.day).padStart(2, "0")].join("-");
         const { data: races, error: raceError } = await pmuDb
           .from("pmu_races")
           .select("id,start_at,status")
