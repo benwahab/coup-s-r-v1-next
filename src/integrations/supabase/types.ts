@@ -562,6 +562,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      transfer_super_admin_ownership: {
+        Args: {
+          p_actor_user_id: string
+          p_target_user_id: string
+        }
+        Returns: undefined
+      }
       settle_ticket_atomic: {
         Args: {
           p_leg_updates?: Json
