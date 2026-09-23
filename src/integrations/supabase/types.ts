@@ -328,6 +328,69 @@ export type Database = {
           },
         ]
       }
+      game_rules: {
+        Row: {
+          active: boolean
+          game_id: string
+          id: string
+          multiplier: number
+          pick_count: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          game_id: string
+          id?: string
+          multiplier: number
+          pick_count: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          game_id?: string
+          id?: string
+          multiplier?: number
+          pick_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      game_schedules: {
+        Row: {
+          close_hour: number
+          draw_hour: number
+          draw_minute: number
+          enabled: boolean
+          game_id: string
+          open_hour: number
+          timezone: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          close_hour: number
+          draw_hour: number
+          draw_minute: number
+          enabled?: boolean
+          game_id: string
+          open_hour: number
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          close_hour?: number
+          draw_hour?: number
+          draw_minute?: number
+          enabled?: boolean
+          game_id?: string
+          open_hour?: number
+          timezone?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       otp_codes: {
         Row: {
           attempts: number
@@ -410,6 +473,122 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pmu_horses: {
+        Row: {
+          created_at: string
+          external_id: string
+          form: string | null
+          id: string
+          intl_name: string | null
+          jockey: string
+          name: string
+          number: number
+          odds: number | null
+          place_rate: number | null
+          race_id: string
+          source: string
+          source_updated_at: string | null
+          status: string
+          trainer: string | null
+          updated_at: string
+          weight: number | null
+          win_rate: number | null
+        }
+        Insert: {
+          created_at?: string
+          external_id: string
+          form?: string | null
+          id?: string
+          intl_name?: string | null
+          jockey: string
+          name: string
+          number: number
+          odds?: number | null
+          place_rate?: number | null
+          race_id: string
+          source: string
+          source_updated_at?: string | null
+          status?: string
+          trainer?: string | null
+          updated_at?: string
+          weight?: number | null
+          win_rate?: number | null
+        }
+        Update: {
+          created_at?: string
+          external_id?: string
+          form?: string | null
+          id?: string
+          intl_name?: string | null
+          jockey?: string
+          name?: string
+          number?: number
+          odds?: number | null
+          place_rate?: number | null
+          race_id?: string
+          source?: string
+          source_updated_at?: string | null
+          status?: string
+          trainer?: string | null
+          updated_at?: string
+          weight?: number | null
+          win_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pmu_horses_race_id_fkey"
+            columns: ["race_id"]
+            isOneToOne: false
+            referencedRelation: "pmu_races"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pmu_races: {
+        Row: {
+          created_at: string
+          external_id: string
+          id: string
+          name: string | null
+          race_date: string
+          race_number: number
+          source: string
+          source_updated_at: string | null
+          start_at: string
+          status: string
+          updated_at: string
+          venue: string
+        }
+        Insert: {
+          created_at?: string
+          external_id: string
+          id?: string
+          name?: string | null
+          race_date: string
+          race_number: number
+          source: string
+          source_updated_at?: string | null
+          start_at: string
+          status?: string
+          updated_at?: string
+          venue: string
+        }
+        Update: {
+          created_at?: string
+          external_id?: string
+          id?: string
+          name?: string | null
+          race_date?: string
+          race_number?: number
+          source?: string
+          source_updated_at?: string | null
+          start_at?: string
+          status?: string
+          updated_at?: string
+          venue?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -562,13 +741,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      transfer_super_admin_ownership: {
-        Args: {
-          p_actor_user_id: string
-          p_target_user_id: string
-        }
-        Returns: undefined
-      }
       settle_ticket_atomic: {
         Args: {
           p_leg_updates?: Json
@@ -582,6 +754,10 @@ export type Database = {
           prize: number
           status: Database["public"]["Enums"]["ticket_status"]
         }[]
+      }
+      transfer_super_admin_ownership: {
+        Args: { p_actor_user_id: string; p_target_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
