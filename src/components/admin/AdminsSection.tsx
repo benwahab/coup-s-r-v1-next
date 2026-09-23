@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { ShieldCheck, ShieldMinus, ShieldPlus, Loader2 } from "lucide-react";
-import { adminListAdmins, adminGrantRole, adminRevokeRole, adminSetPermissions, checkIsSuperAdmin, type AdminPermission } from "@/lib/admin.functions";
+import { ShieldCheck, ShieldMinus, ShieldPlus, Loader2, Crown } from "lucide-react";
+import { adminListAdmins, adminGrantRole, adminRevokeRole, adminSetPermissions, checkIsSuperAdmin, transferSuperAdminOwnership, type AdminPermission } from "@/lib/admin.functions";
 import { useI18n } from "@/lib/i18n";
 
 interface AdminRow {
@@ -32,7 +32,7 @@ export function AdminsSection() {
   const [busy, setBusy] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState<string | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<AdminPermission[]>([]);
-  const [message, setMessage] = useState<{ kind: "error" | "success"; text: string } | null>(null);
+  const [message, setMessage] = useState<{ kind: "error" | "success"; text: string } | null>(null);\n  const [transferTarget, setTransferTarget] = useState<AdminRow | null>(null);\n  const [transferConfirmation, setTransferConfirmation] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -93,6 +93,22 @@ export function AdminsSection() {
     setSelectedPermissions((prev) =>
       prev.includes(permission) ? prev.filter((p) => p !== permission) : [...prev, permission],
     );
+  };
+
+  const transfer = async () => {
+    if (!transferTarget || transferConfirmation !== "TRANSFERER") return;
+    setMessage(null);
+    setBusy(true);
+    try {
+      await transferSuperAdminOwnership({ data: { targetUserId: transferTarget.userId } });
+      setTransferTarget(null);
+      setTransferConfirmation("");
+      setMessage({ kind: "success", text: "Transfert effectué. Votre compte n'est plus Super Admin." });
+    } catch {
+      setMessage({ kind: "error", text: "Le transfert n'a pas pu être effectué." });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const revoke = async (userId: string) => {
@@ -187,6 +203,9 @@ export function AdminsSection() {
                 >
                   Permissions
                 </button>
+                <button type="button" disabled={busy} onClick={() => { setTransferTarget(a); setTransferConfirmation(""); }} className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-500/10 disabled:opacity-50">
+                  <Crown className="h-3.5 w-3.5" /> Transférer
+                </button>
                 <button type="button" disabled={busy} onClick={() => revoke(a.userId)} className="inline-flex items-center gap-1.5 rounded-full border border-destructive/30 px-2.5 py-1 text-[11px] font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50">
                   <ShieldMinus className="h-3.5 w-3.5" /> {t("admin.admins.revoke")}
                 </button>
@@ -195,6 +214,37 @@ export function AdminsSection() {
           ))
         )}
       </div>
+
+      {transferTarget && (
+        <div className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
+          <div className="flex items-center gap-2">
+            <Crown className="h-5 w-5 text-destructive" />
+            <h3 className="text-sm font-bold">Transfert de propriété Super Admin</h3>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Vous allez transférer définitivement votre rôle Super Admin à{" "}
+            <strong>{[transferTarget.firstName, transferTarget.lastName].filter(Boolean).join(" ") || transferTarget.phone || "cet administrateur"}</strong>.
+            Après confirmation, votre compte perdra le rôle Super Admin.
+          </p>
+          <p className="mt-2 text-xs font-semibold">Pour confirmer, saisissez TRANSFERER.</p>
+          <input
+            value={transferConfirmation}
+            onChange={(e) => setTransferConfirmation(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 10))}
+            placeholder="TRANSFERER"
+            className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-2 text-xs"
+            autoComplete="off"
+          />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" disabled={busy || transferConfirmation !== "TRANSFERER"} onClick={transfer} className="inline-flex items-center gap-1.5 rounded-full bg-destructive px-4 py-2 text-xs font-bold text-destructive-foreground disabled:opacity-50">
+              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Crown className="h-3.5 w-3.5" />}
+              Confirmer le transfert
+            </button>
+            <button type="button" disabled={busy} onClick={() => { setTransferTarget(null); setTransferConfirmation(""); }} className="rounded-full border border-border px-4 py-2 text-xs font-semibold">
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
 
       {selectedAdmin && (
         <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
