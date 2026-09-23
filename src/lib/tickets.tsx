@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { GameId } from "./mock-data";
+import type { GameId } from "./game-config";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./auth";
 import {
