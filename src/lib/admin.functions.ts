@@ -410,6 +410,36 @@ export const adminGrantRole = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const transferSuperAdminOwnership = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .inputValidator((data: unknown) =>
+    z.object({ targetUserId: z.string().uuid() }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    await assertSuperAdmin(context.supabase as SB, context.userId);
+    if (data.targetUserId === context.userId) {
+      throw new Error("cannot_transfer_to_self");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.rpc("transfer_super_admin_ownership", {
+      p_actor_user_id: context.userId,
+      p_target_user_id: data.targetUserId,
+    });
+    if (error) throw new Error(error.message);
+
+    await writeAuditLog(supabaseAdmin, {
+      userId: context.userId,
+      action: "super_admin.ownership.transferred",
+      detail: {
+        fromUserId: context.userId,
+        toUserId: data.targetUserId,
+      },
+    });
+
+    return { ok: true as const, transferredTo: data.targetUserId };
+  });
+
 export const adminRevokeRole = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => z.object({ userId: z.string().uuid() }).parse(data))
