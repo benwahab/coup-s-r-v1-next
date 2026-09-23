@@ -130,7 +130,8 @@ function PmuPage() {
       {loadError && <div className="mx-auto max-w-3xl px-4 py-4 text-sm text-destructive">Impossible de charger la course PMU. <button onClick={() => void loadRace()} className="font-bold underline">Réessayer</button></div>}
       {loading && <div className="mx-auto max-w-3xl px-4 py-6 text-center text-sm text-muted-foreground">Chargement de la course PMU…</div>}
       {!loading && !loadError && horses.length === 0 && <div className="mx-auto max-w-3xl px-4 py-6 text-center text-sm text-muted-foreground">Aucune course PMU disponible actuellement.</div>}
-      {!loading && horses.length > 0 &&      <BetFlow
+      {!loading && horses.length > 0 && (
+        <BetFlow
         gameId="pmu"
         gameName="PMU"
         drawDate={drawDateIso ?? ""}
