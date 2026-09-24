@@ -89,8 +89,10 @@ function AuthPage() {
     setAutoRead("listening");
     const ac = new AbortController();
     abortRef.current = ac;
-    // @ts-expect-error - OTPCredential is not in TS lib
-    navigator.credentials
+    const otpCredentials = navigator.credentials as CredentialsContainer & {
+      get(options: { otp: { transport: ["sms"] }; signal: AbortSignal }): Promise<Credential | null>;
+    };
+    otpCredentials
       .get({ otp: { transport: ["sms"] }, signal: ac.signal })
       .then((cred) => {
         const code = (cred as unknown as { code?: string } | null)?.code;
