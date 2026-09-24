@@ -83,6 +83,10 @@ function AuthPage() {
     return () => window.clearInterval(timer);
   }, [resendIn]);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [mode, step]);
+
   const switchMode = (nextMode: Mode) => {
     setMode(nextMode);
     setStep("form");
