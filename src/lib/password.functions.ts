@@ -109,6 +109,13 @@ export const loginWithPassword = createServerFn({ method: "POST" })
     };
   });
 
+function isWeakPasswordError(error: { code?: string; message?: string }): boolean {
+  return (
+    error.code === "weak_password" ||
+    /pwned|compromis|leaked|weak password/i.test(error.message ?? "")
+  );
+}
+
 /** Change le mot de passe depuis une session déjà authentifiée. */
 export const changeUserPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -122,7 +129,10 @@ export const changeUserPassword = createServerFn({ method: "POST" })
       password: data.newPassword,
       current_password: data.currentPassword,
     });
-    if (error) throw new Error("password_change_failed");
+    if (error) {
+      if (isWeakPasswordError(error)) return { ok: false as const, reason: "weak-password" as const };
+      throw new Error("password_change_failed");
+    }
 
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(
       context.userId,
@@ -178,8 +188,14 @@ export const setUserPassword = createServerFn({ method: "POST" })
       throw new Error("password_setup_not_pending");
     }
 
+    // Passe par la session de l'utilisateur pour que Supabase Auth applique ses
+    // contrôles (dont la protection contre les mots de passe compromis).
+    const { error: pwError } = await context.supabase.auth.updateUser({ password: data.password });
+    if (pwError) {
+      if (isWeakPasswordError(pwError)) return { ok: false as const, reason: "weak-password" as const };
+      throw new Error("password_update_failed");
+    }
     const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-      password: data.password,
       app_metadata: { ...(userData.user.app_metadata ?? {}), password_setup_required: false },
     });
     if (error) throw new Error(`password_update_failed: ${error.message}`);
