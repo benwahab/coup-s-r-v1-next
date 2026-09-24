@@ -22,12 +22,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const onAdmin = pathname.startsWith("/admin");
   const showGlobalBackdrop = !onAuth && !onCompte;
 
-  // Garde global : toute page (hors /auth et /compte, seul point d'entrée pour
-  // créer un compte) exige une session active. Redirige sinon vers /auth.
+  // Les jeux, résultats et pages légales restent consultables sans connexion.
+  // Seuls les espaces contenant des données privées exigent une session.
   const navigate = useNavigate();
-  const publicRoute = onAuth || onCompte;
-  const blocked = authChecked && !authed && !publicRoute;
-  const pending = !authChecked && !publicRoute;
+  const protectedRoute = onAdmin || pathname.startsWith("/mes-tickets") || pathname.startsWith("/ticket/");
+  const blocked = authChecked && !authed && protectedRoute;
+  const pending = !authChecked && protectedRoute;
   useEffect(() => {
     if (blocked) navigate({ to: "/auth", replace: true });
   }, [blocked, navigate]);

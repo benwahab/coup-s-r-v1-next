@@ -4,15 +4,6 @@
 // postMessage so the project's preview surfaces share one login; else localStorage.
 export function brokeredPreviewStorage() {
   if (typeof window === 'undefined') return undefined;
-  const safeLocalGet = (key: string) => {
-    try { return window.localStorage.getItem(key); } catch { return null; }
-  };
-  const safeLocalSet = (key: string, value: string) => {
-    try { window.localStorage.setItem(key, value); } catch { /* Storage may be blocked in mobile webviews. */ }
-  };
-  const safeLocalRemove = (key: string) => {
-    try { window.localStorage.removeItem(key); } catch { /* Storage may be blocked in mobile webviews. */ }
-  };
   const host = location.hostname;
   const PREVIEW_ZONES = ['lovableproject.com', 'lovableproject-dev.com', 'lovable.app', 'gpt-eng.com', 'gptengineer.run'];
   const onPreviewZone = PREVIEW_ZONES.some((z) => host === z || host.endsWith('.' + z));
@@ -24,9 +15,7 @@ export function brokeredPreviewStorage() {
         ?? host.match(new RegExp('^(' + UUID + ')(?=[.-])', 'i'))?.[1])
     : undefined;
   const framed = window.parent && window.parent !== window;
-  if (!projectId || !framed) {
-    return { getItem: safeLocalGet, setItem: safeLocalSet, removeItem: safeLocalRemove };
-  }
+  if (!projectId || !framed) return localStorage;
 
   // Post only to the real editor ancestor, validated as a Lovable origin, so the
   // session token can never reach an untrusted embedder.
@@ -82,17 +71,17 @@ export function brokeredPreviewStorage() {
       // '' is the logout tombstone: clear the local copy too so it can't resurrect if
       // the broker later goes silent. A null reply means never-synced -> keep local.
       if (res && res.ok && typeof res.value === 'string') {
-        if (res.value === '') { safeLocalRemove(key); return null; }
+        if (res.value === '') { localStorage.removeItem(key); return null; }
         return res.value;
       }
-      return safeLocalGet(key);
+      return localStorage.getItem(key);
     },
     setItem: (key: string, value: string) => {
-      safeLocalSet(key, value);
+      localStorage.setItem(key, value);
       return request('lovable-preview-auth:set', key, value).then(() => undefined);
     },
     removeItem: (key: string) => {
-      safeLocalRemove(key);
+      localStorage.removeItem(key);
       return request('lovable-preview-auth:remove', key).then(() => undefined);
     },
   };
