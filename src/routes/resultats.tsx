@@ -73,9 +73,9 @@ function ResultsPage() {
   }
   const orderedNumbers = [...numberCounts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0]);
   const hot = orderedNumbers.slice(0, 6).map(([n]) => n);
-  const cold = Array.from({ length: 90 }, (_, i) => i + 1)
-    .filter((n) => !numberCounts.has(n))
-    .slice(0, 6);
+  const cold = orderedNumbers.length > 0
+    ? [...numberCounts.entries()].sort((a, b) => a[1] - b[1] || a[0] - b[0]).slice(0, 6).map(([n]) => n)
+    : [];
 
   const renderNumbers = (row?: DrawResultRow) => {
     const numbers = Array.isArray(row?.result?.numbers) ? row.result.numbers : [];
@@ -200,13 +200,17 @@ function StatsCard({ hot, cold }: { hot: number[]; cold: number[] }) {
         <Flame className="h-3.5 w-3.5 text-gold" /> {t("hotNumbers")}
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
-        {hot.map((n) => <span key={n} className="number-ball number-ball-sm">{n}</span>)}
+        {hot.length > 0
+          ? hot.map((n) => <span key={n} className="number-ball number-ball-sm">{n}</span>)
+          : <span className="text-xs text-muted-foreground">Aucune donnée publiée</span>}
       </div>
       <div className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
         <Snowflake className="h-3.5 w-3.5 text-teal" /> {t("coldNumbers")}
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
-        {cold.map((n) => <span key={n} className="number-ball-empty">{n}</span>)}
+        {cold.length > 0
+          ? cold.map((n) => <span key={n} className="number-ball-empty">{n}</span>)
+          : <span className="text-xs text-muted-foreground">Aucune donnée publiée</span>}
       </div>
     </div>
   );
