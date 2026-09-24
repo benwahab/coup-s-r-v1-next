@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=160&quality=90&url";
 import { useAuth } from "@/lib/auth";
+import { useAccount } from "@/lib/account";
 import { checkPhoneAccount } from "@/lib/account.functions";
 import { loginWithPassword, setUserPassword } from "@/lib/password.functions";
 import { getServerConfigStatus } from "@/lib/server-config.functions";
@@ -35,7 +36,22 @@ const PasswordSchema = z
 
 type Mode = "login" | "signup" | "recovery";
 type Step = "form" | "otp" | "new-password";
-type FieldErrors = Partial<Record<"phone" | "password" | "confirmation" | "terms" | "otp", string>>;
+type FieldErrors = Partial<
+  Record<
+    "phone" | "password" | "confirmation" | "terms" | "otp" | "firstName" | "lastName" | "region",
+    string
+  >
+>;
+const NIGER_REGIONS = [
+  "Agadez",
+  "Diffa",
+  "Dosso",
+  "Maradi",
+  "Niamey",
+  "Tahoua",
+  "Tillabéri",
+  "Zinder",
+];
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -67,6 +83,10 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const { saveAccount } = useAccount();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [region, setRegion] = useState("");
   const [otp, setOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -291,6 +311,13 @@ function AuthPage() {
       nextErrors.terms = "Vous devez accepter les conditions et la politique de confidentialité.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
+    // Nom, prénom et région (non sensibles) sont transmis au serveur à la vérification du code.
+    saveAccount({
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      region,
+      phone,
+    });
     await sendCode("signup");
   };
 
@@ -757,6 +784,39 @@ function AuthPage() {
         </p>
       </section>
     </main>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  onChange,
+  error,
+  autoComplete,
+  autoFocus = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  autoComplete: string;
+  autoFocus?: boolean;
+}) {
+  return (
+    <label className="block min-w-0">
+      <span className="mb-1.5 block text-sm font-semibold text-foreground">{label}</span>
+      <input
+        type="text"
+        value={value}
+        maxLength={80}
+        autoComplete={autoComplete}
+        autoFocus={autoFocus}
+        onChange={(event) => onChange(event.target.value)}
+        aria-invalid={Boolean(error)}
+        className="h-12 w-full rounded-md border border-input bg-background px-3 text-base text-foreground outline-none focus:border-accent"
+      />
+      {error && <FieldError>{error}</FieldError>}
+    </label>
   );
 }
 
