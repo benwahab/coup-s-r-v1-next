@@ -312,7 +312,12 @@ async function settleTicket(ticket: TicketRow, publishedResults: PublishedResult
     const results = new Map<string, FootMatchResult>();
     for (const row of publishedResults) {
       const value = row?.result;
-      if (value && "matchId" in value && typeof value.matchId === "string" && ["1", "X", "2"].includes(value.result)) {
+      if (
+        value &&
+        "matchId" in value &&
+        typeof value.matchId === "string" &&
+        ["1", "X", "2"].includes(value.result)
+      ) {
         results.set(value.matchId, value as FootMatchResult);
       }
       // Backward compatibility for an older draft/published batch format.
