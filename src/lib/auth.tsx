@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Session initiale + abonnement aux changements d'auth Supabase.
     let mounted = true;
     // Garde-fou : ne jamais laisser l'écran vide si la vérification ne répond pas.
-    const fallback = setTimeout(() => { if (mounted) setAuthChecked(true); }, 4000);
+    const fallback = setTimeout(() => { if (mounted) setAuthChecked(true); }, 1000);
     supabase.auth.getUser()
       .then(({ data }) => {
         if (!mounted) return;
