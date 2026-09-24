@@ -32,7 +32,19 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (blocked) navigate({ to: "/auth", replace: true });
   }, [blocked, navigate]);
 
-  if (pending || blocked) return null;
+  if (pending || blocked) {
+    return (
+      <div className="grid min-h-dvh place-items-center bg-background px-4">
+        <div className="flex flex-col items-center gap-3 text-center" role="status" aria-live="polite">
+          <img src={logoCoupSur} alt="Coup Sûr" className="h-20 w-20 object-contain" />
+          <div>
+            <div className="font-display text-xl font-bold text-foreground">Coup Sûr</div>
+            <div className="mt-1 text-sm text-muted-foreground">Chargement de la connexion…</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const navItems: { to: string; label: string; icon: typeof Home; exact?: boolean }[] = [
     { to: "/", label: t("home"), icon: Home, exact: true },
