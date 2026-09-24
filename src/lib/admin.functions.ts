@@ -461,3 +461,88 @@ export const adminRevokeRole = createServerFn({ method: "POST" })
     });
     return { ok: true as const };
   });
+
+export type ReadinessStatus = "ok" | "warning" | "error";
+export interface ReadinessCheck {
+  id: string;
+  label: string;
+  status: ReadinessStatus;
+  detail: string;
+}
+
+/**
+ * Vérifie la configuration de production (super administrateur uniquement).
+ * La protection contre les mots de passe compromis est testée réellement :
+ * une inscription d'essai avec un mot de passe notoirement piraté doit être
+ * refusée par Supabase Auth. Si elle est acceptée, le compte d'essai est
+ * supprimé immédiatement.
+ */
+export const superAdminGetProductionReadiness = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .handler(async ({ context }) => {
+    await assertSuperAdmin(context.supabase as SB, context.userId);
+    const checks: ReadinessCheck[] = [];
+
+    const serverOk =
+      !!process.env["SUPABASE_URL"] &&
+      !!process.env["SUPABASE_PUBLISHABLE_KEY"] &&
+      !!process.env["SUPABASE_SERVICE_ROLE_KEY"];
+    checks.push({
+      id: "server",
+      label: "Configuration du serveur",
+      status: serverOk ? "ok" : "error",
+      detail: serverOk ? "Adresse et clés du serveur présentes." : "Adresse ou clés du serveur manquantes.",
+    });
+
+    // Protection contre les mots de passe compromis (test réel).
+    let hibp: ReadinessCheck;
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const anon = createClient(process.env["SUPABASE_URL"]!, process.env["SUPABASE_PUBLISHABLE_KEY"]!, {
+        auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+      });
+      const email = `hibp-probe-${crypto.randomUUID()}@coup-sur.local`;
+      const { data, error } = await anon.auth.signUp({ email, password: "Password123!" });
+      const reasons = (error as { reasons?: string[] } | null)?.reasons ?? [];
+      if (error && (error.code === "weak_password" || reasons.includes("pwned"))) {
+        hibp = reasons.includes("pwned") || /pwned|leaked|compromis/i.test(error.message)
+          ? { id: "hibp", label: "Mots de passe compromis", status: "ok", detail: "Protection active : les mots de passe piratés sont refusés." }
+          : { id: "hibp", label: "Mots de passe compromis", status: "warning", detail: "Des règles de mot de passe sont actives, mais la protection contre les mots de passe piratés n’a pas pu être confirmée." };
+      } else if (!error && data.user) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        await supabaseAdmin.from("user_roles").delete().eq("user_id", data.user.id);
+        await supabaseAdmin.from("profiles").delete().eq("id", data.user.id);
+        await supabaseAdmin.auth.admin.deleteUser(data.user.id);
+        hibp = { id: "hibp", label: "Mots de passe compromis", status: "error", detail: "Protection désactivée : un mot de passe piraté a été accepté. Activez « Prevent use of leaked passwords » dans Supabase (Authentication → Attack Protection)." };
+      } else {
+        hibp = { id: "hibp", label: "Mots de passe compromis", status: "warning", detail: "Vérification impossible pour le moment. Réessayez plus tard." };
+      }
+    } catch {
+      hibp = { id: "hibp", label: "Mots de passe compromis", status: "warning", detail: "Vérification impossible pour le moment. Réessayez plus tard." };
+    }
+    checks.push(hibp);
+
+    const smsOk = !!process.env["SMS_PROVIDER_URL"] && !!process.env["SMS_PROVIDER_KEY"];
+    checks.push({
+      id: "sms",
+      label: "Envoi des SMS",
+      status: smsOk ? "ok" : "warning",
+      detail: smsOk ? "Fournisseur SMS configuré." : "Aucun fournisseur SMS : les codes s’affichent à l’écran (mode démo).",
+    });
+    checks.push({
+      id: "airtel",
+      label: "Paiement Airtel Money",
+      status: "error",
+      detail: "Airtel Money n’est pas encore branché : aucun paiement ne peut être encaissé.",
+    });
+    const ticketOk = !!process.env["TICKET_HMAC_SECRET"];
+    checks.push({
+      id: "ticket",
+      label: "Signature des tickets",
+      status: ticketOk ? "ok" : "error",
+      detail: ticketOk ? "Clé de signature des tickets présente." : "Clé de signature des tickets manquante.",
+    });
+
+    const ready = checks.every((c) => c.status === "ok");
+    return { ready, checks, checkedAt: new Date().toISOString() };
+  });
