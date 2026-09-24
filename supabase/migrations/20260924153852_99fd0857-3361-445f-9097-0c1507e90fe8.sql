@@ -1,0 +1,1 @@
+DELETE FROM public.otp_codes WHERE created_at < now();
