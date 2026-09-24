@@ -37,6 +37,7 @@ import { PlayersTab } from "@/components/admin/tabs/PlayersTab";
 import { RegionsTab } from "@/components/admin/tabs/RegionsTab";
 import { BallsTab } from "@/components/admin/tabs/BallsTab";
 import { OpsTab } from "@/components/admin/tabs/OpsTab";
+import { ProductionReadiness } from "@/components/admin/ProductionReadiness";
 import { ResultsTab } from "@/components/admin/tabs/ResultsTab";
 import { AdminsSection } from "@/components/admin/AdminsSection";
 
@@ -582,6 +583,7 @@ function AdminPage() {
           </aside>
 
           <main className="mt-3 lg:mt-0 min-w-0">
+            {adminPermissions === "all" && tab === "dashboard" && <ProductionReadiness />}
             {adminPermissions === "all" && tab === "dashboard" && (
               <DashboardTab
                 totalStaked={totalStaked}
