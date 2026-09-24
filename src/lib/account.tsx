@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { type ConsentRecord, makeUserId } from "./legal";
-import { sendAccountNotice } from "./sms";
 
 const RECOVERY_DAYS = 30;
 const RECOVERY_MS = RECOVERY_DAYS * 24 * 60 * 60 * 1000;
@@ -92,11 +91,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       } catch { /* ignore */ }
     }
     for (const phone of expired) {
-      const target =
-        currentAccount && currentAccount.phone === phone
-          ? { phone, email: currentAccount.email, firstName: currentAccount.firstName }
-          : { phone };
-      void sendAccountNotice("deletion-expired", target);
       // Si c'est le compte local en cours, on nettoie localStorage aussi.
       if (currentAccount && currentAccount.phone === phone) {
         localStorage.removeItem(KEY);
@@ -163,11 +157,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const next = { ...account, deletionRequestedAt: now };
     setAccount(next);
     if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(next));
-    void sendAccountNotice("deletion-requested", {
-      phone: account.phone,
-      email: account.email,
-      firstName: account.firstName,
-    });
   };
 
   const cancelDeletion = () => {
@@ -181,11 +170,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const next = { ...account, deletionRequestedAt: null };
     setAccount(next);
     if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(next));
-    void sendAccountNotice("deletion-cancelled", {
-      phone: account.phone,
-      email: account.email,
-      firstName: account.firstName,
-    });
   };
 
   const deletionRemainingMs = () => {

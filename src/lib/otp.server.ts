@@ -1,4 +1,4 @@
-// Server-only helpers for the simulated OTP flow.
+// Server-only helpers for the provider-backed OTP flow.
 // Blocked from client bundles by the *.server.* filename convention.
 
 const encoder = new TextEncoder();
