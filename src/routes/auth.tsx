@@ -124,24 +124,6 @@ function AuthPage() {
       return;
     }
 
-    // Aucun compte pour ce numéro sur CET appareil : avant de conclure qu'il
-    // n'existe pas du tout, on vérifie côté serveur (l'utilisateur peut avoir
-    // créé son compte sur un autre téléphone — le registre local ne le sait pas).
-    if (false && isPhoneAvailable(phone).ok) {
-      setSending(true);
-      let existsOnServer = false;
-      try {
-        const check = await checkPhoneAccount({ data: { phone } });
-        existsOnServer = check.exists;
-      } catch {
-        /* pas de réponse serveur : on retombe sur "aucun compte" */
-      }
-      setSending(false);
-      if (!existsOnServer) {
-        setNoAccountOpen(true);
-        return;
-      }
-    }
 
     setSending(true);
     try {
