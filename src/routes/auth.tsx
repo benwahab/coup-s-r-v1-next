@@ -533,7 +533,26 @@ function AuthPage() {
               }}
               noValidate
             >
-              <PhoneField phone={phone} onChange={setPhone} error={errors.phone} autoFocus />
+              <div className="grid grid-cols-2 gap-3">
+                <TextField label="Prénom" value={firstName} onChange={setFirstName} error={errors.firstName} autoComplete="given-name" autoFocus />
+                <TextField label="Nom" value={lastName} onChange={setLastName} error={errors.lastName} autoComplete="family-name" />
+              </div>
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-semibold text-foreground">Région</span>
+                <select
+                  value={region}
+                  onChange={(event) => setRegion(event.target.value)}
+                  aria-invalid={Boolean(errors.region)}
+                  className="h-12 w-full rounded-md border border-input bg-background px-3 text-base text-foreground outline-none focus:border-accent"
+                >
+                  <option value="">Choisissez votre région</option>
+                  {NIGER_REGIONS.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+                {errors.region && <FieldError>{errors.region}</FieldError>}
+              </label>
+              <PhoneField phone={phone} onChange={setPhone} error={errors.phone} />
               <PasswordField
                 label="Mot de passe"
                 value={password}
