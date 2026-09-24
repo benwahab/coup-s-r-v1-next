@@ -22,6 +22,9 @@ import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=160&quality=90
 import { useAuth } from "@/lib/auth";
 import { checkPhoneAccount } from "@/lib/account.functions";
 import { loginWithPassword, setUserPassword } from "@/lib/password.functions";
+import { getServerConfigStatus } from "@/lib/server-config.functions";
+
+const PENDING_KEY = "coupsur.auth.pending";
 
 const PhoneSchema = z.string().regex(/^\d{8}$/, "Saisissez un numéro nigérien à 8 chiffres.");
 const OtpSchema = z.string().regex(/^\d{6}$/, "Saisissez les 6 chiffres du code.");
@@ -76,6 +79,75 @@ function AuthPage() {
 
   const lockMs = remainingLockMs();
   const otpLocked = step === "otp" && (isPermanent() || lockMs > 0);
+  const [config, setConfig] = useState<
+    { state: "checking" } | { state: "ready" } | { state: "error"; message: string }
+  >({ state: "checking" });
+
+  const checkConfig = async () => {
+    setConfig({ state: "checking" });
+    const clientOk =
+      !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (!clientOk) {
+      setConfig({
+        state: "error",
+        message:
+          "L’application n’a pas l’adresse du serveur Coup Sûr. Les formulaires ne peuvent pas être envoyés.",
+      });
+      return;
+    }
+    try {
+      const res = await getServerConfigStatus();
+      setConfig(
+        res.ready
+          ? { state: "ready" }
+          : {
+              state: "error",
+              message: `Le serveur n’est pas prêt (manque : ${res.missing.join(", ")}). Les formulaires ne peuvent pas être envoyés.`,
+            },
+      );
+    } catch {
+      setConfig({
+        state: "error",
+        message: "Serveur injoignable. Vérifiez votre connexion puis réessayez.",
+      });
+    }
+  };
+
+  // Restaure l'étape du code après un rechargement de la page (mauvaise
+  // connexion, mise à jour de l'aperçu). Ni mot de passe ni code n'est stocké.
+  useEffect(() => {
+    void checkConfig();
+    try {
+      const raw = sessionStorage.getItem(PENDING_KEY);
+      if (!raw) return;
+      const p = JSON.parse(raw) as {
+        mode: Mode;
+        phone: string;
+        demoCode: string | null;
+        sentAt: number;
+      };
+      if (Date.now() - p.sentAt > 5 * 60_000) {
+        sessionStorage.removeItem(PENDING_KEY);
+        return;
+      }
+      setMode(p.mode);
+      setPhone(p.phone);
+      setDemoCode(p.demoCode);
+      setStep("otp");
+      setResendIn(Math.max(0, 60 - Math.floor((Date.now() - p.sentAt) / 1000)));
+      setStatus(p.demoCode ? "Mode démo actif : aucun SMS n’a été envoyé." : null);
+    } catch {
+      /* stockage indisponible */
+    }
+  }, []);
+
+  const clearPending = () => {
+    try {
+      sessionStorage.removeItem(PENDING_KEY);
+    } catch {
+      /* ignore */
+    }
+  };
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -88,6 +160,7 @@ function AuthPage() {
   }, [mode, step]);
 
   const switchMode = (nextMode: Mode) => {
+    clearPending();
     setMode(nextMode);
     setStep("form");
     setPassword("");
@@ -149,6 +222,14 @@ function AuthPage() {
       }
 
       setDemoCode(result.demoCode);
+      try {
+        sessionStorage.setItem(
+          PENDING_KEY,
+          JSON.stringify({ mode: intent, phone, demoCode: result.demoCode, sentAt: Date.now() }),
+        );
+      } catch {
+        /* stockage indisponible */
+      }
       setOtp("");
       setStep("otp");
       setResendIn(60);
@@ -242,7 +323,9 @@ function AuthPage() {
         return;
       }
 
-      if (mode === "signup") {
+      clearPending();
+      // Après un rechargement, le mot de passe (jamais stocké) doit être ressaisi.
+      if (mode === "signup" && password) {
         await finishPasswordSetup(password, "Votre compte est prêt.");
         return;
       }
@@ -267,6 +350,7 @@ function AuthPage() {
       const { supabase } = await import("@/integrations/supabase/client");
       const { error } = await supabase.auth.setSession(login.session);
       if (error) throw error;
+      clearPending();
       toast.success(successMessage);
       await navigate({ to: "/" });
     } catch {
@@ -308,6 +392,7 @@ function AuthPage() {
   };
 
   const goBack = () => {
+    clearPending();
     if (step === "form") {
       switchMode("login");
       return;
@@ -375,6 +460,25 @@ function AuthPage() {
             </h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">{subtitle}</p>
           </header>
+
+          {config.state === "checking" && (
+            <div role="status" className="mb-4 flex items-center gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Vérification du serveur…
+            </div>
+          )}
+          {config.state === "error" && (
+            <div role="alert" className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{config.message}</span>
+              </div>
+              <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => void checkConfig()}>
+                <RefreshCw /> Réessayer
+              </Button>
+            </div>
+          )}
+          <fieldset disabled={config.state !== "ready"} className="contents">
+
 
           {step === "form" && mode === "login" && (
             <form
@@ -626,6 +730,7 @@ function AuthPage() {
               />
             </form>
           )}
+          </fieldset>
         </div>
 
         <p className="mt-5 text-center text-xs text-muted-foreground">
