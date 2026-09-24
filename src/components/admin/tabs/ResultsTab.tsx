@@ -14,7 +14,10 @@ export function ResultsTab() {
     try {
       let result: any;
       if (gameId === "loto") {
-        const numbers = values.split(/[,\s]+/).filter(Boolean).map(Number);
+        const numbers = values
+          .split(/[,\s]+/)
+          .filter(Boolean)
+          .map(Number);
         if (
           numbers.length < 1 ||
           numbers.length > 5 ||
@@ -25,7 +28,10 @@ export function ResultsTab() {
         }
         result = { numbers };
       } else if (gameId === "pmu") {
-        const horses = values.split(/[,\s]+/).filter(Boolean).map(Number);
+        const horses = values
+          .split(/[,\s]+/)
+          .filter(Boolean)
+          .map(Number);
         if (!horses.length || horses.some((n) => !Number.isInteger(n) || n <= 0)) {
           throw new Error("Classement PMU invalide.");
         }
@@ -64,7 +70,9 @@ export function ResultsTab() {
     <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
       <h2 className="text-xl font-extrabold">Résultats & règlement automatique</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Les résultats PMU et Loto sont publiés manuellement par un administrateur. Le règlement des coupons est déclenché après publication. Une future intégration API pourra automatiser cette étape, sans changer le contrôle serveur.
+        Les résultats PMU et Loto sont publiés manuellement par un administrateur. Le règlement des
+        coupons est déclenché après publication. Une future intégration API pourra automatiser cette
+        étape, sans changer le contrôle serveur.
       </p>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">

@@ -27,7 +27,10 @@ interface Ctx {
   account: Account | null;
   saveAccount: (a: Account) => void;
   clearAccount: () => void;
-  isPhoneAvailable: (phone: string, ownUserId?: string) => { ok: boolean; reason?: "active" | "pending_deletion"; recoverableUntil?: number };
+  isPhoneAvailable: (
+    phone: string,
+    ownUserId?: string,
+  ) => { ok: boolean; reason?: "active" | "pending_deletion"; recoverableUntil?: number };
   requestDeletion: () => void;
   cancelDeletion: () => void;
   deletionRemainingMs: () => number;
@@ -47,14 +50,20 @@ function loadRegistry(): Registry {
     let dirty = false;
     for (const p of Object.keys(reg)) {
       const e = reg[p];
-      if (e.status === "pending_deletion" && e.deletionRequestedAt && now - e.deletionRequestedAt > RECOVERY_MS) {
+      if (
+        e.status === "pending_deletion" &&
+        e.deletionRequestedAt &&
+        now - e.deletionRequestedAt > RECOVERY_MS
+      ) {
         delete reg[p];
         dirty = true;
       }
     }
     if (dirty) localStorage.setItem(REG_KEY, JSON.stringify(reg));
     return reg;
-  } catch { return {}; }
+  } catch {
+    return {};
+  }
 }
 
 // Détecte les demandes de suppression arrivées à expiration (>30j) sans les purger.
@@ -68,9 +77,15 @@ function findExpiredDeletions(): string[] {
     const now = Date.now();
     return Object.keys(reg).filter((p) => {
       const e = reg[p];
-      return e.status === "pending_deletion" && !!e.deletionRequestedAt && now - e.deletionRequestedAt > RECOVERY_MS;
+      return (
+        e.status === "pending_deletion" &&
+        !!e.deletionRequestedAt &&
+        now - e.deletionRequestedAt > RECOVERY_MS
+      );
     });
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 function saveRegistry(reg: Registry) {
   if (typeof window !== "undefined") localStorage.setItem(REG_KEY, JSON.stringify(reg));
@@ -88,7 +103,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       try {
         currentAccount = JSON.parse(raw) as Account;
         setAccount(currentAccount);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     for (const phone of expired) {
       // Si c'est le compte local en cours, on nettoie localStorage aussi.
@@ -178,7 +195,17 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AccountCtx.Provider value={{ account, saveAccount, clearAccount, isPhoneAvailable, requestDeletion, cancelDeletion, deletionRemainingMs }}>
+    <AccountCtx.Provider
+      value={{
+        account,
+        saveAccount,
+        clearAccount,
+        isPhoneAvailable,
+        requestDeletion,
+        cancelDeletion,
+        deletionRemainingMs,
+      }}
+    >
       {children}
     </AccountCtx.Provider>
   );

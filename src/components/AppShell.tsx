@@ -1,6 +1,16 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { Home, Trophy, Sparkles, Ticket as TicketIcon, ShieldCheck, Globe2, UserCircle2, LogIn, LogOut } from "lucide-react";
+import {
+  Home,
+  Trophy,
+  Sparkles,
+  Ticket as TicketIcon,
+  ShieldCheck,
+  Globe2,
+  UserCircle2,
+  LogIn,
+  LogOut,
+} from "lucide-react";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { useAuth } from "@/lib/auth";
@@ -25,7 +35,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Les jeux, résultats et pages légales restent consultables sans connexion.
   // Seuls les espaces contenant des données privées exigent une session.
   const navigate = useNavigate();
-  const protectedRoute = onAdmin || pathname.startsWith("/mes-tickets") || pathname.startsWith("/ticket/");
+  const protectedRoute =
+    onAdmin || pathname.startsWith("/mes-tickets") || pathname.startsWith("/ticket/");
   const blocked = authChecked && !authed && protectedRoute;
   const pending = !authChecked && protectedRoute;
   useEffect(() => {
@@ -35,7 +46,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (pending || blocked) {
     return (
       <div className="grid min-h-dvh place-items-center bg-background px-4">
-        <div className="flex flex-col items-center gap-3 text-center" role="status" aria-live="polite">
+        <div
+          className="flex flex-col items-center gap-3 text-center"
+          role="status"
+          aria-live="polite"
+        >
           <img src={logoCoupSur} alt="Coup Sûr" className="h-20 w-20 object-contain" />
           <div>
             <div className="font-display text-xl font-bold text-foreground">Coup Sûr</div>
@@ -69,8 +84,12 @@ export function AppShell({ children }: { children: ReactNode }) {
               <img src={logoCoupSur} alt="" className="h-8 w-8 object-contain" />
             </div>
             <div className="min-w-0">
-              <div className="font-display text-lg font-bold leading-none truncate">{t("appName")}</div>
-              <div className="text-[11px] uppercase tracking-widest text-muted-foreground truncate">{t("tagline")}</div>
+              <div className="font-display text-lg font-bold leading-none truncate">
+                {t("appName")}
+              </div>
+              <div className="text-[11px] uppercase tracking-widest text-muted-foreground truncate">
+                {t("tagline")}
+              </div>
             </div>
           </Link>
           <div className="flex items-center gap-1.5">
@@ -113,7 +132,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                 className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition"
               >
                 <UserCircle2 className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{account ? account.firstName : t("createAccount")}</span>
+                <span className="hidden sm:inline">
+                  {account ? account.firstName : t("createAccount")}
+                </span>
               </Link>
             )}
             {isAdmin && (
@@ -181,13 +202,27 @@ function LangSwitch({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void 
   );
 }
 
-export function PageHeader({ title, subtitle, icon }: { title: string; subtitle?: string; icon?: ReactNode }) {
+export function PageHeader({
+  title,
+  subtitle,
+  icon,
+}: {
+  title: string;
+  subtitle?: string;
+  icon?: ReactNode;
+}) {
   return (
     <div className="mx-auto max-w-6xl px-4 pt-6 pb-2">
       <div className="flex items-center gap-3">
-        {icon && <div className="grid h-11 w-11 place-items-center rounded-xl bg-gold-gradient text-[var(--gold-foreground)] shadow-gold">{icon}</div>}
+        {icon && (
+          <div className="grid h-11 w-11 place-items-center rounded-xl bg-gold-gradient text-[var(--gold-foreground)] shadow-gold">
+            {icon}
+          </div>
+        )}
         <div className="min-w-0">
-          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight truncate">{title}</h1>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight truncate">
+            {title}
+          </h1>
           {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
         </div>
       </div>

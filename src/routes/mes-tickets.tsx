@@ -7,7 +7,9 @@ import { PageHeader } from "@/components/AppShell";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/mes-tickets")({
-  head: () => ({ meta: [{ title: "Mes tickets — Coup Sûr" }, { name: "robots", content: "noindex, follow" }] }),
+  head: () => ({
+    meta: [{ title: "Mes tickets — Coup Sûr" }, { name: "robots", content: "noindex, follow" }],
+  }),
   component: TicketsPage,
 });
 
@@ -42,7 +44,8 @@ function TicketsPage() {
 
   const filtered = useMemo(() => {
     const now = Date.now();
-    const cutoff = period === "7d" ? now - 7 * 86_400_000 : period === "30d" ? now - 30 * 86_400_000 : 0;
+    const cutoff =
+      period === "7d" ? now - 7 * 86_400_000 : period === "30d" ? now - 30 * 86_400_000 : 0;
     let list = tickets.filter((tk) => {
       if (status !== "all" && tk.status !== status) return false;
       if (game !== "all" && tk.gameId !== game) return false;
@@ -64,7 +67,11 @@ function TicketsPage() {
 
   const activeFilters = status !== "all" || game !== "all" || period !== "all" || !!search;
   const resetFilters = () => {
-    setStatus("all"); setGame("all"); setPeriod("all"); setSearch(""); setPage(1);
+    setStatus("all");
+    setGame("all");
+    setPeriod("all");
+    setSearch("");
+    setPage(1);
   };
 
   return (
@@ -78,7 +85,10 @@ function TicketsPage() {
               <input
                 type="search"
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
                 placeholder={t("account.searchTicket")}
                 className="w-full rounded-xl border border-border bg-card pl-9 pr-3 py-2 text-sm outline-none focus:border-primary/60"
               />
@@ -86,7 +96,10 @@ function TicketsPage() {
             <div className="grid grid-cols-3 gap-2">
               <select
                 value={status}
-                onChange={(e) => { setStatus(e.target.value as StatusFilter); setPage(1); }}
+                onChange={(e) => {
+                  setStatus(e.target.value as StatusFilter);
+                  setPage(1);
+                }}
                 className="min-w-0 rounded-xl border border-border bg-card px-2 py-2 text-xs font-semibold outline-none focus:border-primary/60"
                 aria-label={t("account.filterByStatus")}
               >
@@ -98,7 +111,10 @@ function TicketsPage() {
               </select>
               <select
                 value={game}
-                onChange={(e) => { setGame(e.target.value as GameFilter); setPage(1); }}
+                onChange={(e) => {
+                  setGame(e.target.value as GameFilter);
+                  setPage(1);
+                }}
                 className="min-w-0 rounded-xl border border-border bg-card px-2 py-2 text-xs font-semibold outline-none focus:border-primary/60"
                 aria-label={t("account.filterByGame")}
               >
@@ -109,7 +125,10 @@ function TicketsPage() {
               </select>
               <select
                 value={period}
-                onChange={(e) => { setPeriod(e.target.value as PeriodFilter); setPage(1); }}
+                onChange={(e) => {
+                  setPeriod(e.target.value as PeriodFilter);
+                  setPage(1);
+                }}
                 className="min-w-0 rounded-xl border border-border bg-card px-2 py-2 text-xs font-semibold outline-none focus:border-primary/60"
                 aria-label={t("account.filterByPeriod")}
               >
@@ -121,16 +140,22 @@ function TicketsPage() {
             <div className="flex items-center justify-between gap-2 text-xs">
               <button
                 type="button"
-                onClick={() => setSort((s) => s === "date-desc" ? "date-asc" : "date-desc")}
+                onClick={() => setSort((s) => (s === "date-desc" ? "date-asc" : "date-desc"))}
                 className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 font-semibold text-muted-foreground hover:text-foreground"
               >
                 <ArrowUpDown className="h-3.5 w-3.5" />
                 {sort === "date-desc" ? t("account.newestFirst") : t("account.oldestFirst")}
               </button>
               <span className="text-muted-foreground tabular-nums">
-                {t("account.ticketCount", { count: filtered.length, plural: filtered.length > 1 ? "s" : "" })}
+                {t("account.ticketCount", {
+                  count: filtered.length,
+                  plural: filtered.length > 1 ? "s" : "",
+                })}
                 {activeFilters && (
-                  <button onClick={resetFilters} className="ml-2 font-semibold text-primary hover:underline">
+                  <button
+                    onClick={resetFilters}
+                    className="ml-2 font-semibold text-primary hover:underline"
+                  >
                     {t("account.reset")}
                   </button>
                 )}
@@ -140,7 +165,6 @@ function TicketsPage() {
         </div>
 
         {loading ? (
-
           <ul className="space-y-3" aria-busy="true">
             {[0, 1, 2, 3].map((i) => (
               <li key={i} className="animate-pulse rounded-2xl border border-border bg-card p-4">
@@ -155,7 +179,9 @@ function TicketsPage() {
           </ul>
         ) : error ? (
           <div className="rounded-3xl border border-destructive/30 bg-destructive/5 p-8 text-center">
-            <p className="text-sm font-semibold text-destructive">{t("account.loadTicketsError")}</p>
+            <p className="text-sm font-semibold text-destructive">
+              {t("account.loadTicketsError")}
+            </p>
             <button
               type="button"
               onClick={refresh}
@@ -168,7 +194,10 @@ function TicketsPage() {
           <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
             <Inbox className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="mt-2 text-muted-foreground">{t("noTickets")}</p>
-            <Link to="/" className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-bold text-primary-foreground shadow-soft">
+            <Link
+              to="/"
+              className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 font-bold text-primary-foreground shadow-soft"
+            >
               {t("startPlaying")}
             </Link>
           </div>
@@ -176,14 +205,19 @@ function TicketsPage() {
           <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
             <Search className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="mt-2 text-sm text-muted-foreground">{t("account.noFilteredTickets")}</p>
-            <button onClick={resetFilters} className="mt-4 inline-flex rounded-full border border-border bg-card px-4 py-2 text-xs font-bold text-primary hover:border-primary/60">
+            <button
+              onClick={resetFilters}
+              className="mt-4 inline-flex rounded-full border border-border bg-card px-4 py-2 text-xs font-bold text-primary hover:border-primary/60"
+            >
               {t("account.resetFilters")}
             </button>
           </div>
         ) : (
           <>
             <ul className="space-y-3">
-              {pageItems.map((tk) => <TicketCard key={tk.id} tk={tk} />)}
+              {pageItems.map((tk) => (
+                <TicketCard key={tk.id} tk={tk} />
+              ))}
             </ul>
             {totalPages > 1 && (
               <nav className="flex items-center justify-between gap-2 pt-2" aria-label="Pagination">
@@ -233,14 +267,28 @@ function TicketCard({ tk }: { tk: Ticket }) {
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               <span>{gameLabel[tk.gameId] ?? tk.gameName}</span>
               <span aria-hidden>·</span>
-              <time dateTime={tk.createdAt}>{new Date(tk.createdAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}</time>
+              <time dateTime={tk.createdAt}>
+                {new Date(tk.createdAt).toLocaleDateString("fr-FR", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </time>
             </div>
             <div className="mt-0.5 font-mono text-sm font-bold text-foreground">{tk.id}</div>
             <div className="mt-1 truncate text-sm text-muted-foreground">{tk.picksLabel}</div>
           </div>
           <div className="shrink-0 text-right">
-            <div className="font-display text-lg font-bold tabular-nums">{tk.stake.toLocaleString()} <span className="text-xs font-semibold text-muted-foreground">{t("fcfa")}</span></div>
-            <span className={cn("mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", statusColor[tk.status])}>
+            <div className="font-display text-lg font-bold tabular-nums">
+              {tk.stake.toLocaleString()}{" "}
+              <span className="text-xs font-semibold text-muted-foreground">{t("fcfa")}</span>
+            </div>
+            <span
+              className={cn(
+                "mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                statusColor[tk.status],
+              )}
+            >
               {statusLabel[tk.status] ?? tk.status}
             </span>
           </div>

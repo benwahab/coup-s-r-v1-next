@@ -3,7 +3,11 @@
 
 import type { FootMatch } from "./foot.types";
 
-export interface MarketOption { key: string; label: string; odd: number }
+export interface MarketOption {
+  key: string;
+  label: string;
+  odd: number;
+}
 export interface Market {
   id: string;
   name: string;
@@ -12,16 +16,18 @@ export interface Market {
 }
 
 export function marketsForMatch(m: FootMatch): Market[] {
-  return [{
-    id: "1x2",
-    name: "1X2 — Résultat final",
-    group: "Résultat",
-    options: [
-      { key: "1", label: `Victoire ${m.home}`, odd: m.odds["1"] },
-      { key: "X", label: "Match nul", odd: m.odds["X"] },
-      { key: "2", label: `Victoire ${m.away}`, odd: m.odds["2"] },
-    ],
-  }];
+  return [
+    {
+      id: "1x2",
+      name: "1X2 — Résultat final",
+      group: "Résultat",
+      options: [
+        { key: "1", label: `Victoire ${m.home}`, odd: m.odds["1"] },
+        { key: "X", label: "Match nul", odd: m.odds["X"] },
+        { key: "2", label: `Victoire ${m.away}`, odd: m.odds["2"] },
+      ],
+    },
+  ];
 }
 
 /** Trouve la cote d'un pick "matchId:marketId:optionKey". */

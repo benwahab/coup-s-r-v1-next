@@ -10,7 +10,11 @@ const drawResultSchema = z.discriminatedUnion("gameId", [
     gameId: z.literal("loto"),
     drawDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     drawName: z.string().max(200).optional(),
-    result: z.object({ numbers: z.array(z.number().int().min(1).max(90)).min(1).max(5) }).refine((v) => new Set(v.numbers).size === v.numbers.length, { message: "duplicate_loto_numbers" }),
+    result: z
+      .object({ numbers: z.array(z.number().int().min(1).max(90)).min(1).max(5) })
+      .refine((v) => new Set(v.numbers).size === v.numbers.length, {
+        message: "duplicate_loto_numbers",
+      }),
   }),
   z.object({
     gameId: z.literal("pmu"),
@@ -23,17 +27,22 @@ const drawResultSchema = z.discriminatedUnion("gameId", [
     drawDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     drawName: z.string().max(200).optional(),
     result: z.object({
-      matches: z.array(z.object({
-        matchId: z.string().min(1).max(100),
-        result: z.enum(["1", "X", "2"]),
-        homeGoals: z.number().int().min(0).max(30).optional(),
-        awayGoals: z.number().int().min(0).max(30).optional(),
-        halfTimeHomeGoals: z.number().int().min(0).max(30).optional(),
-        halfTimeAwayGoals: z.number().int().min(0).max(30).optional(),
-        yellowCards: z.number().int().min(0).max(50).optional(),
-        corners: z.number().int().min(0).max(50).optional(),
-        scorers: z.array(z.string().max(80)).max(30).optional(),
-      })).min(1).max(500),
+      matches: z
+        .array(
+          z.object({
+            matchId: z.string().min(1).max(100),
+            result: z.enum(["1", "X", "2"]),
+            homeGoals: z.number().int().min(0).max(30).optional(),
+            awayGoals: z.number().int().min(0).max(30).optional(),
+            halfTimeHomeGoals: z.number().int().min(0).max(30).optional(),
+            halfTimeAwayGoals: z.number().int().min(0).max(30).optional(),
+            yellowCards: z.number().int().min(0).max(50).optional(),
+            corners: z.number().int().min(0).max(50).optional(),
+            scorers: z.array(z.string().max(80)).max(30).optional(),
+          }),
+        )
+        .min(1)
+        .max(500),
     }),
   }),
 ]);
@@ -96,7 +105,12 @@ async function evaluateLoto(picks: unknown[], result: { numbers: number[] }, sta
   return { winning, prize: winning ? Math.floor(stake * Number(rule.multiplier)) : 0 };
 }
 
-async function evaluatePmu(picks: unknown[], result: { horses: number[] }, stake: number, drawDate: string) {
+async function evaluatePmu(
+  picks: unknown[],
+  result: { horses: number[] },
+  stake: number,
+  drawDate: string,
+) {
   const nums = picks.filter((p): p is number => typeof p === "number");
   if (nums.length < 1 || nums.length > 8 || new Set(nums).size !== nums.length) return null;
   const winningNumbers = result.horses;
@@ -120,7 +134,9 @@ async function evaluatePmu(picks: unknown[], result: { horses: number[] }, stake
     .eq("race_id", race.id)
     .eq("status", "partant");
   if (startersError) throw new Error("pmu_starters_lookup_failed: " + startersError.message);
-  const validStarters = new Set((starters ?? []).map((row) => Number(row.number)).filter(Number.isInteger));
+  const validStarters = new Set(
+    (starters ?? []).map((row) => Number(row.number)).filter(Number.isInteger),
+  );
   if (!winningNumbers.every((n) => validStarters.has(n))) return null;
 
   const winning = nums.every((n) => winningNumbers.includes(n));
@@ -143,7 +159,11 @@ function thresholdSelection(value: number, selection: string): boolean | null {
   return m[1] === "o" ? value > threshold : value < threshold;
 }
 
-function evaluateFootSelection(m: FootMatchResult, marketId: string, selection: string): boolean | null {
+function evaluateFootSelection(
+  m: FootMatchResult,
+  marketId: string,
+  selection: string,
+): boolean | null {
   const fullTime = m.result;
 
   if (marketId === "1x2") return selection === fullTime;
@@ -211,7 +231,8 @@ async function settleFootTicket(ticket: TicketRow, results: Map<string, FootMatc
     let rowPending = false;
     let rowLosing = false;
     for (const raw of selections) {
-      if (!raw || typeof raw !== "object") return { changed: false, reason: "invalid_foot_pick_payload" };
+      if (!raw || typeof raw !== "object")
+        return { changed: false, reason: "invalid_foot_pick_payload" };
       const pick = raw as { marketId?: unknown; selection?: unknown; odds?: unknown };
       const marketId = typeof pick.marketId === "string" ? pick.marketId : "";
       const selection = typeof pick.selection === "string" ? pick.selection : "";
@@ -248,8 +269,11 @@ async function settleFootTicket(ticket: TicketRow, results: Map<string, FootMatc
   // one failed selection kills the whole coupon immediately.
   // If none failed but at least one selection is unresolved, the coupon stays pending.
   // Only when every selection has passed does the coupon become winning.
-  const nextStatus: "pending" | "losing" | "winning" =
-    couponLosing ? "losing" : couponPending ? "pending" : "winning";
+  const nextStatus: "pending" | "losing" | "winning" = couponLosing
+    ? "losing"
+    : couponPending
+      ? "pending"
+      : "winning";
   const prize = nextStatus === "winning" ? Math.floor(ticket.stake * totalOdds) : 0;
 
   if (nextStatus === "pending") {
@@ -271,7 +295,6 @@ async function settleFootTicket(ticket: TicketRow, results: Map<string, FootMatc
   const row = Array.isArray(settled) ? settled[0] : settled;
   if (!row) return { changed: false, reason: "already_settled" };
   return { changed: true, status: row.status, prize: row.prize };
-
 }
 
 async function settleTicket(ticket: TicketRow, publishedResults: any[]) {
@@ -296,8 +319,19 @@ async function settleTicket(ticket: TicketRow, publishedResults: any[]) {
 
   const result = publishedResults[0];
   let evaluation: { winning: boolean; prize: number } | null = null;
-  if (ticket.game_id === "loto") evaluation = await evaluateLoto(Array.isArray(ticket.picks) ? ticket.picks : [], result?.result, ticket.stake);
-  if (ticket.game_id === "pmu") evaluation = await evaluatePmu(Array.isArray(ticket.picks) ? ticket.picks : [], result?.result, ticket.stake, ticket.draw_date ?? "");
+  if (ticket.game_id === "loto")
+    evaluation = await evaluateLoto(
+      Array.isArray(ticket.picks) ? ticket.picks : [],
+      result?.result,
+      ticket.stake,
+    );
+  if (ticket.game_id === "pmu")
+    evaluation = await evaluatePmu(
+      Array.isArray(ticket.picks) ? ticket.picks : [],
+      result?.result,
+      ticket.stake,
+      ticket.draw_date ?? "",
+    );
   if (!evaluation) return { changed: false, reason: "unsupported_rule" };
 
   const nextStatus = evaluation.winning ? "winning" : "losing";
@@ -336,7 +370,13 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
           .maybeSingle();
         if (scheduleError) throw new Error("schedule_lookup_failed: " + scheduleError.message);
         if (!schedule?.enabled) throw new Error("game_schedule_disabled");
-        const drawAt = nigerInstant(today.year, today.month, today.day, schedule.draw_hour, schedule.draw_minute);
+        const drawAt = nigerInstant(
+          today.year,
+          today.month,
+          today.day,
+          schedule.draw_hour,
+          schedule.draw_minute,
+        );
         if (now < drawAt) throw new Error("loto_draw_not_reached");
       }
     }
@@ -346,17 +386,27 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
         throw new Error("pmu_result_duplicate_horse");
       }
       const { data: race, error: raceError } = await supabaseAdmin
-        .from("pmu_races").select("id,status,start_at").eq("race_date", data.drawDate)
+        .from("pmu_races")
+        .select("id,status,start_at")
+        .eq("race_date", data.drawDate)
         .eq("status", "finished")
-        .order("start_at", { ascending: true }).limit(1).maybeSingle();
+        .order("start_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
       if (raceError) throw new Error("pmu_race_lookup_failed: " + raceError.message);
       if (!race) throw new Error("pmu_finished_race_not_found");
       if (new Date(race.start_at).getTime() > Date.now()) throw new Error("pmu_race_not_finished");
       const { data: starters, error: startersError } = await supabaseAdmin
-        .from("pmu_horses").select("number").eq("race_id", race.id).eq("status", "partant");
+        .from("pmu_horses")
+        .select("number")
+        .eq("race_id", race.id)
+        .eq("status", "partant");
       if (startersError) throw new Error("pmu_starters_lookup_failed: " + startersError.message);
-      const validStarters = new Set((starters ?? []).map((row) => Number(row.number)).filter(Number.isInteger));
-      if (!data.result.horses.every((n) => validStarters.has(n))) throw new Error("pmu_result_contains_non_starter");
+      const validStarters = new Set(
+        (starters ?? []).map((row) => Number(row.number)).filter(Number.isInteger),
+      );
+      if (!data.result.horses.every((n) => validStarters.has(n)))
+        throw new Error("pmu_result_contains_non_starter");
     }
 
     if (data.gameId === "foot") {
@@ -411,7 +461,11 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
 
     const { data: published, error: publishError } = await supabaseAdmin
       .from("draw_results")
-      .update({ status: "published", published_at: new Date().toISOString(), published_by: context.userId })
+      .update({
+        status: "published",
+        published_at: new Date().toISOString(),
+        published_by: context.userId,
+      })
       .eq("id", result.id)
       .eq("status", "draft")
       .select("id")
@@ -435,10 +489,16 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
       .eq("status", "pending");
     if (ticketsError) throw new Error(ticketsError.message);
 
-    let settled = 0, winners = 0, losers = 0, skipped = 0;
+    let settled = 0,
+      winners = 0,
+      losers = 0,
+      skipped = 0;
     for (const ticket of (tickets ?? []) as TicketRow[]) {
       const out = await settleTicket(ticket, publishedResults ?? []);
-      if (!out.changed) { skipped++; continue; }
+      if (!out.changed) {
+        skipped++;
+        continue;
+      }
       settled++;
       if (out.status === "winning") winners++;
       if (out.status === "losing") losers++;
@@ -462,7 +522,6 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
     return { ok: true as const, settled, winners, losers, skipped };
   });
 
-
 /**
  * Cash-out gate: the server is the only authority allowed to mark a winning
  * coupon as paid. Until a real payout provider is configured, no money movement
@@ -482,6 +541,7 @@ export const requestCashout = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!ticket) throw new Error("ticket_not_found");
     if (ticket.status !== "winning") throw new Error("cashout_not_available");
-    if (ticket.prize == null || !Number.isInteger(ticket.prize) || ticket.prize <= 0) throw new Error("invalid_prize");
+    if (ticket.prize == null || !Number.isInteger(ticket.prize) || ticket.prize <= 0)
+      throw new Error("invalid_prize");
     throw new Error("cashout_provider_not_configured");
   });

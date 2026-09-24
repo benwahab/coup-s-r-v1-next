@@ -1,14 +1,23 @@
 import { Users } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
-type RegionStat = { region: string; players: number; tickets: number; staked: number; paid: number; delta7d: number };
+type RegionStat = {
+  region: string;
+  players: number;
+  tickets: number;
+  staked: number;
+  paid: number;
+  delta7d: number;
+};
 type PlayerStat = { player: string; region: string; tickets: number; staked: number; won: number };
 
 interface Props {
   filteredPlayers: PlayerStat[];
   regionStats: RegionStat[];
-  searchPlayer: string; setSearchPlayer: (v: string) => void;
-  filterRegion: string; setFilterRegion: (v: string) => void;
+  searchPlayer: string;
+  setSearchPlayer: (v: string) => void;
+  filterRegion: string;
+  setFilterRegion: (v: string) => void;
 }
 
 export function PlayersTab(p: Props) {
@@ -21,17 +30,36 @@ export function PlayersTab(p: Props) {
           <h2 className="font-display text-lg font-bold min-w-0 truncate">{t("players")}</h2>
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <input value={p.searchPlayer} onChange={(e) => p.setSearchPlayer(e.target.value)} placeholder={t("admin.players.search")} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs" />
-          <select value={p.filterRegion} onChange={(e) => p.setFilterRegion(e.target.value)} className="rounded-full border border-border bg-background px-3 py-1.5 text-xs">
+          <input
+            value={p.searchPlayer}
+            onChange={(e) => p.setSearchPlayer(e.target.value)}
+            placeholder={t("admin.players.search")}
+            className="rounded-full border border-border bg-background px-3 py-1.5 text-xs"
+          />
+          <select
+            value={p.filterRegion}
+            onChange={(e) => p.setFilterRegion(e.target.value)}
+            className="rounded-full border border-border bg-background px-3 py-1.5 text-xs"
+          >
             <option value="all">{t("admin.players.allRegions")}</option>
-            {p.regionStats.map((r) => <option key={r.region} value={r.region}>{r.region}</option>)}
+            {p.regionStats.map((r) => (
+              <option key={r.region} value={r.region}>
+                {r.region}
+              </option>
+            ))}
           </select>
         </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-secondary/40 text-[11px] uppercase tracking-widest text-muted-foreground">
-            <tr><th className="px-4 py-2 text-left">{t("admin.players.player")}</th><th className="px-4 py-2 text-left">{t("region")}</th><th className="px-4 py-2 text-right">{t("myTickets")}</th><th className="px-4 py-2 text-right">{t("admin.players.staked")}</th><th className="px-4 py-2 text-right">{t("admin.players.won")}</th></tr>
+            <tr>
+              <th className="px-4 py-2 text-left">{t("admin.players.player")}</th>
+              <th className="px-4 py-2 text-left">{t("region")}</th>
+              <th className="px-4 py-2 text-right">{t("myTickets")}</th>
+              <th className="px-4 py-2 text-right">{t("admin.players.staked")}</th>
+              <th className="px-4 py-2 text-right">{t("admin.players.won")}</th>
+            </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {p.filteredPlayers.map((row) => (
@@ -40,7 +68,14 @@ export function PlayersTab(p: Props) {
                 <td className="px-4 py-2 text-muted-foreground">{row.region}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{row.tickets}</td>
                 <td className="px-4 py-2 text-right tabular-nums">{formatFcfa(row.staked)}</td>
-                <td className={cn("px-4 py-2 text-right tabular-nums font-bold", row.won > 0 ? "text-success" : "text-muted-foreground")}>{formatFcfa(row.won)}</td>
+                <td
+                  className={cn(
+                    "px-4 py-2 text-right tabular-nums font-bold",
+                    row.won > 0 ? "text-success" : "text-muted-foreground",
+                  )}
+                >
+                  {formatFcfa(row.won)}
+                </td>
               </tr>
             ))}
           </tbody>

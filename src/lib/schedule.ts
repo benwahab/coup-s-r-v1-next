@@ -5,24 +5,29 @@
 const NIGER_TZ = "Africa/Niamey";
 
 const DRAW_NAMES = [
-  "BALSA",       // dimanche
-  "MAMAKI",      // lundi
-  "SOUDJI",      // mardi
-  "ARZIKI",      // mercredi
-  "GOMNI",       // jeudi
-  "IRMA SABOU",  // vendredi
-  "FARAHA",      // samedi
+  "BALSA", // dimanche
+  "MAMAKI", // lundi
+  "SOUDJI", // mardi
+  "ARZIKI", // mercredi
+  "GOMNI", // jeudi
+  "IRMA SABOU", // vendredi
+  "FARAHA", // samedi
 ] as const;
 
 export function nigerParts(d: Date = new Date()) {
   // Convertit l'instant en composants horaires Niger.
   const fmt = new Intl.DateTimeFormat("fr-FR", {
     timeZone: NIGER_TZ,
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
     weekday: "short",
   });
-  const parts = Object.fromEntries(fmt.formatToParts(d).map(p => [p.type, p.value]));
+  const parts = Object.fromEntries(fmt.formatToParts(d).map((p) => [p.type, p.value]));
   return {
     year: Number(parts.year),
     month: Number(parts.month),
@@ -35,7 +40,13 @@ export function nigerParts(d: Date = new Date()) {
 }
 
 /** Construit l'instant UTC correspondant à une date locale Niger (UTC+1, sans DST). */
-export function nigerInstant(year: number, month: number, day: number, hour: number, minute = 0): Date {
+export function nigerInstant(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute = 0,
+): Date {
   // Niger = UTC+1 → l'UTC = local - 1h
   return new Date(Date.UTC(year, month - 1, day, hour - 1, minute, 0));
 }
@@ -59,13 +70,22 @@ export function nigerDateLabel(d: Date = new Date()): string {
 }
 
 export type DrawStage = "openAt" | "closesIn" | "drawIn";
-export interface NextEvent { stage: DrawStage; target: Date; }
+export interface NextEvent {
+  stage: DrawStage;
+  target: Date;
+}
 
 /** Prochain jalon (ouverture / clôture / tirage) pour un jeu à 3 horaires quotidiens, sur fuseau Niger.
  *  Supporte le cycle traversant minuit (ex : ouverture 16h, fermeture 15h le
  *  lendemain, tirage peu après la fermeture). Dans ce cas, l'ordre chronologique
  *  des jalons dans une même journée Niger est : fermeture → tirage → ouverture. */
-export function nextDailyEvent(openHour: number, closeHour: number, drawHour: number, now: Date = new Date(), drawMinute = 0): NextEvent {
+export function nextDailyEvent(
+  openHour: number,
+  closeHour: number,
+  drawHour: number,
+  now: Date = new Date(),
+  drawMinute = 0,
+): NextEvent {
   const p = nigerParts(now);
   const open = nigerInstant(p.year, p.month, p.day, openHour);
   const close = nigerInstant(p.year, p.month, p.day, closeHour);

@@ -7,7 +7,11 @@ export const Route = createFileRoute("/confidentialite")({
   head: () => ({
     meta: [
       { title: "Politique de confidentialité — Coup Sûr" },
-      { name: "description", content: "Politique de confidentialité Coup Sûr : données collectées, finalités, durée de conservation, droits des utilisateurs." },
+      {
+        name: "description",
+        content:
+          "Politique de confidentialité Coup Sûr : données collectées, finalités, durée de conservation, droits des utilisateurs.",
+      },
     ],
   }),
   component: PrivacyPage,
@@ -17,7 +21,10 @@ function PrivacyPage() {
   const { t } = useI18n();
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
-      <Link to="/" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
+      <Link
+        to="/"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+      >
         <ArrowLeft className="h-4 w-4" /> {t("back")}
       </Link>
       <div className="rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-soft">
@@ -27,33 +34,47 @@ function PrivacyPage() {
           </div>
           <div>
             <h1 className="font-display text-2xl font-extrabold">{t("privacy.pageTitle")}</h1>
-            <p className="text-xs text-muted-foreground">{t("terms.versionInfo", { version: PRIVACY_VERSION, date: PRIVACY_DATE })}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("terms.versionInfo", { version: PRIVACY_VERSION, date: PRIVACY_DATE })}
+            </p>
           </div>
         </div>
 
         <div className="mt-6 space-y-5 text-sm leading-relaxed text-foreground/90">
           <section>
-            <h2 className="font-display text-lg font-bold text-foreground">{t("privacy.s1Title")}</h2>
+            <h2 className="font-display text-lg font-bold text-foreground">
+              {t("privacy.s1Title")}
+            </h2>
             <p>{t("privacy.s1Body")}</p>
           </section>
           <section>
-            <h2 className="font-display text-lg font-bold text-foreground">{t("privacy.s2Title")}</h2>
+            <h2 className="font-display text-lg font-bold text-foreground">
+              {t("privacy.s2Title")}
+            </h2>
             <p>{t("privacy.s2Body")}</p>
           </section>
           <section>
-            <h2 className="font-display text-lg font-bold text-foreground">{t("privacy.s3Title")}</h2>
+            <h2 className="font-display text-lg font-bold text-foreground">
+              {t("privacy.s3Title")}
+            </h2>
             <p>{t("privacy.s3Body")}</p>
           </section>
           <section>
-            <h2 className="font-display text-lg font-bold text-foreground">{t("privacy.s4Title")}</h2>
+            <h2 className="font-display text-lg font-bold text-foreground">
+              {t("privacy.s4Title")}
+            </h2>
             <p>{t("privacy.s4Body")}</p>
           </section>
           <section>
-            <h2 className="font-display text-lg font-bold text-foreground">{t("privacy.s5Title")}</h2>
+            <h2 className="font-display text-lg font-bold text-foreground">
+              {t("privacy.s5Title")}
+            </h2>
             <p>{t("privacy.s5Body")}</p>
           </section>
           <section>
-            <h2 className="font-display text-lg font-bold text-foreground">{t("privacy.s6Title")}</h2>
+            <h2 className="font-display text-lg font-bold text-foreground">
+              {t("privacy.s6Title")}
+            </h2>
             <p>{t("privacy.s6Body")}</p>
           </section>
         </div>

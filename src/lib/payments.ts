@@ -31,7 +31,12 @@ function stripPrefix(e164: string | null | undefined): string {
 }
 
 /** Empreinte cryptographique déterministe du paiement. */
-export async function paymentKey(input: { phone: string; amount: number; gameId: string; selection: string }): Promise<string> {
+export async function paymentKey(input: {
+  phone: string;
+  amount: number;
+  gameId: string;
+  selection: string;
+}): Promise<string> {
   const normalizedPhone = input.phone.replace(/\D/g, "");
   const payload = `${normalizedPhone}|${input.amount}|${input.gameId}|${input.selection}`;
   const bytes = new TextEncoder().encode(payload);
@@ -41,7 +46,9 @@ export async function paymentKey(input: { phone: string; amount: number; gameId:
 }
 
 /** Vérifie si un paiement identique est en cours ou a déjà été confirmé dans la fenêtre anti-doublon. */
-export async function checkDuplicate(key: string): Promise<{ duplicate: boolean; intent?: PaymentIntent }> {
+export async function checkDuplicate(
+  key: string,
+): Promise<{ duplicate: boolean; intent?: PaymentIntent }> {
   return checkPaymentDuplicate({ data: { key } });
 }
 

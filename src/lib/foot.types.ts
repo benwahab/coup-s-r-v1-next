@@ -7,5 +7,5 @@ export interface FootMatch {
   away: string;
   date: string;
   kickoffAt: string;
-  odds: { "1": number; "X": number; "2": number };
+  odds: { "1": number; X: number; "2": number };
 }

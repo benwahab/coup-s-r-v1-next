@@ -45,13 +45,19 @@ async function assertAdmin(supabase: SB, userId: string) {
 }
 
 async function assertAdminPermission(supabase: SB, userId: string, permission: AdminPermission) {
-  const { data, error } = await supabase.rpc("has_admin_permission", { _user_id: userId, _permission: permission });
+  const { data, error } = await supabase.rpc("has_admin_permission", {
+    _user_id: userId,
+    _permission: permission,
+  });
   if (error) throw new Error("permission_check_failed");
   if (data !== true) throw new Error("Forbidden: admin permission required");
 }
 
 async function assertSuperAdmin(supabase: SB, userId: string) {
-  const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "super_admin" });
+  const { data, error } = await supabase.rpc("has_role", {
+    _user_id: userId,
+    _role: "super_admin",
+  });
   if (error) throw new Error("role_check_failed");
   if (data !== true) throw new Error("Forbidden: super_admin role required");
 }
@@ -157,15 +163,27 @@ export const adminListTickets = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("tickets")
-      .select("id,code,user_id,game_id,game_name,stake,payment_method,draw_date,status,prize,phone,region,created_at")
+      .select(
+        "id,code,user_id,game_id,game_name,stake,payment_method,draw_date,status,prize,phone,region,created_at",
+      )
       .order("created_at", { ascending: false })
       .limit(5000);
     if (error) throw new Error(error.message);
     return {
       tickets: (data ?? []).map((r) => ({
-        id: r.id, code: r.code, userId: r.user_id, gameId: r.game_id, gameName: r.game_name,
-        stake: r.stake, paymentMethod: r.payment_method, drawDate: r.draw_date,
-        status: r.status, prize: r.prize, phone: r.phone, region: r.region, createdAt: r.created_at,
+        id: r.id,
+        code: r.code,
+        userId: r.user_id,
+        gameId: r.game_id,
+        gameName: r.game_name,
+        stake: r.stake,
+        paymentMethod: r.payment_method,
+        drawDate: r.draw_date,
+        status: r.status,
+        prize: r.prize,
+        phone: r.phone,
+        region: r.region,
+        createdAt: r.created_at,
       })) satisfies AdminTicketRow[],
     };
   });
@@ -175,7 +193,9 @@ export const adminGetRegisteredPlayerCount = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertAdminPermission(context.supabase as SB, context.userId, "player_stats");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { count, error } = await supabaseAdmin.from("profiles").select("id", { count: "exact", head: true });
+    const { count, error } = await supabaseAdmin
+      .from("profiles")
+      .select("id", { count: "exact", head: true });
     if (error) throw new Error("registered_player_count_failed: " + error.message);
     return { count: count ?? 0 };
   });
@@ -220,34 +240,42 @@ export const adminListPlayerActivities = createServerFn({ method: "POST" })
  */
 export const superAdminGetPlayerDisputeHistory = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
-  .inputValidator((data: unknown) =>
-    z.object({ userId: z.string().uuid() }).parse(data),
-  )
+  .inputValidator((data: unknown) => z.object({ userId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.supabase as SB, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: profile, error: profileError },
+    const [
+      { data: profile, error: profileError },
       { data: tickets, error: ticketsError },
       { data: payments, error: paymentsError },
       { data: ledger, error: ledgerError },
-      { data: audit, error: auditError }] = await Promise.all([
-      supabaseAdmin.from("profiles")
+      { data: audit, error: auditError },
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
         .select("id,phone,first_name,last_name,region,created_at")
-        .eq("id", data.userId).maybeSingle(),
-      supabaseAdmin.from("tickets")
+        .eq("id", data.userId)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("tickets")
         .select("id,code,game_id,stake,payment_method,status,prize,legs,phone,region,created_at")
         .eq("user_id", data.userId)
         .order("created_at", { ascending: false }),
-      supabaseAdmin.from("payments")
+      supabaseAdmin
+        .from("payments")
         .select("id,game_id,amount,method,status,reference,ticket_id,created_at")
         .eq("user_id", data.userId)
         .order("created_at", { ascending: false }),
-      supabaseAdmin.from("financial_ledger")
-        .select("id,event_type,payment_id,ticket_id,reference,amount,prize,method,provider_reference,metadata,created_at")
+      supabaseAdmin
+        .from("financial_ledger")
+        .select(
+          "id,event_type,payment_id,ticket_id,reference,amount,prize,method,provider_reference,metadata,created_at",
+        )
         .eq("user_id", data.userId)
         .order("created_at", { ascending: false }),
-      supabaseAdmin.from("audit_logs")
+      supabaseAdmin
+        .from("audit_logs")
         .select("id,action,detail,ip,created_at")
         .eq("user_id", data.userId)
         .order("created_at", { ascending: false })
@@ -298,7 +326,11 @@ export const adminListAdmins = createServerFn({ method: "POST" })
     if (e3) throw new Error(e3.message);
     const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
     const permissionsByUser = new Map<string, string[]>();
-    for (const row of permissionRows ?? []) permissionsByUser.set(row.user_id, [...(permissionsByUser.get(row.user_id) ?? []), row.permission]);
+    for (const row of permissionRows ?? [])
+      permissionsByUser.set(row.user_id, [
+        ...(permissionsByUser.get(row.user_id) ?? []),
+        row.permission,
+      ]);
     return {
       admins: (roles ?? []).map((r) => ({
         userId: r.user_id,
@@ -316,14 +348,21 @@ export const adminListPermissions = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertSuperAdmin(context.supabase as SB, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin.from("admin_permissions").select("user_id, permission, created_at").order("created_at", { ascending: true });
+    const { data, error } = await supabaseAdmin
+      .from("admin_permissions")
+      .select("user_id, permission, created_at")
+      .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
     return { permissions: data ?? [] };
   });
 
 export const adminSetPermissions = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
-  .inputValidator((data: unknown) => z.object({ userId: z.string().uuid(), permissions: z.array(AdminPermission).max(20) }).parse(data))
+  .inputValidator((data: unknown) =>
+    z
+      .object({ userId: z.string().uuid(), permissions: z.array(AdminPermission).max(20) })
+      .parse(data),
+  )
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.supabase as SB, context.userId);
     if (data.userId === context.userId) throw new Error("cannot_change_own_admin_permissions");
@@ -334,7 +373,11 @@ export const adminSetPermissions = createServerFn({ method: "POST" })
       p_permissions: data.permissions,
     });
     if (permissionError) throw new Error(permissionError.message);
-    await writeAuditLog(supabaseAdmin, { userId: context.userId, action: "admin.permissions.updated", detail: { targetUserId: data.userId, permissions: data.permissions } });
+    await writeAuditLog(supabaseAdmin, {
+      userId: context.userId,
+      action: "admin.permissions.updated",
+      detail: { targetUserId: data.userId, permissions: data.permissions },
+    });
     return { ok: true as const, permissions: data.permissions };
   });
 
@@ -368,9 +411,7 @@ export const adminGrantRole = createServerFn({ method: "POST" })
 
 export const transferSuperAdminOwnership = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
-  .inputValidator((data: unknown) =>
-    z.object({ targetUserId: z.string().uuid() }).parse(data),
-  )
+  .inputValidator((data: unknown) => z.object({ targetUserId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.supabase as SB, context.userId);
     if (data.targetUserId === context.userId) {
@@ -401,7 +442,8 @@ export const adminRevokeRole = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => z.object({ userId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.supabase as SB, context.userId);
-    if (data.userId === context.userId) return { ok: false as const, reason: "cannot_self_revoke" as const };
+    if (data.userId === context.userId)
+      return { ok: false as const, reason: "cannot_self_revoke" as const };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: revoked, error } = await supabaseAdmin
       .from("user_roles")

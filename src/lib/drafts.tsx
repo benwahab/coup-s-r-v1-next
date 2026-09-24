@@ -48,7 +48,9 @@ export function DraftsProvider({ children }: { children: ReactNode }) {
         });
         setDrafts(kept);
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, []);
   useEffect(() => {
     if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(drafts));
@@ -56,7 +58,12 @@ export function DraftsProvider({ children }: { children: ReactNode }) {
 
   const addDraft: Ctx["addDraft"] = (d) => {
     const id = `DR-${Math.floor(Math.random() * 9_000_000) + 1_000_000}`;
-    const draft: Draft = { ...d, id, savedAt: new Date().toISOString(), sessionId: currentSessionId(d.gameId) };
+    const draft: Draft = {
+      ...d,
+      id,
+      savedAt: new Date().toISOString(),
+      sessionId: currentSessionId(d.gameId),
+    };
     setDrafts((p) => [draft, ...p]);
     return draft;
   };

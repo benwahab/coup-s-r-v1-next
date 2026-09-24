@@ -31,9 +31,7 @@ export const signTicketToken = createServerFn({ method: "POST" })
     // ticket. Otherwise an authenticated owner could obtain a valid-looking
     // receipt token carrying an arbitrary leg identifier.
     if (data.legId) {
-      const legs = Array.isArray(ticket.legs)
-        ? (ticket.legs as Array<{ legId?: unknown }>)
-        : [];
+      const legs = Array.isArray(ticket.legs) ? (ticket.legs as Array<{ legId?: unknown }>) : [];
       if (!legs.some((leg) => leg.legId === data.legId)) {
         throw new Error("Pari introuvable sur ce ticket");
       }
@@ -62,9 +60,7 @@ export const verifyTicketToken = createServerFn({ method: "POST" })
     if (!ticket) return { valid: false as const, reason: "Ticket introuvable" };
 
     if (result.legId) {
-      const legs = Array.isArray(ticket.legs)
-        ? (ticket.legs as Array<{ legId?: unknown }>)
-        : [];
+      const legs = Array.isArray(ticket.legs) ? (ticket.legs as Array<{ legId?: unknown }>) : [];
       if (!legs.some((leg) => leg.legId === result.legId)) {
         return { valid: false as const, reason: "Pari introuvable sur ce ticket" };
       }
