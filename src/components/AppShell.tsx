@@ -118,6 +118,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <button
                   type="button"
                   onClick={() => logout("user")}
+                  aria-label={t("shell.logout")}
                   title={session ? t("shell.connectedAs", { phone: session.phone }) : ""}
                   className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-300 transition hover:bg-red-500/20"
                 >
