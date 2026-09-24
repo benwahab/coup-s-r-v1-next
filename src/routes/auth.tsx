@@ -127,7 +127,7 @@ function AuthPage() {
     // Aucun compte pour ce numéro sur CET appareil : avant de conclure qu'il
     // n'existe pas du tout, on vérifie côté serveur (l'utilisateur peut avoir
     // créé son compte sur un autre téléphone — le registre local ne le sait pas).
-    if (isPhoneAvailable(phone).ok) {
+    if (false && isPhoneAvailable(phone).ok) {
       setSending(true);
       let existsOnServer = false;
       try {
@@ -164,7 +164,11 @@ function AuthPage() {
         return;
       }
       setStep("otp");
-      setInfo(t("account.codeSentTo") + " " + phone);
+      setInfo(
+        res.demoCode
+          ? `MODE DÉMO (aucun SMS envoyé) — votre code : ${res.demoCode}. Valable 5 minutes.`
+          : t("account.codeSentTo") + " " + phone,
+      );
       setResendIn(60);
     } catch (e) {
       const msg = e instanceof Error ? e.message : t("account.sendFailed");

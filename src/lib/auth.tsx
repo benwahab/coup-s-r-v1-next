@@ -44,7 +44,8 @@ interface Ctx extends AuthState {
   requestOtp: (
     phone: string,
   ) => Promise<
-    { ok: true } | { ok: false; rate: RateCheck; reason?: "rate-limited" | "provider-unavailable" }
+    | { ok: true; demoCode: string | null }
+    | { ok: false; rate: RateCheck; reason?: "rate-limited" | "provider-unavailable" }
   >;
   verifyOtp: (
     phone: string,
@@ -199,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         rate: { ok: false, reason: "phone" as const, retryInMs: 15 * 60 * 1000 } as RateCheck,
       };
     }
-    return { ok: true as const };
+    return { ok: true as const, demoCode: res.demoCode ?? null };
   }, []);
 
   const verifyOtp: Ctx["verifyOtp"] = useCallback(
