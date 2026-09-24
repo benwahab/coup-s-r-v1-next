@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-
 const paymentInput = z.object({
   key: z.string().min(3).max(200),
   gameId: z.enum(["pmu", "loto", "foot"]),
@@ -46,9 +45,10 @@ export const beginPayment = createServerFn({ method: "POST" })
       const p = nigerParts(now);
       const open = nigerInstant(p.year, p.month, p.day, schedule.open_hour);
       const close = nigerInstant(p.year, p.month, p.day, schedule.close_hour);
-      const isOpen = schedule.open_hour > schedule.close_hour
-        ? !(now >= close && now < open)
-        : now >= open && now < close;
+      const isOpen =
+        schedule.open_hour > schedule.close_hour
+          ? !(now >= close && now < open)
+          : now >= open && now < close;
       if (!isOpen) throw new Error("game_closed");
     }
     if (!PAYMENT_METHODS.has(data.method)) throw new Error("invalid_payment_method");
@@ -79,7 +79,7 @@ export const beginPayment = createServerFn({ method: "POST" })
 
     const { data: duplicate, error: duplicateError } = await supabaseAdmin
       .from("payments")
-       .select("reference, amount, status, payment_key, created_at, game_id")
+      .select("reference, amount, status, payment_key, created_at, game_id")
       .eq("user_id", context.userId)
       .eq("payment_key", data.key)
       .or("status.eq.confirmed,and(status.eq.pending,created_at.gte." + cutoff + ")")
@@ -87,7 +87,8 @@ export const beginPayment = createServerFn({ method: "POST" })
       .limit(1)
       .maybeSingle();
 
-    if (duplicateError) throw new Error("payment_duplicate_check_failed: " + duplicateError.message);
+    if (duplicateError)
+      throw new Error("payment_duplicate_check_failed: " + duplicateError.message);
     if (duplicate) {
       return {
         duplicate: true as const,
@@ -141,7 +142,7 @@ export const checkPaymentDuplicate = createServerFn({ method: "POST" })
     const cutoff = new Date(Date.now() - 30_000).toISOString();
     const { data: row, error } = await supabaseAdmin
       .from("payments")
-       .select("payment_key, reference, amount, status, created_at, game_id")
+      .select("payment_key, reference, amount, status, created_at, game_id")
       .eq("user_id", context.userId)
       .eq("payment_key", data.key)
       .or("status.eq.confirmed,and(status.eq.pending,created_at.gte." + cutoff + ")")

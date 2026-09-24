@@ -66,7 +66,7 @@
   },
   "browse.aiPmuPrompt": {
     "fr": "Cliquez « PMU » pour générer une analyse IA des chevaux du jour.",
-    "en": "Click "PMU" to generate an AI analysis of today's horses.",
+    "en": "Click \"PMU\" to generate an AI analysis of today's horses.",
     "ha": "Danna «PMU» don samar da nazarin AI na dawakai na yau."
   },
   "browse.scoreByHorse": {
@@ -76,7 +76,7 @@
   },
   "browse.aiLotoPrompt": {
     "fr": "Cliquez « Loto » pour analyser la rotation des boules.",
-    "en": "Click "Loto" to analyse ball rotation.",
+    "en": "Click \"Loto\" to analyse ball rotation.",
     "ha": "Danna «Loto» don nazarin juyawar ƙwallo."
   },
   "browse.hotBalls": {

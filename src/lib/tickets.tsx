@@ -56,7 +56,9 @@ interface Ctx {
   loading: boolean;
   error: string | null;
   refresh: () => void;
-  addTicket: (t: Omit<Ticket, "id" | "createdAt" | "status"> & { paymentReference: string }) => Promise<Ticket>;
+  addTicket: (
+    t: Omit<Ticket, "id" | "createdAt" | "status"> & { paymentReference: string },
+  ) => Promise<Ticket>;
   getTicket: (id: string) => Ticket | undefined;
 }
 
@@ -71,7 +73,11 @@ function stripPrefix(e164: string | null | undefined): string {
   return s.slice(-8);
 }
 
-function rowToTicket(r: TicketRow, profile: ProfileRow | null, footPickStatuses?: Ticket["footPickStatuses"]): Ticket {
+function rowToTicket(
+  r: TicketRow,
+  profile: ProfileRow | null,
+  footPickStatuses?: Ticket["footPickStatuses"],
+): Ticket {
   const legs = (Array.isArray(r.legs) ? r.legs : []) as unknown as TicketLeg[];
   return {
     id: r.code,
@@ -106,7 +112,13 @@ export function TicketsProvider({ children }: { children: ReactNode }) {
   const refresh = () => setRefreshTick((n) => n + 1);
 
   useEffect(() => {
-    if (!session) { setTickets([]); setProfile(null); setLoading(false); setError(null); return; }
+    if (!session) {
+      setTickets([]);
+      setProfile(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
     const userId = session.userId;
     let cancelled = false;
     setLoading(true);
@@ -165,7 +177,9 @@ export function TicketsProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [session, refreshTick]);
 
   const addTicket: Ctx["addTicket"] = async (t) => {

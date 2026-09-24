@@ -24,7 +24,8 @@ const dict = {
     "admin.admins.grantButton": "Donner l'accès admin",
     "admin.admins.loadError": "Impossible de charger la liste des administrateurs.",
     "admin.admins.invalidPhone": "Numéro invalide (8 chiffres attendus).",
-    "admin.admins.noAccount": "Aucun compte trouvé pour ce numéro. La personne doit d'abord s'être connectée au moins une fois sur l'app.",
+    "admin.admins.noAccount":
+      "Aucun compte trouvé pour ce numéro. La personne doit d'abord s'être connectée au moins une fois sur l'app.",
     "admin.admins.granted": "Accès admin accordé.",
     "admin.admins.failed": "Échec de l'opération.",
     "admin.admins.cannotSelfRevoke": "Vous ne pouvez pas retirer votre propre accès admin.",
@@ -96,7 +97,8 @@ const dict = {
     "admin.regions.subtitle": "Montant misé, gains versés et évolution sur 7 jours.",
     "admin.regions.playersTickets": "{players} joueurs · {tickets} tickets",
     "admin.balls.title": "Boules — fréquence de jeu",
-    "admin.balls.subtitle": "Cliquez une boule pour voir la répartition seule / combinaison et ses paires fréquentes.",
+    "admin.balls.subtitle":
+      "Cliquez une boule pour voir la répartition seule / combinaison et ses paires fréquentes.",
     "admin.balls.solo": "Seule",
     "admin.balls.combo": "Combinée",
     "admin.balls.topPairs": "Top paires",
@@ -128,7 +130,8 @@ const dict = {
     "admin.nav.claims": "Réclamations",
     "admin.nav.subtitle": "Panneau administrateur",
     "admin.denied.title": "Accès refusé",
-    "admin.denied.message": "Cette zone est réservée aux administrateurs. Contactez le service technique si vous devez y accéder.",
+    "admin.denied.message":
+      "Cette zone est réservée aux administrateurs. Contactez le service technique si vous devez y accéder.",
     "admin.denied.backHome": "Retour à l'accueil",
     "admin.charts.salesTrend": "Évolution des ventes (30 jours)",
     "admin.charts.stakesVsPrizes": "Mises vs gains versés",
@@ -150,30 +153,42 @@ const dict = {
     "terms.pageTitle": "Conditions d'utilisation",
     "terms.versionInfo": "Version {version} · en vigueur le {date}",
     "terms.s1Title": "1. Objet",
-    "terms.s1Body": "Les présentes Conditions régissent l'accès et l'utilisation de la plateforme Coup Sûr permettant de jouer en ligne au PMU, au Loto Balsa et au Pari Foot.",
+    "terms.s1Body":
+      "Les présentes Conditions régissent l'accès et l'utilisation de la plateforme Coup Sûr permettant de jouer en ligne au PMU, au Loto Balsa et au Pari Foot.",
     "terms.s2Title": "2. Éligibilité",
-    "terms.s2Body": "L'utilisation est strictement réservée aux personnes majeures (18 ans révolus) résidant au Niger. Un seul compte est autorisé par numéro de téléphone.",
+    "terms.s2Body":
+      "L'utilisation est strictement réservée aux personnes majeures (18 ans révolus) résidant au Niger. Un seul compte est autorisé par numéro de téléphone.",
     "terms.s3Title": "3. Compte joueur",
-    "terms.s3Body": "L'ouverture d'un compte requiert un numéro de téléphone valide, la vérification par code OTP, ainsi que l'acceptation des présentes Conditions et de la Politique de confidentialité. Vous pouvez demander la suppression de votre compte à tout moment. Un délai de rétractation de 30 jours vous permet de le récupérer.",
+    "terms.s3Body":
+      "L'ouverture d'un compte requiert un numéro de téléphone valide, la vérification par code OTP, ainsi que l'acceptation des présentes Conditions et de la Politique de confidentialité. Vous pouvez demander la suppression de votre compte à tout moment. Un délai de rétractation de 30 jours vous permet de le récupérer.",
     "terms.s4Title": "4. Paiement & gains",
-    "terms.s4Body": "Les mises sont réglées via Mobile Money (Airtel Money). Les gains sont crédités selon les règles propres à chaque jeu et notifiés par SMS.",
+    "terms.s4Body":
+      "Les mises sont réglées via Mobile Money (Airtel Money). Les gains sont crédités selon les règles propres à chaque jeu et notifiés par SMS.",
     "terms.s5Title": "5. Jeu responsable",
-    "terms.s5Body": "Le jeu comporte des risques. Fixez-vous des limites. Le service clientèle est joignable au 7000 pour toute assistance.",
+    "terms.s5Body":
+      "Le jeu comporte des risques. Fixez-vous des limites. Le service clientèle est joignable au 7000 pour toute assistance.",
     "terms.s6Title": "6. Modifications",
-    "terms.s6Body": "Coup Sûr se réserve le droit de faire évoluer les présentes Conditions. Toute modification substantielle sera notifiée aux utilisateurs.",
+    "terms.s6Body":
+      "Coup Sûr se réserve le droit de faire évoluer les présentes Conditions. Toute modification substantielle sera notifiée aux utilisateurs.",
     "privacy.pageTitle": "Politique de confidentialité",
     "privacy.s1Title": "1. Données collectées",
-    "privacy.s1Body": "Nom, prénom, région, numéro de téléphone, historique de mises et de gains, adresse IP au moment de l'inscription et de la connexion.",
+    "privacy.s1Body":
+      "Nom, prénom, région, numéro de téléphone, historique de mises et de gains, adresse IP au moment de l'inscription et de la connexion.",
     "privacy.s2Title": "2. Finalités",
-    "privacy.s2Body": "Gestion du compte joueur, exécution des transactions, versement des gains, lutte contre la fraude et respect des obligations légales.",
+    "privacy.s2Body":
+      "Gestion du compte joueur, exécution des transactions, versement des gains, lutte contre la fraude et respect des obligations légales.",
     "privacy.s3Title": "3. Base légale",
-    "privacy.s3Body": "Exécution du contrat, obligation légale, intérêt légitime (sécurité et anti-fraude), consentement pour les communications non essentielles.",
+    "privacy.s3Body":
+      "Exécution du contrat, obligation légale, intérêt légitime (sécurité et anti-fraude), consentement pour les communications non essentielles.",
     "privacy.s4Title": "4. Conservation",
-    "privacy.s4Body": "Les données de compte sont conservées pendant la durée d'utilisation puis archivées selon les obligations légales. Après suppression de compte, un délai de rétractation de 30 jours s'applique avant effacement définitif.",
+    "privacy.s4Body":
+      "Les données de compte sont conservées pendant la durée d'utilisation puis archivées selon les obligations légales. Après suppression de compte, un délai de rétractation de 30 jours s'applique avant effacement définitif.",
     "privacy.s5Title": "5. Vos droits",
-    "privacy.s5Body": "Accès, rectification, suppression, opposition et portabilité de vos données. Contact : privacy@coupsur.ne.",
+    "privacy.s5Body":
+      "Accès, rectification, suppression, opposition et portabilité de vos données. Contact : privacy@coupsur.ne.",
     "privacy.s6Title": "6. Sécurité",
-    "privacy.s6Body": "Chiffrement des reçus (HMAC-SHA256), rate limiting, journalisation des accès, hébergement sécurisé. Aucun mot de passe Mobile Money n'est conservé.",
+    "privacy.s6Body":
+      "Chiffrement des reçus (HMAC-SHA256), rate limiting, journalisation des accès, hébergement sécurisé. Aucun mot de passe Mobile Money n'est conservé.",
     "verify.invalidToken": "Token invalide",
     "verify.verifying": "Vérification…",
     "verify.authentic": "Ticket authentique",
@@ -289,7 +304,8 @@ const dict = {
     last7days: "7 derniers jours",
     latestWinning: "Numéros gagnants",
     autoSmsTitle: "SMS gagnant automatique",
-    autoSmsDesc: "Envoie un SMS dès la publication des résultats et propose au gagnant de demander son encaissement.",
+    autoSmsDesc:
+      "Envoie un SMS dès la publication des résultats et propose au gagnant de demander son encaissement.",
     enabled: "Activé",
     disabled: "Désactivé",
     cashoutRequests: "Demandes d'encaissement",
@@ -357,7 +373,8 @@ const dict = {
     notAuthentic: "Ticket non valide",
     // ── bet-flow (StepStake / StepPayment / StepConfirm) ──
     "bet.stakeAutoCalculated": "Mise calculée automatiquement selon votre pari · {amount} {fcfa}",
-    "bet.stakePerGrid": "Mises définies par grille — {count} grilles · Mise totale : {total} {fcfa}",
+    "bet.stakePerGrid":
+      "Mises définies par grille — {count} grilles · Mise totale : {total} {fcfa}",
     "bet.otherAmount": "Autre montant ({fcfa}) — min {min} · max {max}",
     "bet.greetConfirmPhone": "Bonjour {name}, choisissez votre opérateur de paiement.",
     "bet.enterPhoneInstruction": "Choisissez l'opérateur puis la région.",
@@ -367,9 +384,11 @@ const dict = {
     "bet.detectedName": "Détecté : {name}",
     "bet.editPhoneOperator": "Changer d'opérateur",
     "bet.editSelection": "Modifier ma sélection",
-    "bet.confirmHolder": "Je valide que {holder} est bien le titulaire du compte {operator} au +227 {phone}.",
+    "bet.confirmHolder":
+      "Je valide que {holder} est bien le titulaire du compte {operator} au +227 {phone}.",
     "bet.gameClosed": "Jeu fermé pour cette session.",
-    "bet.reopenAt": "Les paiements rouvrent à {hour}h00. Vous pouvez enregistrer votre pari en brouillon et le payer dès la réouverture.",
+    "bet.reopenAt":
+      "Les paiements rouvrent à {hour}h00. Vous pouvez enregistrer votre pari en brouillon et le payer dès la réouverture.",
     "bet.duplicateBlocked": "Paiement bloqué (anti-doublon)",
     "bet.saveDraft": "Enregistrer pour plus tard",
     "bet.accountValidated": "Compte validé",
@@ -396,7 +415,8 @@ const dict = {
     "browse.suggestedGrids": "Grilles suggérées",
     "browse.heroAction": "Jouez. Gagnez. ",
     "browse.heroEncaissez": "Encaissez.",
-    "browse.heroDesc": "PMU quotidien à 15h, Loto Balsa du vendredi (1 à 5 boules sur 90) et Pari Foot. Paiement Airtel Money. Reçu QR sécurisé, SMS gagnant automatique.",
+    "browse.heroDesc":
+      "PMU quotidien à 15h, Loto Balsa du vendredi (1 à 5 boules sur 90) et Pari Foot. Paiement Airtel Money. Reçu QR sécurisé, SMS gagnant automatique.",
     "browse.threeClicks": "3 clics",
     "browse.qrSecured": "QR sécurisé",
     "browse.selectGameDesc": "Sélectionnez un jeu pour commencer à parier.",
@@ -416,7 +436,8 @@ const dict = {
     "account.receiveSms": "Recevoir le code SMS",
     "account.noAccount": "Pas encore de compte ?",
     "account.noAccountTitle": "Aucun compte trouvé",
-    "account.noAccountDesc": "Ce numéro ne correspond à aucun compte Coup Sûr. Créez-en un pour pouvoir vous connecter.",
+    "account.noAccountDesc":
+      "Ce numéro ne correspond à aucun compte Coup Sûr. Créez-en un pour pouvoir vous connecter.",
     "account.attemptsLeft": "Tentatives restantes : {remaining} / 3",
     "account.step2": "Étape 2 · Vérification",
     "account.enterCode": "Entrez votre code",
@@ -424,7 +445,8 @@ const dict = {
     "account.modify": "Modifier",
     "account.autoReadListening": "Lecture automatique du SMS en cours…",
     "account.autoReadOk": "Code lu automatiquement.",
-    "account.autoReadUnavailable": "Lecture automatique indisponible. Saisissez le code manuellement.",
+    "account.autoReadUnavailable":
+      "Lecture automatique indisponible. Saisissez le code manuellement.",
     "account.smsCode": "Code SMS",
     "account.sixDigits": "6 chiffres",
     "account.digitAriaLabel": "Chiffre {n} sur 6",
@@ -438,39 +460,49 @@ const dict = {
     "account.privacyLink": "Politique de confidentialité",
     "account.termsAnd": "et notre",
     "account.rateLimitPhone": "Trop de tentatives depuis ce numéro. Réessayez dans ~{mins} min.",
-    "account.rateLimitDevice": "Trop de tentatives depuis cet appareil. Réessayez dans ~{mins} min.",
+    "account.rateLimitDevice":
+      "Trop de tentatives depuis cet appareil. Réessayez dans ~{mins} min.",
     "account.loginSuccess": "Connexion réussie. Redirection...",
     "account.welcomeToast": "Bienvenue !",
     "account.rateLimitOtp": "Trop de tentatives. Réessayez dans ~{mins} min.",
     "account.blockedContact": "Compte bloqué. Veuillez contacter le service clientèle.",
     "account.blockedHour": "Trop de tentatives. Compte bloqué pendant 1 heure.",
-    "account.wrongPhone": "Ce numéro ne correspond pas au compte enregistré. Il vous reste {remaining} tentative(s).",
+    "account.wrongPhone":
+      "Ce numéro ne correspond pas au compte enregistré. Il vous reste {remaining} tentative(s).",
     "account.wrongOtp": "Code OTP incorrect. Il vous reste {remaining} tentative(s).",
     "account.sendFailed": "Impossible d'envoyer le code. Réessayez dans un instant.",
     "account.verifyFailed": "Vérification impossible. Réessayez.",
     "account.phoneDigits": "({digits} chiffres)",
     "account.createSubtitle": "Créez votre compte joueur en quelques secondes.",
     "account.deletionScheduled": "Suppression programmée",
-    "account.deletionNotice": "Votre compte sera définitivement supprimé dans {days} jour{plural}. Vous pouvez annuler à tout moment pendant ce délai.",
+    "account.deletionNotice":
+      "Votre compte sera définitivement supprimé dans {days} jour{plural}. Vous pouvez annuler à tout moment pendant ce délai.",
     "account.cancelDeletion": "Annuler la suppression",
     "account.consentPrefix": "J'accepte les",
     "account.consentAnd": "et la",
-    "account.consentSuffix": "de Coup Sûr. Un enregistrement horodaté sera conservé pour prouver ce consentement.",
-    "account.consentAriaLabel": "J'accepte les conditions d'utilisation et la politique de confidentialité",
+    "account.consentSuffix":
+      "de Coup Sûr. Un enregistrement horodaté sera conservé pour prouver ce consentement.",
+    "account.consentAriaLabel":
+      "J'accepte les conditions d'utilisation et la politique de confidentialité",
     "account.formInvalid": "Formulaire invalide",
-    "account.phoneTaken": "Ce numéro est déjà associé à un compte actif. Un seul compte est autorisé par numéro.",
-    "account.phonePendingDeletion": "Ce numéro appartient à un compte en cours de suppression. Réutilisable dans {days} jour(s).",
+    "account.phoneTaken":
+      "Ce numéro est déjà associé à un compte actif. Un seul compte est autorisé par numéro.",
+    "account.phonePendingDeletion":
+      "Ce numéro appartient à un compte en cours de suppression. Réutilisable dans {days} jour(s).",
     "account.savedToast": "Compte enregistré. Vous pouvez maintenant vous connecter.",
     "account.deleteMyAccount": "Supprimer mon compte",
     "account.deletionCooldown": "Un délai de rétractation s'applique",
     "account.close": "Fermer",
     "account.mmInfoTitle": "Numéro Mobile Money",
-    "account.mmInfoDesc": "Veuillez utiliser le numéro de téléphone associé à votre compte Mobile Money. Vous pourrez choisir votre opérateur, mais le numéro utilisé pour le paiement ne pourra pas être modifié à cette étape.",
+    "account.mmInfoDesc":
+      "Veuillez utiliser le numéro de téléphone associé à votre compte Mobile Money. Vous pourrez choisir votre opérateur, mais le numéro utilisé pour le paiement ne pourra pas être modifié à cette étape.",
     "account.mmInfoAck": "J'ai compris",
     "account.deletionSoft": "Suppression avec délai de 30 jours (recommandé)",
-    "account.deletionSoftDesc": "Votre compte sera désactivé immédiatement. Pendant 30 jours, vous pouvez le récupérer en annulant la suppression. Passé ce délai, le numéro sera libéré et pourra être associé à un nouveau compte.",
+    "account.deletionSoftDesc":
+      "Votre compte sera désactivé immédiatement. Pendant 30 jours, vous pouvez le récupérer en annulant la suppression. Passé ce délai, le numéro sera libéré et pourra être associé à un nouveau compte.",
     "account.deletionHard": "Suppression immédiate & définitive",
-    "account.deletionHardDesc": "Toutes les données locales seront effacées maintenant. Cette action est irréversible.",
+    "account.deletionHardDesc":
+      "Toutes les données locales seront effacées maintenant. Cette action est irréversible.",
     "account.scheduleDeletion": "Programmer la suppression (30 jours)",
     "account.deletePermanent": "Supprimer définitivement maintenant",
     "account.cancel": "Annuler",
@@ -535,9 +567,12 @@ const dict = {
     "shell.footer.supportHours": "Du lundi au samedi · 8h – 20h (UTC+1)",
     "shell.footer.freeCall": "7000 (appel gratuit Niger)",
     "shell.footer.whatsapp": "WhatsApp : +227 90 00 70 00",
-    "shell.footer.aboutText": "Coup Sûr propose les jeux PMU, Loto Balsa et Pari Foot en ligne avec paiement Mobile Money sécurisé, reçu QR Code infalsifiable et notification de gain par SMS. Notre mission : offrir un jeu fiable, transparent et accessible à tous les Nigériens.",
-    "shell.footer.privacyText1": "Vos données personnelles (nom, téléphone, transactions) sont protégées et utilisées uniquement pour la gestion de votre compte de jeu, le versement des gains et le respect des obligations légales du Niger.",
-    "shell.footer.privacyText2": "Chaque reçu intègre un QR Code signé (HMAC-SHA256) garantissant son authenticité. Paiements traités via les opérateurs Mobile Money agréés. Aucun mot de passe Mobile Money n'est stocké.",
+    "shell.footer.aboutText":
+      "Coup Sûr propose les jeux PMU, Loto Balsa et Pari Foot en ligne avec paiement Mobile Money sécurisé, reçu QR Code infalsifiable et notification de gain par SMS. Notre mission : offrir un jeu fiable, transparent et accessible à tous les Nigériens.",
+    "shell.footer.privacyText1":
+      "Vos données personnelles (nom, téléphone, transactions) sont protégées et utilisées uniquement pour la gestion de votre compte de jeu, le versement des gains et le respect des obligations légales du Niger.",
+    "shell.footer.privacyText2":
+      "Chaque reçu intègre un QR Code signé (HMAC-SHA256) garantissant son authenticité. Paiements traités via les opérateurs Mobile Money agréés. Aucun mot de passe Mobile Money n'est stocké.",
     "shell.footer.minorsWarning": "Interdit aux mineurs · Jouez responsable",
     "shell.footer.copyright": "© {year} Coup Sûr · Tous droits réservés",
     "shell.footer.terms": "Conditions d'utilisation",
@@ -547,7 +582,8 @@ const dict = {
     "shell.notFoundDesc": "La page que vous cherchez n'existe pas ou a été déplacée.",
     "shell.goHome": "Accueil",
     "shell.errorTitle": "Cette page n'a pas pu se charger",
-    "shell.errorDesc": "Une erreur s'est produite. Vous pouvez rafraîchir la page ou revenir à l'accueil.",
+    "shell.errorDesc":
+      "Une erreur s'est produite. Vous pouvez rafraîchir la page ou revenir à l'accueil.",
     "shell.tryAgain": "Réessayer",
     "shell.verify.loading": "Vérification…",
     "shell.verify.signedOn": "Signé le {date}",
@@ -574,7 +610,8 @@ const dict = {
     "admin.admins.grantButton": "Grant admin access",
     "admin.admins.loadError": "Couldn't load the list of admins.",
     "admin.admins.invalidPhone": "Invalid number (8 digits expected).",
-    "admin.admins.noAccount": "No account found for this number. The person must have signed in at least once first.",
+    "admin.admins.noAccount":
+      "No account found for this number. The person must have signed in at least once first.",
     "admin.admins.granted": "Admin access granted.",
     "admin.admins.failed": "Operation failed.",
     "admin.admins.cannotSelfRevoke": "You can't revoke your own admin access.",
@@ -678,7 +715,8 @@ const dict = {
     "admin.nav.claims": "Claims",
     "admin.nav.subtitle": "Admin panel",
     "admin.denied.title": "Access denied",
-    "admin.denied.message": "This area is restricted to administrators. Contact technical support if you need access.",
+    "admin.denied.message":
+      "This area is restricted to administrators. Contact technical support if you need access.",
     "admin.denied.backHome": "Back to home",
     "admin.charts.salesTrend": "Sales trend (30 days)",
     "admin.charts.stakesVsPrizes": "Stakes vs prizes paid",
@@ -700,30 +738,42 @@ const dict = {
     "terms.pageTitle": "Terms of Use",
     "terms.versionInfo": "Version {version} · effective {date}",
     "terms.s1Title": "1. Purpose",
-    "terms.s1Body": "These Terms govern access to and use of the Coup Sûr platform, which allows online play on PMU (horse racing), Loto Balsa, and Pari Foot (football betting).",
+    "terms.s1Body":
+      "These Terms govern access to and use of the Coup Sûr platform, which allows online play on PMU (horse racing), Loto Balsa, and Pari Foot (football betting).",
     "terms.s2Title": "2. Eligibility",
-    "terms.s2Body": "Use is strictly reserved for adults (18 years or older) residing in Niger. Only one account is allowed per phone number.",
+    "terms.s2Body":
+      "Use is strictly reserved for adults (18 years or older) residing in Niger. Only one account is allowed per phone number.",
     "terms.s3Title": "3. Player account",
-    "terms.s3Body": "Opening an account requires a valid phone number, OTP verification, and acceptance of these Terms and the Privacy Policy. You may request account deletion at any time. A 30-day grace period lets you recover it.",
+    "terms.s3Body":
+      "Opening an account requires a valid phone number, OTP verification, and acceptance of these Terms and the Privacy Policy. You may request account deletion at any time. A 30-day grace period lets you recover it.",
     "terms.s4Title": "4. Payment & winnings",
-    "terms.s4Body": "Stakes are paid via Mobile Money (Airtel Money). Winnings are credited according to each game's rules and notified by SMS.",
+    "terms.s4Body":
+      "Stakes are paid via Mobile Money (Airtel Money). Winnings are credited according to each game's rules and notified by SMS.",
     "terms.s5Title": "5. Responsible gambling",
-    "terms.s5Body": "Gambling carries risks. Set yourself limits. Customer service can be reached at 7000 for any assistance.",
+    "terms.s5Body":
+      "Gambling carries risks. Set yourself limits. Customer service can be reached at 7000 for any assistance.",
     "terms.s6Title": "6. Changes",
-    "terms.s6Body": "Coup Sûr reserves the right to update these Terms. Any substantial change will be notified to users.",
+    "terms.s6Body":
+      "Coup Sûr reserves the right to update these Terms. Any substantial change will be notified to users.",
     "privacy.pageTitle": "Privacy Policy",
     "privacy.s1Title": "1. Data collected",
-    "privacy.s1Body": "First name, last name, region, phone number, betting and winnings history, IP address at signup and login.",
+    "privacy.s1Body":
+      "First name, last name, region, phone number, betting and winnings history, IP address at signup and login.",
     "privacy.s2Title": "2. Purposes",
-    "privacy.s2Body": "Player account management, transaction processing, payout of winnings, fraud prevention, and legal compliance.",
+    "privacy.s2Body":
+      "Player account management, transaction processing, payout of winnings, fraud prevention, and legal compliance.",
     "privacy.s3Title": "3. Legal basis",
-    "privacy.s3Body": "Contract performance, legal obligation, legitimate interest (security and anti-fraud), consent for non-essential communications.",
+    "privacy.s3Body":
+      "Contract performance, legal obligation, legitimate interest (security and anti-fraud), consent for non-essential communications.",
     "privacy.s4Title": "4. Retention",
-    "privacy.s4Body": "Account data is kept for the duration of use, then archived per legal obligations. After account deletion, a 30-day grace period applies before permanent erasure.",
+    "privacy.s4Body":
+      "Account data is kept for the duration of use, then archived per legal obligations. After account deletion, a 30-day grace period applies before permanent erasure.",
     "privacy.s5Title": "5. Your rights",
-    "privacy.s5Body": "Access, rectification, deletion, objection, and portability of your data. Contact: privacy@coupsur.ne.",
+    "privacy.s5Body":
+      "Access, rectification, deletion, objection, and portability of your data. Contact: privacy@coupsur.ne.",
     "privacy.s6Title": "6. Security",
-    "privacy.s6Body": "Receipt encryption (HMAC-SHA256), rate limiting, access logging, secure hosting. No Mobile Money password is ever stored.",
+    "privacy.s6Body":
+      "Receipt encryption (HMAC-SHA256), rate limiting, access logging, secure hosting. No Mobile Money password is ever stored.",
     "verify.invalidToken": "Invalid token",
     "verify.verifying": "Verifying…",
     "verify.authentic": "Authentic ticket",
@@ -839,7 +889,8 @@ const dict = {
     last7days: "Last 7 days",
     latestWinning: "Winning numbers",
     autoSmsTitle: "Automatic winner SMS",
-    autoSmsDesc: "Sends an SMS as soon as results are published and lets winners request their payout.",
+    autoSmsDesc:
+      "Sends an SMS as soon as results are published and lets winners request their payout.",
     enabled: "Enabled",
     disabled: "Disabled",
     cashoutRequests: "Cash-out requests",
@@ -917,7 +968,8 @@ const dict = {
     "bet.editSelection": "Edit my selection",
     "bet.confirmHolder": "I confirm {holder} is the account holder for {operator} at +227 {phone}.",
     "bet.gameClosed": "Game closed for this session.",
-    "bet.reopenAt": "Payments reopen at {hour}:00. You can save your bet as a draft and pay when it reopens.",
+    "bet.reopenAt":
+      "Payments reopen at {hour}:00. You can save your bet as a draft and pay when it reopens.",
     "bet.duplicateBlocked": "Payment blocked (duplicate protection)",
     "bet.saveDraft": "Save for later",
     "bet.accountValidated": "Account validated",
@@ -936,7 +988,8 @@ const dict = {
     "browse.playLoto": "Play Loto",
     "browse.betFoot": "Bet Football",
     "browse.favProno": "Top pick @ {odds}",
-    "browse.aiPmuPrompt": "Click \u00abPMU\u00bb to generate an AI analysis of today\u2019s horses.",
+    "browse.aiPmuPrompt":
+      "Click \u00abPMU\u00bb to generate an AI analysis of today\u2019s horses.",
     "browse.scoreByHorse": "Score per horse",
     "browse.aiLotoPrompt": "Click \u00abLoto\u00bb to analyse ball rotation.",
     "browse.hotBalls": "Hot",
@@ -944,7 +997,8 @@ const dict = {
     "browse.suggestedGrids": "Suggested grids",
     "browse.heroAction": "Play. Win. ",
     "browse.heroEncaissez": "Cash out.",
-    "browse.heroDesc": "Daily PMU at 3 pm, Friday Loto Balsa (1 to 5 balls out of 90) and Football Betting. Payment via Airtel Money. Secure QR receipt, automatic winner SMS.",
+    "browse.heroDesc":
+      "Daily PMU at 3 pm, Friday Loto Balsa (1 to 5 balls out of 90) and Football Betting. Payment via Airtel Money. Secure QR receipt, automatic winner SMS.",
     "browse.threeClicks": "3 clicks",
     "browse.qrSecured": "Secure QR",
     "browse.selectGameDesc": "Select a game to start betting.",
@@ -964,7 +1018,8 @@ const dict = {
     "account.receiveSms": "Receive SMS code",
     "account.noAccount": "No account yet?",
     "account.noAccountTitle": "No account found",
-    "account.noAccountDesc": "This number doesn't match any Coup Sûr account. Create one to sign in.",
+    "account.noAccountDesc":
+      "This number doesn't match any Coup Sûr account. Create one to sign in.",
     "account.attemptsLeft": "Remaining attempts: {remaining} / 3",
     "account.step2": "Step 2 · Verification",
     "account.enterCode": "Enter your code",
@@ -992,31 +1047,38 @@ const dict = {
     "account.rateLimitOtp": "Too many attempts. Retry in ~{mins} min.",
     "account.blockedContact": "Account blocked. Please contact customer support.",
     "account.blockedHour": "Too many attempts. Account locked for 1 hour.",
-    "account.wrongPhone": "This number doesn't match the registered account. {remaining} attempt(s) remaining.",
+    "account.wrongPhone":
+      "This number doesn't match the registered account. {remaining} attempt(s) remaining.",
     "account.wrongOtp": "Incorrect OTP code. {remaining} attempt(s) remaining.",
     "account.sendFailed": "Unable to send the code. Please retry shortly.",
     "account.verifyFailed": "Verification failed. Please retry.",
     "account.phoneDigits": "({digits} digits)",
     "account.createSubtitle": "Create your player account in seconds.",
     "account.deletionScheduled": "Deletion scheduled",
-    "account.deletionNotice": "Your account will be permanently deleted in {days} day{plural}. You can cancel at any time during this period.",
+    "account.deletionNotice":
+      "Your account will be permanently deleted in {days} day{plural}. You can cancel at any time during this period.",
     "account.cancelDeletion": "Cancel deletion",
     "account.consentPrefix": "I accept the",
     "account.consentAnd": "and the",
-    "account.consentSuffix": "of Coup Sûr. A timestamped record will be kept to prove this consent.",
+    "account.consentSuffix":
+      "of Coup Sûr. A timestamped record will be kept to prove this consent.",
     "account.consentAriaLabel": "I accept the terms of use and privacy policy",
     "account.formInvalid": "Invalid form",
-    "account.phoneTaken": "This number is already linked to an active account. Only one account per number is allowed.",
-    "account.phonePendingDeletion": "This number belongs to an account pending deletion. Reusable in {days} day(s).",
+    "account.phoneTaken":
+      "This number is already linked to an active account. Only one account per number is allowed.",
+    "account.phonePendingDeletion":
+      "This number belongs to an account pending deletion. Reusable in {days} day(s).",
     "account.savedToast": "Account saved. You can now sign in.",
     "account.deleteMyAccount": "Delete my account",
     "account.deletionCooldown": "A withdrawal period applies",
     "account.close": "Close",
     "account.mmInfoTitle": "Mobile Money number",
-    "account.mmInfoDesc": "Please use the phone number linked to your Mobile Money account. You'll be able to choose your operator, but the number used for payment cannot be changed at this step.",
+    "account.mmInfoDesc":
+      "Please use the phone number linked to your Mobile Money account. You'll be able to choose your operator, but the number used for payment cannot be changed at this step.",
     "account.mmInfoAck": "Got it",
     "account.deletionSoft": "Deletion with 30-day delay (recommended)",
-    "account.deletionSoftDesc": "Your account will be deactivated immediately. For 30 days you can recover it by cancelling the deletion. After that period, the number will be released and can be linked to a new account.",
+    "account.deletionSoftDesc":
+      "Your account will be deactivated immediately. For 30 days you can recover it by cancelling the deletion. After that period, the number will be released and can be linked to a new account.",
     "account.deletionHard": "Immediate & permanent deletion",
     "account.deletionHardDesc": "All local data will be erased now. This action is irreversible.",
     "account.scheduleDeletion": "Schedule deletion (30 days)",
@@ -1083,9 +1145,12 @@ const dict = {
     "shell.footer.supportHours": "Monday to Saturday · 8am – 8pm (UTC+1)",
     "shell.footer.freeCall": "7000 (free call Niger)",
     "shell.footer.whatsapp": "WhatsApp: +227 90 00 70 00",
-    "shell.footer.aboutText": "Coup Sûr offers PMU, Loto Balsa and Pari Foot games online with secure Mobile Money payment, tamper-proof QR Code receipt and SMS win notification. Our mission: to offer a reliable, transparent game accessible to all Nigeriens.",
-    "shell.footer.privacyText1": "Your personal data (name, phone, transactions) are protected and used solely for managing your game account, paying out winnings and complying with Niger's legal obligations.",
-    "shell.footer.privacyText2": "Each receipt includes a signed QR Code (HMAC-SHA256) guaranteeing its authenticity. Payments processed via approved Mobile Money operators. No Mobile Money password is stored.",
+    "shell.footer.aboutText":
+      "Coup Sûr offers PMU, Loto Balsa and Pari Foot games online with secure Mobile Money payment, tamper-proof QR Code receipt and SMS win notification. Our mission: to offer a reliable, transparent game accessible to all Nigeriens.",
+    "shell.footer.privacyText1":
+      "Your personal data (name, phone, transactions) are protected and used solely for managing your game account, paying out winnings and complying with Niger's legal obligations.",
+    "shell.footer.privacyText2":
+      "Each receipt includes a signed QR Code (HMAC-SHA256) guaranteeing its authenticity. Payments processed via approved Mobile Money operators. No Mobile Money password is stored.",
     "shell.footer.minorsWarning": "Not for minors · Play responsibly",
     "shell.footer.copyright": "© {year} Coup Sûr · All rights reserved",
     "shell.footer.terms": "Terms of use",
@@ -1134,7 +1199,8 @@ const Ctx = createContext<I18nCtx | null>(null);
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("fr");
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? (localStorage.getItem("lonani.lang") as Lang | null) : null;
+    const stored =
+      typeof window !== "undefined" ? (localStorage.getItem("lonani.lang") as Lang | null) : null;
     if (stored === "fr" || stored === "en") setLangState(stored);
   }, []);
   const setLang = (l: Lang) => {

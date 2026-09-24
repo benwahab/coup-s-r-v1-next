@@ -12,11 +12,23 @@ export function Card({ title, children }: { title?: string; children: ReactNode 
   );
 }
 
-export function Footer({ onBack, onNext, disabled }: { onBack: () => void; onNext: () => void; disabled?: boolean }) {
+export function Footer({
+  onBack,
+  onNext,
+  disabled,
+}: {
+  onBack: () => void;
+  onNext: () => void;
+  disabled?: boolean;
+}) {
   const { t } = useI18n();
   return (
     <div className="mt-6 flex items-center justify-between gap-3">
-      <button onClick={onBack} type="button" className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold text-muted-foreground hover:text-foreground">
+      <button
+        onClick={onBack}
+        type="button"
+        className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold text-muted-foreground hover:text-foreground"
+      >
         <ArrowLeft className="h-4 w-4" /> {t("back")}
       </button>
       <button
@@ -31,10 +43,29 @@ export function Footer({ onBack, onNext, disabled }: { onBack: () => void; onNex
   );
 }
 
-export function Field({ label, value, onChange, type = "text", placeholder, required, wide }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string; required?: boolean; wide?: boolean }) {
+export function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  required,
+  wide,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+  required?: boolean;
+  wide?: boolean;
+}) {
   return (
     <label className={cn("block", wide && "sm:col-span-2")}>
-      <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}{required && " *"}</span>
+      <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        {label}
+        {required && " *"}
+      </span>
       <input
         type={type}
         value={value}

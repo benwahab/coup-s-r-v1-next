@@ -6,32 +6,72 @@ import { Card } from "./atoms";
 export function StepPayment() {
   const { t } = useI18n();
   const {
-    selectedPayment, phone, region, holder, gameOpen, openHour, odds,
-    totalStake, potentialWin, mmError,
-    validated, setValidated, paying, saving, duplicateMsg,
-    setStep, finish, saveDraft,
+    selectedPayment,
+    phone,
+    region,
+    holder,
+    gameOpen,
+    openHour,
+    odds,
+    totalStake,
+    potentialWin,
+    mmError,
+    validated,
+    setValidated,
+    paying,
+    saving,
+    duplicateMsg,
+    setStep,
+    finish,
+    saveDraft,
   } = useBetFlow();
 
   return (
     <Card title={t("payment")}>
       <div className="-mt-2 mb-3 flex flex-wrap items-center gap-3 text-[11px]">
-        <button type="button" onClick={() => setStep(3)} className="font-bold text-primary underline">{t("bet.editSelection")}</button>
+        <button
+          type="button"
+          onClick={() => setStep(3)}
+          className="font-bold text-primary underline"
+        >
+          {t("bet.editSelection")}
+        </button>
       </div>
       <div className="rounded-2xl border border-border bg-secondary/40 p-4">
         <div className="flex items-center gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-bold text-white" style={{ backgroundColor: selectedPayment.color }}>
+          <span
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-xl font-bold text-white"
+            style={{ backgroundColor: selectedPayment.color }}
+          >
             <Smartphone className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("operator")} · {t("accountDetected")}</div>
-            <div className="font-display text-base font-extrabold truncate">{selectedPayment.name}</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              {t("operator")} · {t("accountDetected")}
+            </div>
+            <div className="font-display text-base font-extrabold truncate">
+              {selectedPayment.name}
+            </div>
             <div className="text-sm font-bold truncate">{holder}</div>
-            <div className="text-xs text-muted-foreground truncate">+227 {phone} · {region}</div>
+            <div className="text-xs text-muted-foreground truncate">
+              +227 {phone} · {region}
+            </div>
           </div>
-          <button type="button" onClick={() => setStep(3)} className="text-xs font-bold text-primary underline">{t("changeNumber")}</button>
+          <button
+            type="button"
+            onClick={() => setStep(3)}
+            className="text-xs font-bold text-primary underline"
+          >
+            {t("changeNumber")}
+          </button>
         </div>
         <label className="mt-3 flex items-start gap-2.5 cursor-pointer rounded-xl bg-card/70 px-3 py-2">
-          <input type="checkbox" checked={validated} onChange={(e) => setValidated(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
+          <input
+            type="checkbox"
+            checked={validated}
+            onChange={(e) => setValidated(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-primary"
+          />
           <span className="text-sm">
             {t("bet.confirmHolder", { holder, operator: selectedPayment.name, phone })}
           </span>
@@ -42,20 +82,30 @@ export function StepPayment() {
         <div className="mt-4 flex items-start gap-2 rounded-2xl border border-primary/40 bg-primary/10 p-3 text-primary">
           <Clock className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="min-w-0 text-sm">
-            <b className="font-bold">{t("bet.gameClosed")}</b><br />
+            <b className="font-bold">{t("bet.gameClosed")}</b>
+            <br />
             {t("bet.reopenAt", { hour: String(openHour).padStart(2, "0") })}
           </div>
         </div>
       )}
 
       <div className="mt-4 flex items-baseline justify-between rounded-2xl border border-gold/30 bg-gold/5 px-4 py-3">
-        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("totalStake")}</span>
-        <span className="font-display text-2xl font-extrabold tabular-nums text-gold">{totalStake.toLocaleString()} <span className="text-xs text-muted-foreground">{t("fcfa")}</span></span>
+        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          {t("totalStake")}
+        </span>
+        <span className="font-display text-2xl font-extrabold tabular-nums text-gold">
+          {totalStake.toLocaleString()}{" "}
+          <span className="text-xs text-muted-foreground">{t("fcfa")}</span>
+        </span>
       </div>
       {odds > 1 && (
         <div className="mt-2 flex items-baseline justify-between rounded-2xl border border-success/30 bg-success/5 px-4 py-3">
-          <span className="text-xs font-bold uppercase tracking-widest text-success">{t("potentialWin")}</span>
-          <span className="font-display text-2xl font-extrabold tabular-nums text-success">{potentialWin.toLocaleString()} <span className="text-xs">{t("fcfa")}</span></span>
+          <span className="text-xs font-bold uppercase tracking-widest text-success">
+            {t("potentialWin")}
+          </span>
+          <span className="font-display text-2xl font-extrabold tabular-nums text-success">
+            {potentialWin.toLocaleString()} <span className="text-xs">{t("fcfa")}</span>
+          </span>
         </div>
       )}
 
@@ -65,7 +115,13 @@ export function StepPayment() {
           <div className="min-w-0">
             <div className="font-bold">{mmError}</div>
             {mmError === t("insufficientFunds") && (
-              <button type="button" onClick={() => setStep(3)} className="mt-1 text-xs font-bold underline">{t("changeNumber")}</button>
+              <button
+                type="button"
+                onClick={() => setStep(3)}
+                className="mt-1 text-xs font-bold underline"
+              >
+                {t("changeNumber")}
+              </button>
             )}
           </div>
         </div>
@@ -82,9 +138,16 @@ export function StepPayment() {
       )}
 
       {gameOpen ? (
-        <div className="mt-5 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm text-primary" role="status">
-          <div className="flex items-center gap-2 font-bold"><ShieldCheck className="h-4 w-4" /> Paiement temporairement indisponible</div>
-          <p className="mt-1 text-xs">Aucune mise ne sera enregistrée avant l’activation sécurisée d’Airtel Money.</p>
+        <div
+          className="mt-5 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm text-primary"
+          role="status"
+        >
+          <div className="flex items-center gap-2 font-bold">
+            <ShieldCheck className="h-4 w-4" /> Paiement temporairement indisponible
+          </div>
+          <p className="mt-1 text-xs">
+            Aucune mise ne sera enregistrée avant l’activation sécurisée d’Airtel Money.
+          </p>
         </div>
       ) : (
         <button

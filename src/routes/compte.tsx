@@ -1,5 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { UserCircle2, Save, Trash2, X, AlertTriangle, RotateCcw, Clock, Smartphone } from "lucide-react";
+import {
+  UserCircle2,
+  Save,
+  Trash2,
+  X,
+  AlertTriangle,
+  RotateCcw,
+  Clock,
+  Smartphone,
+} from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -12,22 +21,42 @@ import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
 const AccountSchema = z.object({
-  firstName: z.string().trim().min(2, "Prénom trop court (2 caractères min).").max(80, "Prénom trop long."),
-  lastName: z.string().trim().min(2, "Nom trop court (2 caractères min.).").max(80, "Nom trop long."),
+  firstName: z
+    .string()
+    .trim()
+    .min(2, "Prénom trop court (2 caractères min).")
+    .max(80, "Prénom trop long."),
+  lastName: z
+    .string()
+    .trim()
+    .min(2, "Nom trop court (2 caractères min.).")
+    .max(80, "Nom trop long."),
   region: z.string().min(1, "Sélectionnez une région."),
   phone: z.string().regex(/^\d{8}$/, "Numéro à 8 chiffres requis."),
   consented: z.literal(true, { errorMap: () => ({ message: "Vous devez accepter les CGU." }) }),
 });
-type FieldErrors = Partial<Record<"firstName" | "lastName" | "region" | "phone" | "consented", string>>;
+type FieldErrors = Partial<
+  Record<"firstName" | "lastName" | "region" | "phone" | "consented", string>
+>;
 
 export const Route = createFileRoute("/compte")({
-  head: () => ({ meta: [{ title: "Mon compte — Coup Sûr" }, { name: "robots", content: "noindex, follow" }] }),
+  head: () => ({
+    meta: [{ title: "Mon compte — Coup Sûr" }, { name: "robots", content: "noindex, follow" }],
+  }),
   component: ComptePage,
 });
 
 function ComptePage() {
   const { t } = useI18n();
-  const { account, saveAccount, clearAccount, isPhoneAvailable, requestDeletion, cancelDeletion, deletionRemainingMs } = useAccount();
+  const {
+    account,
+    saveAccount,
+    clearAccount,
+    isPhoneAvailable,
+    requestDeletion,
+    cancelDeletion,
+    deletionRemainingMs,
+  } = useAccount();
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState(account?.firstName ?? "");
   const [lastName, setLastName] = useState(account?.lastName ?? "");
@@ -89,11 +118,15 @@ function ComptePage() {
     if (!avail.ok) {
       if (avail.reason === "active") {
         const msg = t("account.phoneTaken");
-        setPhoneError(msg); toast.error(msg);
+        setPhoneError(msg);
+        toast.error(msg);
       } else if (avail.reason === "pending_deletion") {
-        const daysLeft = Math.ceil(((avail.recoverableUntil ?? 0) - Date.now()) / (24 * 60 * 60 * 1000));
+        const daysLeft = Math.ceil(
+          ((avail.recoverableUntil ?? 0) - Date.now()) / (24 * 60 * 60 * 1000),
+        );
         const msg = t("account.phonePendingDeletion", { days: daysLeft });
-        setPhoneError(msg); toast.error(msg);
+        setPhoneError(msg);
+        toast.error(msg);
       }
       return;
     }
@@ -106,18 +139,20 @@ function ComptePage() {
       try {
         const check = await checkPhoneAccount({ data: { phone } });
         existsOnServer = check.exists;
-      } catch { /* pas de réponse serveur : le serveur retranchera de toute façon à l'étape OTP */ }
+      } catch {
+        /* pas de réponse serveur : le serveur retranchera de toute façon à l'étape OTP */
+      }
       setChecking(false);
       if (existsOnServer) {
         const msg = t("account.phoneTaken");
-        setPhoneError(msg); toast.error(msg);
+        setPhoneError(msg);
+        toast.error(msg);
         return;
       }
     }
     persist();
     toast.success(t("account.savedToast"));
   };
-
 
   return (
     <>
@@ -133,105 +168,157 @@ function ComptePage() {
             <p className="mt-0.5 text-[11px] text-white/60">{t("account.createSubtitle")}</p>
           </div>
 
-        {account?.deletionRequestedAt && deletionMs > 0 && (
-          <div className="rounded-2xl border border-primary/40 bg-primary/10 p-4 text-primary">
-            <div className="flex items-center gap-2 font-bold">
-              <Clock className="h-4 w-4" /> {t("account.deletionScheduled")}
-            </div>
-            <p className="mt-1 text-sm">
-              {t("account.deletionNotice", { days: deletionDaysLeft, plural: deletionDaysLeft > 1 ? "s" : "" })}
-            </p>
-            <button
-              type="button"
-              onClick={cancelDeletion}
-              className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary/20 px-4 py-2 text-sm font-bold text-primary hover:bg-primary/30"
-            >
-              <RotateCcw className="h-4 w-4" /> {t("account.cancelDeletion")}
-            </button>
-          </div>
-        )}
-
-        <form onSubmit={submit} className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm space-y-2.5">
-          <div className="grid grid-cols-2 gap-2.5">
-            <Field label={t("lastName")} value={lastName} onChange={(v) => { setLastName(v); if (fieldErrors.lastName) setFieldErrors((s) => ({ ...s, lastName: undefined })); }} placeholder="ex. Issa" error={fieldErrors.lastName} />
-            <Field label={t("firstName")} value={firstName} onChange={(v) => { setFirstName(v); if (fieldErrors.firstName) setFieldErrors((s) => ({ ...s, firstName: undefined })); }} placeholder="ex. Aïssa" error={fieldErrors.firstName} />
-          </div>
-          <label className="block">
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">{t("region")}</span>
-            <select
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              className="mt-1 w-full rounded-2xl border border-white/15 bg-white/10 px-3.5 py-2.5 text-sm text-white focus:border-[#00C896] outline-none"
-            >
-              {regions.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </label>
-          <Field
-            label={`${t("phone")} (8 chiffres)`}
-            value={phone}
-            onChange={(v) => { setPhoneError(null); setFieldErrors((s) => ({ ...s, phone: undefined })); setPhone(v.replace(/\D/g, "").slice(0, 8)); }}
-            onFocus={() => { if (!mmInfoSeen) { setMmInfoOpen(true); setMmInfoSeen(true); } }}
-            placeholder="99294949"
-            type="tel"
-            error={fieldErrors.phone}
-          />
-          {phoneError && (
-            <div className="flex items-start gap-2 rounded-xl border border-red-500/40 bg-red-500/10 p-2.5 text-xs text-red-100">
-              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-              <span>{phoneError}</span>
+          {account?.deletionRequestedAt && deletionMs > 0 && (
+            <div className="rounded-2xl border border-primary/40 bg-primary/10 p-4 text-primary">
+              <div className="flex items-center gap-2 font-bold">
+                <Clock className="h-4 w-4" /> {t("account.deletionScheduled")}
+              </div>
+              <p className="mt-1 text-sm">
+                {t("account.deletionNotice", {
+                  days: deletionDaysLeft,
+                  plural: deletionDaysLeft > 1 ? "s" : "",
+                })}
+              </p>
+              <button
+                type="button"
+                onClick={cancelDeletion}
+                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary/20 px-4 py-2 text-sm font-bold text-primary hover:bg-primary/30"
+              >
+                <RotateCcw className="h-4 w-4" /> {t("account.cancelDeletion")}
+              </button>
             </div>
           )}
 
-          <label className="flex items-start gap-2.5 rounded-2xl border border-white/15 bg-white/5 p-2.5 cursor-pointer hover:bg-white/10 transition">
-            <input
-              type="checkbox"
-              checked={consented}
-              onChange={(e) => { setConsented(e.target.checked); if (fieldErrors.consented) setFieldErrors((s) => ({ ...s, consented: undefined })); }}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-[#00C896] cursor-pointer"
-              aria-label={t("account.consentAriaLabel")}
-            />
-            <span className="text-[11px] leading-snug text-white/80">
-              {t("account.consentPrefix")}{" "}
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); setLegalOpen("terms"); }}
-                className="font-semibold text-[#00C896] hover:underline"
-              >{t("account.termsLink")}</button>{" "}
-              {t("account.consentAnd")}{" "}
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); setLegalOpen("privacy"); }}
-                className="font-semibold text-[#00C896] hover:underline"
-              >{t("account.privacyLink")}</button>{" "}
-              {t("account.consentSuffix")}
-            </span>
-          </label>
-          {fieldErrors.consented && (
-            <p className="text-xs font-semibold text-red-300 -mt-2">{fieldErrors.consented}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={!ok || checking}
-            className="cs-cta"
+          <form
+            onSubmit={submit}
+            className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm space-y-2.5"
           >
-            <Save className="h-4 w-4" /> {t("saveAccount")}
-          </button>
+            <div className="grid grid-cols-2 gap-2.5">
+              <Field
+                label={t("lastName")}
+                value={lastName}
+                onChange={(v) => {
+                  setLastName(v);
+                  if (fieldErrors.lastName) setFieldErrors((s) => ({ ...s, lastName: undefined }));
+                }}
+                placeholder="ex. Issa"
+                error={fieldErrors.lastName}
+              />
+              <Field
+                label={t("firstName")}
+                value={firstName}
+                onChange={(v) => {
+                  setFirstName(v);
+                  if (fieldErrors.firstName)
+                    setFieldErrors((s) => ({ ...s, firstName: undefined }));
+                }}
+                placeholder="ex. Aïssa"
+                error={fieldErrors.firstName}
+              />
+            </div>
+            <label className="block">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">
+                {t("region")}
+              </span>
+              <select
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                className="mt-1 w-full rounded-2xl border border-white/15 bg-white/10 px-3.5 py-2.5 text-sm text-white focus:border-[#00C896] outline-none"
+              >
+                {regions.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Field
+              label={`${t("phone")} (8 chiffres)`}
+              value={phone}
+              onChange={(v) => {
+                setPhoneError(null);
+                setFieldErrors((s) => ({ ...s, phone: undefined }));
+                setPhone(v.replace(/\D/g, "").slice(0, 8));
+              }}
+              onFocus={() => {
+                if (!mmInfoSeen) {
+                  setMmInfoOpen(true);
+                  setMmInfoSeen(true);
+                }
+              }}
+              placeholder="99294949"
+              type="tel"
+              error={fieldErrors.phone}
+            />
+            {phoneError && (
+              <div className="flex items-start gap-2 rounded-xl border border-red-500/40 bg-red-500/10 p-2.5 text-xs text-red-100">
+                <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span>{phoneError}</span>
+              </div>
+            )}
 
-          {saved && (
-            <p className="text-center text-sm font-semibold text-emerald-300">{t("accountSaved")} ✓</p>
-          )}
+            <label className="flex items-start gap-2.5 rounded-2xl border border-white/15 bg-white/5 p-2.5 cursor-pointer hover:bg-white/10 transition">
+              <input
+                type="checkbox"
+                checked={consented}
+                onChange={(e) => {
+                  setConsented(e.target.checked);
+                  if (fieldErrors.consented)
+                    setFieldErrors((s) => ({ ...s, consented: undefined }));
+                }}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-[#00C896] cursor-pointer"
+                aria-label={t("account.consentAriaLabel")}
+              />
+              <span className="text-[11px] leading-snug text-white/80">
+                {t("account.consentPrefix")}{" "}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setLegalOpen("terms");
+                  }}
+                  className="font-semibold text-[#00C896] hover:underline"
+                >
+                  {t("account.termsLink")}
+                </button>{" "}
+                {t("account.consentAnd")}{" "}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setLegalOpen("privacy");
+                  }}
+                  className="font-semibold text-[#00C896] hover:underline"
+                >
+                  {t("account.privacyLink")}
+                </button>{" "}
+                {t("account.consentSuffix")}
+              </span>
+            </label>
+            {fieldErrors.consented && (
+              <p className="text-xs font-semibold text-red-300 -mt-2">{fieldErrors.consented}</p>
+            )}
 
-          {account && (
-            <button
-              type="button"
-              onClick={() => setConfirmDeleteOpen(true)}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-500/40 bg-red-500/10 px-5 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/20"
-            >
-              <Trash2 className="h-3.5 w-3.5" /> {t("deleteAccount")}
+            <button type="submit" disabled={!ok || checking} className="cs-cta">
+              <Save className="h-4 w-4" /> {t("saveAccount")}
             </button>
-          )}
-        </form>
+
+            {saved && (
+              <p className="text-center text-sm font-semibold text-emerald-300">
+                {t("accountSaved")} ✓
+              </p>
+            )}
+
+            {account && (
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteOpen(true)}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-500/40 bg-red-500/10 px-5 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/20"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> {t("deleteAccount")}
+              </button>
+            )}
+          </form>
         </div>
       </PremiumPhoneCard>
 
@@ -244,7 +331,9 @@ function ComptePage() {
           }}
           onPurge={() => {
             clearAccount();
-            setFirstName(""); setLastName(""); setPhone("");
+            setFirstName("");
+            setLastName("");
+            setPhone("");
             setConfirmDeleteOpen(false);
           }}
         />
@@ -274,10 +363,28 @@ function ComptePage() {
   );
 }
 
-function Field({ label, value, onChange, placeholder, type = "text", error, onFocus }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; error?: string; onFocus?: () => void }) {
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  error,
+  onFocus,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+  error?: string;
+  onFocus?: () => void;
+}) {
   return (
     <label className="block min-w-0">
-      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">{label}</span>
+      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/55">
+        {label}
+      </span>
       <input
         type={type}
         value={value}
@@ -295,7 +402,11 @@ function Field({ label, value, onChange, placeholder, type = "text", error, onFo
 function MobileMoneyInfoModal({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-0 sm:p-4" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-0 sm:p-4"
+      role="dialog"
+      aria-modal="true"
+    >
       <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl border border-border bg-card shadow-elevated overflow-hidden">
         <div className="flex items-start justify-between gap-3 border-b border-border/60 bg-gradient-to-br from-primary/15 to-transparent p-5">
           <div className="flex items-center gap-3">
@@ -304,7 +415,11 @@ function MobileMoneyInfoModal({ onClose }: { onClose: () => void }) {
             </div>
             <h3 className="font-display text-base font-extrabold">{t("account.mmInfoTitle")}</h3>
           </div>
-          <button onClick={onClose} aria-label={t("account.close")} className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground">
+          <button
+            onClick={onClose}
+            aria-label={t("account.close")}
+            className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -322,10 +437,22 @@ function MobileMoneyInfoModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function ConfirmDeleteModal({ onCancel, onConfirm, onPurge }: { onCancel: () => void; onConfirm: () => void; onPurge: () => void }) {
+function ConfirmDeleteModal({
+  onCancel,
+  onConfirm,
+  onPurge,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+  onPurge: () => void;
+}) {
   const { t } = useI18n();
   return (
-    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-0 sm:p-4" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-0 sm:p-4"
+      role="dialog"
+      aria-modal="true"
+    >
       <div className="w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border border-border bg-card shadow-elevated overflow-hidden">
         <div className="flex items-start justify-between gap-3 border-b border-border/60 bg-gradient-to-br from-destructive/15 to-transparent p-5">
           <div className="flex items-center gap-3">
@@ -333,11 +460,17 @@ function ConfirmDeleteModal({ onCancel, onConfirm, onPurge }: { onCancel: () => 
               <Trash2 className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-display text-lg font-extrabold">{t("account.deleteMyAccount")}</h3>
+              <h3 className="font-display text-lg font-extrabold">
+                {t("account.deleteMyAccount")}
+              </h3>
               <p className="text-xs text-muted-foreground">{t("account.deletionCooldown")}</p>
             </div>
           </div>
-          <button onClick={onCancel} aria-label={t("account.close")} className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground">
+          <button
+            onClick={onCancel}
+            aria-label={t("account.close")}
+            className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>

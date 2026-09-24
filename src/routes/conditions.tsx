@@ -7,7 +7,11 @@ export const Route = createFileRoute("/conditions")({
   head: () => ({
     meta: [
       { title: "Conditions d'utilisation — Coup Sûr" },
-      { name: "description", content: "Conditions générales d'utilisation de la plateforme Coup Sûr : règles de jeu, obligations, responsabilités." },
+      {
+        name: "description",
+        content:
+          "Conditions générales d'utilisation de la plateforme Coup Sûr : règles de jeu, obligations, responsabilités.",
+      },
     ],
   }),
   component: TermsPage,
@@ -17,7 +21,10 @@ function TermsPage() {
   const { t } = useI18n();
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
-      <Link to="/" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
+      <Link
+        to="/"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+      >
         <ArrowLeft className="h-4 w-4" /> {t("back")}
       </Link>
       <div className="rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-soft">
@@ -27,7 +34,9 @@ function TermsPage() {
           </div>
           <div>
             <h1 className="font-display text-2xl font-extrabold">{t("terms.pageTitle")}</h1>
-            <p className="text-xs text-muted-foreground">{t("terms.versionInfo", { version: TERMS_VERSION, date: TERMS_DATE })}</p>
+            <p className="text-xs text-muted-foreground">
+              {t("terms.versionInfo", { version: TERMS_VERSION, date: TERMS_DATE })}
+            </p>
           </div>
         </div>
 

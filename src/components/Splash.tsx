@@ -15,12 +15,17 @@ export function Splash() {
     try {
       if (sessionStorage.getItem(SEEN_KEY) === "1") return;
       sessionStorage.setItem(SEEN_KEY, "1");
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setShow(true);
     // Reste affiché au moins 5s au tout premier chargement de la session.
     const t1 = setTimeout(() => setLeaving(true), 4700);
     const t2 = setTimeout(() => setShow(false), 5200);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, []);
 
   if (!show) return null;
@@ -32,18 +37,26 @@ export function Splash() {
         "transition-opacity duration-500",
         leaving ? "opacity-0" : "opacity-100",
       ].join(" ")}
-      onClick={() => { setLeaving(true); setTimeout(() => setShow(false), 300); }}
+      onClick={() => {
+        setLeaving(true);
+        setTimeout(() => setShow(false), 300);
+      }}
       role="button"
       aria-label={t("shell.splash.skip")}
     >
       <div className="absolute inset-0 grid-bg opacity-30" />
       <div
         className="absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl opacity-40 animate-pulse"
-        style={{ background: "radial-gradient(circle, oklch(0.86 0.16 88 / 0.5), transparent 70%)" }}
+        style={{
+          background: "radial-gradient(circle, oklch(0.86 0.16 88 / 0.5), transparent 70%)",
+        }}
       />
       <div
         className="absolute -bottom-32 -right-32 h-[28rem] w-[28rem] rounded-full blur-3xl opacity-40 animate-pulse"
-        style={{ background: "radial-gradient(circle, oklch(0.82 0.20 150 / 0.4), transparent 70%)", animationDelay: "0.8s" }}
+        style={{
+          background: "radial-gradient(circle, oklch(0.82 0.20 150 / 0.4), transparent 70%)",
+          animationDelay: "0.8s",
+        }}
       />
       <div className="relative flex flex-col items-center gap-4 px-6 text-center">
         <div className="cs-splash-logo-wrap relative">

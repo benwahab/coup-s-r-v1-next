@@ -28,7 +28,11 @@ async function sha256Hex(value: string): Promise<string> {
 }
 
 async function findUserIdByPhone(phoneE164: string): Promise<string | null> {
-  const { data, error } = await supabaseAdmin.from("profiles").select("id").eq("phone", phoneE164).maybeSingle();
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("id")
+    .eq("phone", phoneE164)
+    .maybeSingle();
   if (error) throw new Error(`profile_lookup_failed: ${error.message}`);
   return data?.id ?? null;
 }
@@ -46,18 +50,29 @@ async function passwordLoginRateBlocked(phoneE164: string): Promise<boolean> {
   return (count ?? 0) >= MAX_FAILED_LOGINS;
 }
 
-async function recordPasswordLoginAttempt(phoneE164: string, success: boolean, userId?: string): Promise<void> {
+async function recordPasswordLoginAttempt(
+  phoneE164: string,
+  success: boolean,
+  userId?: string,
+): Promise<void> {
   const phoneHash = await sha256Hex(phoneE164);
-  const { error } = await supabaseAdmin.from("auth_login_attempts").insert({ phone_hash: phoneHash, success, user_id: userId ?? null });
+  const { error } = await supabaseAdmin
+    .from("auth_login_attempts")
+    .insert({ phone_hash: phoneHash, success, user_id: userId ?? null });
   if (error) throw new Error(`login_attempt_record_failed: ${error.message}`);
 }
 
 export const loginWithPassword = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => z.object({ phone: PhoneSchema, password: PasswordSchema }).parse(data))
+  .inputValidator((data: unknown) =>
+    z.object({ phone: PhoneSchema, password: PasswordSchema }).parse(data),
+  )
   .handler(async ({ data }) => {
     const phoneE164 = toE164Phone(data.phone);
     if (await passwordLoginRateBlocked(phoneE164)) {
-      await writeAuditLog(supabaseAdmin, { action: "auth.password.rate_limited", detail: { phone: phoneE164, windowMinutes: 15, maxFailedAttempts: MAX_FAILED_LOGINS } });
+      await writeAuditLog(supabaseAdmin, {
+        action: "auth.password.rate_limited",
+        detail: { phone: phoneE164, windowMinutes: 15, maxFailedAttempts: MAX_FAILED_LOGINS },
+      });
       return { ok: false as const, reason: "rate-limited" as const };
     }
 
@@ -65,18 +80,31 @@ export const loginWithPassword = createServerFn({ method: "POST" })
     const anon = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
       auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
     });
-    const { data: signed, error } = await anon.auth.signInWithPassword({ email: syntheticEmail(phoneE164), password: data.password });
+    const { data: signed, error } = await anon.auth.signInWithPassword({
+      email: syntheticEmail(phoneE164),
+      password: data.password,
+    });
     if (error || !signed.session) {
       await recordPasswordLoginAttempt(phoneE164, false);
-      await writeAuditLog(supabaseAdmin, { action: "auth.password.failed", detail: { phone: phoneE164, reason: "invalid_credentials" } });
+      await writeAuditLog(supabaseAdmin, {
+        action: "auth.password.failed",
+        detail: { phone: phoneE164, reason: "invalid_credentials" },
+      });
       return { ok: false as const, reason: "invalid-credentials" as const };
     }
 
     await recordPasswordLoginAttempt(phoneE164, true, signed.user?.id);
-    await writeAuditLog(supabaseAdmin, { userId: signed.user?.id, action: "auth.password.login", detail: { phone: phoneE164 } });
+    await writeAuditLog(supabaseAdmin, {
+      userId: signed.user?.id,
+      action: "auth.password.login",
+      detail: { phone: phoneE164 },
+    });
     return {
       ok: true as const,
-      session: { access_token: signed.session.access_token, refresh_token: signed.session.refresh_token },
+      session: {
+        access_token: signed.session.access_token,
+        refresh_token: signed.session.refresh_token,
+      },
       userId: signed.user.id,
     };
   });
@@ -84,7 +112,9 @@ export const loginWithPassword = createServerFn({ method: "POST" })
 /** Change le mot de passe depuis une session déjà authentifiée. */
 export const changeUserPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => z.object({ currentPassword: PasswordSchema, newPassword: PasswordSchema }).parse(data))
+  .inputValidator((data: unknown) =>
+    z.object({ currentPassword: PasswordSchema, newPassword: PasswordSchema }).parse(data),
+  )
   .handler(async ({ data, context }) => {
     if (data.currentPassword === data.newPassword) throw new Error("password_must_change");
 
@@ -94,7 +124,9 @@ export const changeUserPassword = createServerFn({ method: "POST" })
     });
     if (error) throw new Error("password_change_failed");
 
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(context.userId);
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(
+      context.userId,
+    );
     if (userError || !userData.user) throw new Error("password_change_user_invalid");
 
     const { error: metaError } = await supabaseAdmin.auth.admin.updateUserById(context.userId, {
@@ -109,10 +141,18 @@ export const changeUserPassword = createServerFn({ method: "POST" })
 
     const { error: revokeError } = await context.supabase.auth.signOut({ scope: "others" });
     if (revokeError) {
-      await writeAuditLog(supabaseAdmin, { userId: context.userId, action: "auth.session.revoke_others_failed", detail: { reason: revokeError.message, source: "password_change" } });
+      await writeAuditLog(supabaseAdmin, {
+        userId: context.userId,
+        action: "auth.session.revoke_others_failed",
+        detail: { reason: revokeError.message, source: "password_change" },
+      });
     }
 
-    await writeAuditLog(supabaseAdmin, { userId: context.userId, action: "auth.password.changed", detail: { method: "current_password" } });
+    await writeAuditLog(supabaseAdmin, {
+      userId: context.userId,
+      action: "auth.password.changed",
+      detail: { method: "current_password" },
+    });
     return { ok: true as const };
   });
 
@@ -122,7 +162,8 @@ export const setUserPassword = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => z.object({ password: PasswordSchema }).parse(data))
   .handler(async ({ data, context }) => {
     const userId = context.userId;
-    const { data: userData, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const { data: userData, error: getUserError } =
+      await supabaseAdmin.auth.admin.getUserById(userId);
     if (getUserError || !userData.user) throw new Error("password_setup_user_invalid");
     const { data: profileState, error: profileStateError } = await supabaseAdmin
       .from("profiles")
@@ -130,7 +171,10 @@ export const setUserPassword = createServerFn({ method: "POST" })
       .eq("id", userId)
       .maybeSingle();
     if (profileStateError || !profileState) throw new Error("password_setup_state_unavailable");
-    if (userData.user.app_metadata?.password_setup_required !== true || profileState.password_setup_required !== true) {
+    if (
+      userData.user.app_metadata?.password_setup_required !== true ||
+      profileState.password_setup_required !== true
+    ) {
       throw new Error("password_setup_not_pending");
     }
 
@@ -151,10 +195,18 @@ export const setUserPassword = createServerFn({ method: "POST" })
     // verified session, but revoke refresh tokens for other devices/sessions.
     const { error: revokeError } = await context.supabase.auth.signOut({ scope: "others" });
     if (revokeError) {
-      await writeAuditLog(supabaseAdmin, { userId, action: "auth.session.revoke_others_failed", detail: { reason: revokeError.message } });
+      await writeAuditLog(supabaseAdmin, {
+        userId,
+        action: "auth.session.revoke_others_failed",
+        detail: { reason: revokeError.message },
+      });
     }
 
-    await writeAuditLog(supabaseAdmin, { userId, action: "auth.password.created", detail: { method: "otp_verified" } });
+    await writeAuditLog(supabaseAdmin, {
+      userId,
+      action: "auth.password.created",
+      detail: { method: "otp_verified" },
+    });
     return { ok: true as const };
   });
 

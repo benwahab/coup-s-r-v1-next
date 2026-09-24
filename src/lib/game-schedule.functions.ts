@@ -41,17 +41,20 @@ export const adminUpdateGameSchedule = createServerFn({ method: "POST" })
 
     const { data: row, error } = await supabaseAdmin
       .from("game_schedules")
-      .upsert({
-        game_id: data.gameId,
-        open_hour: data.openHour,
-        close_hour: data.closeHour,
-        draw_hour: data.drawHour,
-        draw_minute: data.drawMinute,
-        timezone: "Africa/Niamey",
-        enabled: data.enabled,
-        updated_at: new Date().toISOString(),
-        updated_by: context.userId,
-      }, { onConflict: "game_id" })
+      .upsert(
+        {
+          game_id: data.gameId,
+          open_hour: data.openHour,
+          close_hour: data.closeHour,
+          draw_hour: data.drawHour,
+          draw_minute: data.drawMinute,
+          timezone: "Africa/Niamey",
+          enabled: data.enabled,
+          updated_at: new Date().toISOString(),
+          updated_by: context.userId,
+        },
+        { onConflict: "game_id" },
+      )
       .select("game_id,open_hour,close_hour,draw_hour,draw_minute,timezone,enabled,updated_at")
       .single();
 

@@ -23,7 +23,10 @@ export function WinConfetti() {
   const [show, setShow] = useState(true);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
       return;
     }
     const arr: Piece[] = Array.from({ length: 60 }, (_, i) => ({

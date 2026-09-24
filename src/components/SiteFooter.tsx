@@ -28,41 +28,86 @@ const socials = [
 export function SiteFooter() {
   const { t } = useI18n();
   const [open, setOpen] = useState<string | null>(null);
-  const sections = useMemo<Section[]>(() => [
-    { id: "contact", label: t("shell.footer.contact"), icon: Mail, content: (
-      <ul className="space-y-2 text-sm text-white/80">
-        <li className="flex items-start gap-2"><Phone className="h-4 w-4 mt-0.5 text-gold" /> +227 20 73 00 00</li>
-        <li className="flex items-start gap-2"><Mail className="h-4 w-4 mt-0.5 text-gold" /> contact@coupsur.ne</li>
-        <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 text-gold" /> Avenue de la Liberté, Niamey, Niger</li>
-      </ul>
-    ) },
-    { id: "about", label: t("shell.footer.about"), icon: Info, content: (
-      <p className="text-sm text-white/75 leading-relaxed">{t("shell.footer.aboutText")}</p>
-    ) },
-    { id: "partners", label: t("shell.footer.partners"), icon: Users, content: (
-      <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm text-white/80">
-        {["Airtel Money"].map((p) => (
-          <li key={p} className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-center text-xs font-semibold">{p}</li>
-        ))}
-      </ul>
-    ) },
-    { id: "privacy", label: t("shell.footer.privacy"), icon: Shield, content: (
-      <div className="space-y-2 text-sm text-white/75 leading-relaxed">
-        <p>{t("shell.footer.privacyText1")}</p>
-        <p>{t("shell.footer.privacyText2")}</p>
-      </div>
-    ) },
-    { id: "support", label: t("shell.footer.support"), icon: Headphones, content: (
-      <div className="space-y-2 text-sm text-white/80">
-        <p>{t("shell.footer.supportHours")}</p>
-        <ul className="space-y-1.5">
-          <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-gold" /> {t("shell.footer.freeCall")}</li>
-          <li className="flex items-center gap-2"><MessageCircle className="h-4 w-4 text-gold" /> {t("shell.footer.whatsapp")}</li>
-          <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-gold" /> support@coupsur.ne</li>
-        </ul>
-      </div>
-    ) },
-  ], [t]);
+  const sections = useMemo<Section[]>(
+    () => [
+      {
+        id: "contact",
+        label: t("shell.footer.contact"),
+        icon: Mail,
+        content: (
+          <ul className="space-y-2 text-sm text-white/80">
+            <li className="flex items-start gap-2">
+              <Phone className="h-4 w-4 mt-0.5 text-gold" /> +227 20 73 00 00
+            </li>
+            <li className="flex items-start gap-2">
+              <Mail className="h-4 w-4 mt-0.5 text-gold" /> contact@coupsur.ne
+            </li>
+            <li className="flex items-start gap-2">
+              <MapPin className="h-4 w-4 mt-0.5 text-gold" /> Avenue de la Liberté, Niamey, Niger
+            </li>
+          </ul>
+        ),
+      },
+      {
+        id: "about",
+        label: t("shell.footer.about"),
+        icon: Info,
+        content: (
+          <p className="text-sm text-white/75 leading-relaxed">{t("shell.footer.aboutText")}</p>
+        ),
+      },
+      {
+        id: "partners",
+        label: t("shell.footer.partners"),
+        icon: Users,
+        content: (
+          <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm text-white/80">
+            {["Airtel Money"].map((p) => (
+              <li
+                key={p}
+                className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-center text-xs font-semibold"
+              >
+                {p}
+              </li>
+            ))}
+          </ul>
+        ),
+      },
+      {
+        id: "privacy",
+        label: t("shell.footer.privacy"),
+        icon: Shield,
+        content: (
+          <div className="space-y-2 text-sm text-white/75 leading-relaxed">
+            <p>{t("shell.footer.privacyText1")}</p>
+            <p>{t("shell.footer.privacyText2")}</p>
+          </div>
+        ),
+      },
+      {
+        id: "support",
+        label: t("shell.footer.support"),
+        icon: Headphones,
+        content: (
+          <div className="space-y-2 text-sm text-white/80">
+            <p>{t("shell.footer.supportHours")}</p>
+            <ul className="space-y-1.5">
+              <li className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-gold" /> {t("shell.footer.freeCall")}
+              </li>
+              <li className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-gold" /> {t("shell.footer.whatsapp")}
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-gold" /> support@coupsur.ne
+              </li>
+            </ul>
+          </div>
+        ),
+      },
+    ],
+    [t],
+  );
 
   return (
     <footer className="mt-8 border-t border-white/10 bg-hero text-white">
@@ -70,8 +115,12 @@ export function SiteFooter() {
         {/* -18 badge */}
         <div className="mb-7 flex flex-wrap items-center justify-center gap-3">
           <div className="inline-flex items-center gap-2.5 rounded-full border border-red-500/50 bg-red-500/10 px-4 py-1.5 backdrop-blur">
-            <span className="grid h-7 w-7 place-items-center rounded-full bg-red-500 font-display text-xs font-black text-white">-18</span>
-            <span className="text-[11px] font-bold uppercase tracking-widest text-red-300">{t("shell.footer.minorsWarning")}</span>
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-red-500 font-display text-xs font-black text-white">
+              -18
+            </span>
+            <span className="text-[11px] font-bold uppercase tracking-widest text-red-300">
+              {t("shell.footer.minorsWarning")}
+            </span>
           </div>
         </div>
 
@@ -90,12 +139,16 @@ export function SiteFooter() {
                   aria-expanded={active}
                 >
                   <span className="flex items-center gap-3">
-                    <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl transition-colors ${active ? "bg-gold/20 text-gold" : "bg-white/[0.06] text-white/70"}`}>
+                    <span
+                      className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl transition-colors ${active ? "bg-gold/20 text-gold" : "bg-white/[0.06] text-white/70"}`}
+                    >
                       <s.icon className="h-4 w-4" />
                     </span>
                     <span className="font-display text-sm font-bold">{s.label}</span>
                   </span>
-                  <ChevronDown className={`h-4 w-4 shrink-0 text-white/50 transition-transform duration-300 ${active ? "rotate-180 text-gold" : ""}`} />
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 text-white/50 transition-transform duration-300 ${active ? "rotate-180 text-gold" : ""}`}
+                  />
                 </button>
                 <div
                   className="grid transition-[grid-template-rows] duration-300 ease-out"
@@ -140,7 +193,11 @@ export function SiteFooter() {
             { to: "/conditions" as const, label: t("shell.footer.terms") },
             { to: "/confidentialite" as const, label: t("shell.footer.privacyPolicy") },
           ].map((l) => (
-            <Link key={l.to} to={l.to} className="rounded-full px-2.5 py-1 text-white/55 transition hover:bg-white/5 hover:text-gold">
+            <Link
+              key={l.to}
+              to={l.to}
+              className="rounded-full px-2.5 py-1 text-white/55 transition hover:bg-white/5 hover:text-gold"
+            >
               {l.label}
             </Link>
           ))}

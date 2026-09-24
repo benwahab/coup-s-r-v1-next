@@ -2,8 +2,21 @@ import { MapPin } from "lucide-react";
 import { cn, formatFcfa } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 
-export type RegionStat = { region: string; players: number; tickets: number; staked: number; paid: number; delta7d: number };
-export function RegionsTab({ regionStats, maxRegion }: { regionStats: RegionStat[]; maxRegion: number }) {
+export type RegionStat = {
+  region: string;
+  players: number;
+  tickets: number;
+  staked: number;
+  paid: number;
+  delta7d: number;
+};
+export function RegionsTab({
+  regionStats,
+  maxRegion,
+}: {
+  regionStats: RegionStat[];
+  maxRegion: number;
+}) {
   const { t } = useI18n();
   return (
     <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
@@ -18,12 +31,26 @@ export function RegionsTab({ regionStats, maxRegion }: { regionStats: RegionStat
           return (
             <li key={r.region}>
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="font-bold">{r.region} <span className="ml-1 text-xs font-normal text-muted-foreground">· {t("admin.regions.playersTickets", { players: r.players, tickets: r.tickets })}</span></span>
+                <span className="font-bold">
+                  {r.region}{" "}
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">
+                    ·{" "}
+                    {t("admin.regions.playersTickets", { players: r.players, tickets: r.tickets })}
+                  </span>
+                </span>
                 <span className="tabular-nums">
                   <span className="font-display font-bold">{formatFcfa(r.staked)}</span>
                   <span className="ml-2 text-xs text-success">+{formatFcfa(r.paid)}</span>
-                  <span className={cn("ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold", r.delta7d >= 0 ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive")}>
-                    {r.delta7d >= 0 ? "+" : ""}{r.delta7d}%
+                  <span
+                    className={cn(
+                      "ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                      r.delta7d >= 0
+                        ? "bg-success/15 text-success"
+                        : "bg-destructive/15 text-destructive",
+                    )}
+                  >
+                    {r.delta7d >= 0 ? "+" : ""}
+                    {r.delta7d}%
                   </span>
                 </span>
               </div>

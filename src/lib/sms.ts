@@ -4,7 +4,7 @@ import type { Ticket, TicketLeg } from "./tickets";
 import { signTicketToken } from "./ticket-token.functions";
 
 export interface SmsEntry {
-  id: string;          // ticket id (+ leg suffix)
+  id: string; // ticket id (+ leg suffix)
   phone: string;
   prize: number;
   body: string;
@@ -39,7 +39,10 @@ export async function sendWinSms(ticket: Ticket, leg?: TicketLeg): Promise<SmsEn
 
 export type AccountNoticeKind = "deletion-requested" | "deletion-cancelled" | "deletion-expired";
 
-const KIND_MESSAGES: Record<AccountNoticeKind, (firstName: string) => { subject: string; body: string }> = {
+const KIND_MESSAGES: Record<
+  AccountNoticeKind,
+  (firstName: string) => { subject: string; body: string }
+> = {
   "deletion-requested": (fn) => ({
     subject: "Coup Sûr — Suppression de compte demandée",
     body: `Coup Sûr: ${fn || "Bonjour"}, votre demande de suppression a été enregistrée. Votre compte sera définitivement supprimé dans 30 jours. Vous pouvez annuler à tout moment depuis « Mon compte ».`,

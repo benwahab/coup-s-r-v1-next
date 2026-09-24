@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { adminCreateDrawResult, adminPublishDrawResult } from "@/lib/settlement.functions";
 
+type DrawResultPayload = { numbers: number[] } | { horses: number[] };
+
 export function ResultsTab() {
   const [gameId, setGameId] = useState<"loto" | "pmu">("loto");
   const [drawDate, setDrawDate] = useState(new Date().toISOString().slice(0, 10));
@@ -12,9 +14,12 @@ export function ResultsTab() {
     setBusy(true);
     setMessage(null);
     try {
-      let result: any;
+      let result: DrawResultPayload = { numbers: [] };
       if (gameId === "loto") {
-        const numbers = values.split(/[,\s]+/).filter(Boolean).map(Number);
+        const numbers = values
+          .split(/[,\s]+/)
+          .filter(Boolean)
+          .map(Number);
         if (
           numbers.length < 1 ||
           numbers.length > 5 ||
@@ -25,17 +30,20 @@ export function ResultsTab() {
         }
         result = { numbers };
       } else if (gameId === "pmu") {
-        const horses = values.split(/[,\s]+/).filter(Boolean).map(Number);
+        const horses = values
+          .split(/[,\s]+/)
+          .filter(Boolean)
+          .map(Number);
         if (!horses.length || horses.some((n) => !Number.isInteger(n) || n <= 0)) {
           throw new Error("Classement PMU invalide.");
         }
         result = { horses };
       }
-      const created: any = await adminCreateDrawResult({
-        data: { gameId, drawDate, result } as any,
+      const created = await adminCreateDrawResult({
+        data: { gameId, drawDate, result },
       });
 
-      const resultIds: string[] = created.resultIds ?? [created.result.id];
+      const resultIds: string[] = [created.result.id];
       let settled = 0;
       let winners = 0;
       let losers = 0;
@@ -64,7 +72,9 @@ export function ResultsTab() {
     <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
       <h2 className="text-xl font-extrabold">Résultats & règlement automatique</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Les résultats PMU et Loto sont publiés manuellement par un administrateur. Le règlement des coupons est déclenché après publication. Une future intégration API pourra automatiser cette étape, sans changer le contrôle serveur.
+        Les résultats PMU et Loto sont publiés manuellement par un administrateur. Le règlement des
+        coupons est déclenché après publication. Une future intégration API pourra automatiser cette
+        étape, sans changer le contrôle serveur.
       </p>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">

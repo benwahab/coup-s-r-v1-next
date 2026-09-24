@@ -1,12 +1,17 @@
 /** Static product configuration only. No draws, fixtures, horses, results or simulated data live here. */
 export type GameId = "pmu" | "loto" | "foot";
 
-export const paymentMethods = [
-  { id: "airtel", name: "Airtel Money", color: "#E40000" },
-] as const;
+export const paymentMethods = [{ id: "airtel", name: "Airtel Money", color: "#E40000" }] as const;
 
 export const regions = [
-  "Niamey", "Maradi", "Zinder", "Tahoua", "Agadez", "Dosso", "Tillabéri", "Diffa",
+  "Niamey",
+  "Maradi",
+  "Zinder",
+  "Tahoua",
+  "Agadez",
+  "Dosso",
+  "Tillabéri",
+  "Diffa",
 ] as const;
 export type Region = (typeof regions)[number];
 

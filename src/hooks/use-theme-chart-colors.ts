@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
  *  Les couleurs OKLCH du projet ne peuvent pas être injectées via `var()`
  *  dans un attribut SVG (stroke/fill) — on les résout au montage. */
 export type ChartColors = {
-  primary: string;   // orange CTA
-  teal: string;      // émeraude
-  success: string;   // vert gain
+  primary: string; // orange CTA
+  teal: string; // émeraude
+  success: string; // vert gain
   destructive: string;
   muted: string;
   border: string;

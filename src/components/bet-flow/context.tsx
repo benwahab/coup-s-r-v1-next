@@ -33,9 +33,23 @@ const BetFlowCtx = createContext<Ctx | null>(null);
 
 function useProviderValue(cfg: BetFlowConfig) {
   const {
-    gameId, gameName, drawDate, selection, picksLabel, canContinue, renderSelection,
-    defaultStake = 500, legs, drawName, minStake = 100, maxStake = 100_000, odds = 1, lockedStake,
-    skipStake = false, gameOpen = true, openHour = 8,
+    gameId,
+    gameName,
+    drawDate,
+    selection,
+    picksLabel,
+    canContinue,
+    renderSelection,
+    defaultStake = 500,
+    legs,
+    drawName,
+    minStake = 100,
+    maxStake = 100_000,
+    odds = 1,
+    lockedStake,
+    skipStake = false,
+    gameOpen = true,
+    openHour = 8,
   } = cfg;
 
   const { t } = useI18n();
@@ -86,10 +100,19 @@ function useProviderValue(cfg: BetFlowConfig) {
 
   const allLegs: TicketLeg[] = legs?.length
     ? legs
-    : [{
-        legId: `${Date.now()}-0`, gameId, gameName,
-        picks: selection, picksLabel, stake, drawName, drawDate, status: "pending",
-      }];
+    : [
+        {
+          legId: `${Date.now()}-0`,
+          gameId,
+          gameName,
+          picks: selection,
+          picksLabel,
+          stake,
+          drawName,
+          drawDate,
+          status: "pending",
+        },
+      ];
   const totalStake = allLegs.reduce((s, l) => s + l.stake, 0);
   const potentialWin = Math.round(totalStake * odds);
 
@@ -101,9 +124,10 @@ function useProviderValue(cfg: BetFlowConfig) {
       const pk = await paymentKey({ phone, amount: totalStake, gameId, selection: selectionKey });
       const dup = await checkDuplicate(pk);
       if (dup.duplicate) {
-        const msg = dup.intent?.status === "confirmed"
-          ? `Paiement déjà encaissé (${dup.intent.txRef}). Consultez « Mes tickets ».`
-          : `Un paiement identique est déjà en cours. Patientez quelques secondes.`;
+        const msg =
+          dup.intent?.status === "confirmed"
+            ? `Paiement déjà encaissé (${dup.intent.txRef}). Consultez « Mes tickets ».`
+            : `Un paiement identique est déjà en cours. Patientez quelques secondes.`;
         setDuplicateMsg(msg);
         toast.error(msg);
         return;
@@ -112,7 +136,6 @@ function useProviderValue(cfg: BetFlowConfig) {
       setMmError(unavailable);
       toast.error(unavailable);
       return;
-
     } catch (e) {
       setPaying(false);
       const msg = e instanceof Error ? e.message : "Erreur réseau — réessayez.";
@@ -125,28 +148,75 @@ function useProviderValue(cfg: BetFlowConfig) {
     setSaving(true);
     await new Promise((r) => setTimeout(r, 400));
     addDraft({
-      gameId, gameName, drawName, drawDate,
+      gameId,
+      gameName,
+      drawName,
+      drawDate,
       legs: allLegs,
       picksLabel: allLegs.map((l) => l.picksLabel).join(" | "),
       totalStake,
-      phone, region,
-      paymentId: selectedPayment.id, paymentName: selectedPayment.name,
+      phone,
+      region,
+      paymentId: selectedPayment.id,
+      paymentName: selectedPayment.name,
       openHour,
     });
     navigate({ to: "/mes-tickets" });
   };
 
   return {
-    gameId, gameName, drawDate, selection, picksLabel, canContinue, renderSelection,
-    legs, drawName, minStake, maxStake, odds, lockedStake, skipStake, gameOpen, openHour,
-    account, accountComplete, expressMode, setExpressMode,
-    step, setStep, stake, setStake, phone, setPhone, region, setRegion,
-    validated, setValidated, mmError, setMmError,
-    paying, simpleMode, setSimpleMode, paymentId, setPaymentId,
-    saving, duplicateMsg,
-    visibleSteps, totalSteps, stepIndex, goNextFrom, goBackFrom,
-    phoneOk, selectedPayment, holder, allLegs, totalStake, potentialWin,
-    finish, saveDraft,
+    gameId,
+    gameName,
+    drawDate,
+    selection,
+    picksLabel,
+    canContinue,
+    renderSelection,
+    legs,
+    drawName,
+    minStake,
+    maxStake,
+    odds,
+    lockedStake,
+    skipStake,
+    gameOpen,
+    openHour,
+    account,
+    accountComplete,
+    expressMode,
+    setExpressMode,
+    step,
+    setStep,
+    stake,
+    setStake,
+    phone,
+    setPhone,
+    region,
+    setRegion,
+    validated,
+    setValidated,
+    mmError,
+    setMmError,
+    paying,
+    simpleMode,
+    setSimpleMode,
+    paymentId,
+    setPaymentId,
+    saving,
+    duplicateMsg,
+    visibleSteps,
+    totalSteps,
+    stepIndex,
+    goNextFrom,
+    goBackFrom,
+    phoneOk,
+    selectedPayment,
+    holder,
+    allLegs,
+    totalStake,
+    potentialWin,
+    finish,
+    saveDraft,
   };
 }
 

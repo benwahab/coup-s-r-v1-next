@@ -23,14 +23,14 @@ const footPickSchema = z.string().regex(/^[^:]{1,100}:[^:]{1,40}:.{1,100}$/);
 
 const FOOT_MARKETS: Record<string, Set<string>> = {
   "1x2": new Set(["1", "X", "2"]),
-  "dc": new Set(["1X", "12", "X2"]),
-  "ou": new Set(["o05", "u05", "o15", "u15", "o25", "u25", "o35", "u35"]),
-  "btts": new Set(["yes", "no"]),
-  "cs": new Set(["1:0", "2:0", "2:1", "3:1", "3:2", "0:0", "1:1", "2:2", "0:1", "0:2", "1:2", "1:3"]),
-  "ht": new Set(["1", "X", "2"]),
-  "cards": new Set(["o25", "u25", "o45", "u45"]),
-  "corners": new Set(["o75", "u75", "o95", "u95"]),
-  "scorer": new Set(["home_star", "home_mid", "away_star", "away_mid"]),
+  dc: new Set(["1X", "12", "X2"]),
+  ou: new Set(["o05", "u05", "o15", "u15", "o25", "u25", "o35", "u35"]),
+  btts: new Set(["yes", "no"]),
+  cs: new Set(["1:0", "2:0", "2:1", "3:1", "3:2", "0:0", "1:1", "2:2", "0:1", "0:2", "1:2", "1:3"]),
+  ht: new Set(["1", "X", "2"]),
+  cards: new Set(["o25", "u25", "o45", "u45"]),
+  corners: new Set(["o75", "u75", "o95", "u95"]),
+  scorer: new Set(["home_star", "home_mid", "away_star", "away_mid"]),
 };
 
 const createTicketSchema = z.object({
@@ -102,14 +102,20 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     if (profileError) throw new Error("profile_lookup_failed: " + profileError.message);
     const profilePhone = profile?.phone ? toE164(profile.phone) : null;
     const submittedPhone = toE164(data.phone);
-    if (!profilePhone || !submittedPhone || profilePhone !== submittedPhone) throw new Error("phone_mismatch");
-    if (!payment.method || payment.method !== data.payment) throw new Error("payment_method_mismatch");
+    if (!profilePhone || !submittedPhone || profilePhone !== submittedPhone)
+      throw new Error("phone_mismatch");
+    if (!payment.method || payment.method !== data.payment)
+      throw new Error("payment_method_mismatch");
     const drawDate = data.drawDate ? data.drawDate.slice(0, 10) : "";
     if (drawDate && !/^\d{4}-\d{2}-\d{2}$/.test(drawDate)) throw new Error("invalid_draw_date");
     const { nigerParts, nigerInstant } = await import("@/lib/schedule");
     const now = new Date();
     const nowParts = nigerParts(now);
-    const todayNiger = [nowParts.year, String(nowParts.month).padStart(2, "0"), String(nowParts.day).padStart(2, "0")].join("-");
+    const todayNiger = [
+      nowParts.year,
+      String(nowParts.month).padStart(2, "0"),
+      String(nowParts.day).padStart(2, "0"),
+    ].join("-");
     if (drawDate && drawDate < todayNiger) throw new Error("draw_closed");
 
     // Re-check the authoritative PMU/Loto schedule at ticket creation time.
@@ -125,9 +131,10 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
       if (!schedule?.enabled) throw new Error("game_schedule_disabled");
       const open = nigerInstant(nowParts.year, nowParts.month, nowParts.day, schedule.open_hour);
       const close = nigerInstant(nowParts.year, nowParts.month, nowParts.day, schedule.close_hour);
-      const isOpen = schedule.open_hour > schedule.close_hour
-        ? !(now >= close && now < open)
-        : now >= open && now < close;
+      const isOpen =
+        schedule.open_hour > schedule.close_hour
+          ? !(now >= close && now < open)
+          : now >= open && now < close;
       if (!isOpen) throw new Error("game_closed");
     }
 
@@ -143,7 +150,10 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
           throw new Error("invalid_loto_selection");
         }
         const unique = new Set(nums);
-        if (unique.size !== nums.length || nums.some((n) => !Number.isInteger(n) || n < 1 || n > 90)) {
+        if (
+          unique.size !== nums.length ||
+          nums.some((n) => !Number.isInteger(n) || n < 1 || n > 90)
+        ) {
           throw new Error("invalid_loto_selection");
         }
       } else if (gameId === "pmu") {
@@ -156,8 +166,12 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
         }
         // PMU starters are validated against the real scheduled race, never
         // against a client-side catalog.
-        const pmuDb = supabaseAdmin as any;
-        const today = [nowParts.year, String(nowParts.month).padStart(2, "0"), String(nowParts.day).padStart(2, "0")].join("-");
+        const pmuDb = supabaseAdmin;
+        const today = [
+          nowParts.year,
+          String(nowParts.month).padStart(2, "0"),
+          String(nowParts.day).padStart(2, "0"),
+        ].join("-");
         const { data: races, error: raceError } = await pmuDb
           .from("pmu_races")
           .select("id,start_at,status")
@@ -172,9 +186,11 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
           .select("number,status")
           .eq("race_id", races[0].id);
         if (startersError) throw new Error("pmu_starters_lookup_failed");
-        const validPartants = new Set((starters ?? [])
-          .filter((h: { status: string }) => h.status === "partant")
-          .map((h: { number: number }) => h.number));
+        const validPartants = new Set(
+          (starters ?? [])
+            .filter((h: { status: string }) => h.status === "partant")
+            .map((h: { number: number }) => h.number),
+        );
         if (nums.some((n) => !validPartants.has(n))) throw new Error("invalid_pmu_selection");
       }
     };
@@ -192,7 +208,8 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     }
 
     if (data.legs?.length) {
-      if (data.legs.some((leg) => leg.gameId !== data.gameId)) throw new Error("ticket_leg_game_mismatch");
+      if (data.legs.some((leg) => leg.gameId !== data.gameId))
+        throw new Error("ticket_leg_game_mismatch");
       const legsStake = data.legs.reduce((sum, leg) => sum + leg.stake, 0);
       if (legsStake !== data.stake) throw new Error("ticket_leg_stake_mismatch");
     }
@@ -221,9 +238,13 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     // Les paris foot sont enregistrés côté serveur. Le client ne peut donc
     // plus fabriquer directement une ligne foot_picks avec un autre user_id,
     // un autre match ou un marché arbitraire.
-    const footPickKeys = data.gameId === "foot"
-      ? (data.picks as unknown[]).filter((p): p is string => typeof p === "string" && /^[^:]{1,100}:[^:]{1,40}:.{1,100}$/.test(p))
-      : [];
+    const footPickKeys =
+      data.gameId === "foot"
+        ? (data.picks as unknown[]).filter(
+            (p): p is string =>
+              typeof p === "string" && /^[^:]{1,100}:[^:]{1,40}:.{1,100}$/.test(p),
+          )
+        : [];
     if (data.gameId === "foot" && footPickKeys.length === 0) throw new Error("missing_foot_picks");
     if (data.gameId === "foot" && footPickKeys.length > 0) {
       const seenMarkets = new Set<string>();
@@ -247,51 +268,63 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
           .maybeSingle();
         if (fixtureError) throw new Error("fixture_lookup_failed: " + fixtureError.message);
         if (!fixture) throw new Error("fixture_not_found");
-        if (fixture.status !== "scheduled" || new Date(fixture.kickoff_at).getTime() <= Date.now()) {
+        if (
+          fixture.status !== "scheduled" ||
+          new Date(fixture.kickoff_at).getTime() <= Date.now()
+        ) {
           throw new Error("fixture_closed");
         }
       }
     }
 
-    const footPickRows = data.gameId === "foot" && footPickKeys.length > 0
-      ? await (async () => {
-          const byFixture = new Map<string, { marketId: string; selection: string; odds: number; status: "pending" }[]>();
-          for (const key of footPickKeys) {
-            const parts = key.split(":");
-            const fixtureId = parts[0];
-            const marketId = parts[1];
-            const selection = parts.slice(2).join(":");
-            const { data: fixture, error: oddsError } = await supabaseAdmin
-              .from("foot_fixtures")
-              .select("id,odds_home,odds_draw,odds_away,status,kickoff_at")
-              .eq("id", fixtureId)
-              .maybeSingle();
-            if (oddsError) throw new Error("fixture_odds_lookup_failed");
-            if (!fixture) throw new Error("fixture_not_found");
-            // The canonical fixture table currently stores only 1X2 odds.
-            // Never trust client-supplied odds for other markets. Until a
-            // provider-backed odds source is persisted server-side for a market,
-            // fail closed rather than creating a ticket with unverifiable odds.
-            if (marketId !== "1x2") throw new Error("foot_market_odds_not_configured");
-            const oddsByOption: Record<string, number | null> = {
-              "1": fixture.odds_home,
-              "X": fixture.odds_draw,
-              "2": fixture.odds_away,
-            };
-            const odds = oddsByOption[selection];
-            if (typeof odds !== "number" || !Number.isFinite(odds) || odds < 1 || (odds as number) > 1000) {
-              throw new Error("invalid_backend_odds");
+    const footPickRows =
+      data.gameId === "foot" && footPickKeys.length > 0
+        ? await (async () => {
+            const byFixture = new Map<
+              string,
+              { marketId: string; selection: string; odds: number; status: "pending" }[]
+            >();
+            for (const key of footPickKeys) {
+              const parts = key.split(":");
+              const fixtureId = parts[0];
+              const marketId = parts[1];
+              const selection = parts.slice(2).join(":");
+              const { data: fixture, error: oddsError } = await supabaseAdmin
+                .from("foot_fixtures")
+                .select("id,odds_home,odds_draw,odds_away,status,kickoff_at")
+                .eq("id", fixtureId)
+                .maybeSingle();
+              if (oddsError) throw new Error("fixture_odds_lookup_failed");
+              if (!fixture) throw new Error("fixture_not_found");
+              // The canonical fixture table currently stores only 1X2 odds.
+              // Never trust client-supplied odds for other markets. Until a
+              // provider-backed odds source is persisted server-side for a market,
+              // fail closed rather than creating a ticket with unverifiable odds.
+              if (marketId !== "1x2") throw new Error("foot_market_odds_not_configured");
+              const oddsByOption: Record<string, number | null> = {
+                "1": fixture.odds_home,
+                X: fixture.odds_draw,
+                "2": fixture.odds_away,
+              };
+              const odds = oddsByOption[selection];
+              if (
+                typeof odds !== "number" ||
+                !Number.isFinite(odds) ||
+                odds < 1 ||
+                (odds as number) > 1000
+              ) {
+                throw new Error("invalid_backend_odds");
+              }
+              const list = byFixture.get(fixtureId) ?? [];
+              list.push({ marketId, selection, odds, status: "pending" });
+              byFixture.set(fixtureId, list);
             }
-            const list = byFixture.get(fixtureId) ?? [];
-            list.push({ marketId, selection, odds, status: "pending" });
-            byFixture.set(fixtureId, list);
-          }
-          return Array.from(byFixture.entries()).map(([fixtureId, picks]) => ({
-            fixture_id: fixtureId,
-            picks,
-          }));
-        })()
-      : [];
+            return Array.from(byFixture.entries()).map(([fixtureId, picks]) => ({
+              fixture_id: fixtureId,
+              picks,
+            }));
+          })()
+        : [];
 
     const ticketPayload = {
       code,

@@ -30,7 +30,11 @@ async function getHmacKey(): Promise<CryptoKey> {
   );
 }
 
-interface Payload { tid: string; lid?: string; ts: number }
+interface Payload {
+  tid: string;
+  lid?: string;
+  ts: number;
+}
 
 export async function signTicketTokenServer(ticketId: string, legId?: string): Promise<string> {
   const payload: Payload = { tid: ticketId, lid: legId, ts: Date.now() };
@@ -41,7 +45,13 @@ export async function signTicketTokenServer(ticketId: string, legId?: string): P
   return `${body}.${sigShort}`;
 }
 
-export interface VerifyResult { valid: boolean; ticketId?: string; legId?: string; ts?: number; reason?: string }
+export interface VerifyResult {
+  valid: boolean;
+  ticketId?: string;
+  legId?: string;
+  ts?: number;
+  reason?: string;
+}
 
 export async function verifyTicketTokenServer(token: string): Promise<VerifyResult> {
   try {

@@ -52,9 +52,13 @@ Deno.serve(async (req) => {
   const response = await fetch(providerUrl, {
     headers: { authorization: `Bearer ${providerKey}`, accept: "application/json" },
   });
-  if (!response.ok) return Response.json({ error: "pmu_provider_request_failed", status: response.status }, { status: 502 });
+  if (!response.ok)
+    return Response.json(
+      { error: "pmu_provider_request_failed", status: response.status },
+      { status: 502 },
+    );
 
-  const payload = await response.json() as { races?: ProviderRace[] };
+  const payload = (await response.json()) as { races?: ProviderRace[] };
   const races = Array.isArray(payload.races) ? payload.races : [];
   if (!races.length) return Response.json({ ok: true, races: 0, horses: 0 });
 
@@ -62,21 +66,30 @@ Deno.serve(async (req) => {
   let horseCount = 0;
 
   for (const race of races) {
-    if (!race.externalId || !validDate(race.raceDate) || !race.startAt || !Array.isArray(race.horses)) continue;
+    if (
+      !race.externalId ||
+      !validDate(race.raceDate) ||
+      !race.startAt ||
+      !Array.isArray(race.horses)
+    )
+      continue;
 
     const { data: raceRow, error: raceError } = await supabase
       .from("pmu_races")
-      .upsert({
-        external_id: race.externalId,
-        race_date: race.raceDate,
-        venue: race.venue,
-        race_number: race.raceNumber,
-        name: race.name ?? null,
-        start_at: race.startAt,
-        status: race.status,
-        source: "licensed_provider",
-        source_updated_at: new Date().toISOString(),
-      }, { onConflict: "external_id" })
+      .upsert(
+        {
+          external_id: race.externalId,
+          race_date: race.raceDate,
+          venue: race.venue,
+          race_number: race.raceNumber,
+          name: race.name ?? null,
+          start_at: race.startAt,
+          status: race.status,
+          source: "licensed_provider",
+          source_updated_at: new Date().toISOString(),
+        },
+        { onConflict: "external_id" },
+      )
       .select("id")
       .single();
 
@@ -84,7 +97,10 @@ Deno.serve(async (req) => {
     raceCount++;
 
     const rows = race.horses
-      .filter((horse) => Number.isInteger(horse.number) && horse.number > 0 && horse.externalId && horse.name)
+      .filter(
+        (horse) =>
+          Number.isInteger(horse.number) && horse.number > 0 && horse.externalId && horse.name,
+      )
       .map((horse) => ({
         race_id: raceRow.id,
         external_id: horse.externalId,
@@ -104,7 +120,9 @@ Deno.serve(async (req) => {
       }));
 
     if (rows.length) {
-      const { error } = await supabase.from("pmu_horses").upsert(rows, { onConflict: "race_id,external_id" });
+      const { error } = await supabase
+        .from("pmu_horses")
+        .upsert(rows, { onConflict: "race_id,external_id" });
       if (!error) horseCount += rows.length;
     }
   }

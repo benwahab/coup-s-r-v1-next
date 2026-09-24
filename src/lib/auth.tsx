@@ -20,13 +20,19 @@ function stripPrefix(e164OrLocal: string): string {
 }
 
 interface AuthState {
-  failedAttempts: number;   // current cycle (0..3)
-  lockCount: number;        // number of times the account got locked
+  failedAttempts: number; // current cycle (0..3)
+  lockCount: number; // number of times the account got locked
   lockedUntil: number | null; // ms epoch; if Infinity-like (=-1) → permanent
   lastPhone?: string;
 }
 
-interface Session { phone: string; startedAt: number; lastActivity: number; userId: string; passwordSetupRequired: boolean }
+interface Session {
+  phone: string;
+  startedAt: number;
+  lastActivity: number;
+  userId: string;
+  passwordSetupRequired: boolean;
+}
 
 interface Ctx extends AuthState {
   authed: boolean;
@@ -35,8 +41,16 @@ interface Ctx extends AuthState {
   sessionRemainingMs: () => number;
   touchSession: () => void;
   logout: (reason?: "user" | "expired") => void;
-  requestOtp: (phone: string) => Promise<{ ok: true } | { ok: false; rate: RateCheck; reason?: "rate-limited" | "provider-unavailable" }>;
-  verifyOtp: (phone: string, code: string, accountPhone: string | null) => Promise<{
+  requestOtp: (
+    phone: string,
+  ) => Promise<
+    { ok: true } | { ok: false; rate: RateCheck; reason?: "rate-limited" | "provider-unavailable" }
+  >;
+  verifyOtp: (
+    phone: string,
+    code: string,
+    accountPhone: string | null,
+  ) => Promise<{
     ok: boolean;
     reason?: "wrong-phone" | "wrong-code" | "locked" | "permanent" | "rate-limited";
     remaining?: number; // attempts left
@@ -58,7 +72,9 @@ function load(): AuthState {
     const raw = localStorage.getItem(KEY);
     if (!raw) return defaultState;
     return { ...defaultState, ...JSON.parse(raw) };
-  } catch { return defaultState; }
+  } catch {
+    return defaultState;
+  }
 }
 function save(s: AuthState) {
   if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(s));
@@ -76,7 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Session initiale + abonnement aux changements d'auth Supabase.
     let mounted = true;
     // Garde-fou : ne jamais laisser l'écran vide si la vérification ne répond pas.
-    const fallback = setTimeout(() => { if (mounted) setAuthChecked(true); }, 1000);
+    const fallback = setTimeout(() => {
+      if (mounted) setAuthChecked(true);
+    }, 1000);
     let initialUserRequest: ReturnType<typeof supabase.auth.getUser>;
     try {
       initialUserRequest = supabase.auth.getUser();
@@ -84,7 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("[auth] getUser initialization failed", err);
       clearTimeout(fallback);
       setAuthChecked(true);
-      return () => { mounted = false; };
+      return () => {
+        mounted = false;
+      };
     }
     initialUserRequest
       .then(({ data }) => {
@@ -92,13 +112,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const u = data.user;
         if (u && u.phone) {
           const startedAt = u.last_sign_in_at ? new Date(u.last_sign_in_at).getTime() : Date.now();
-          setSession({ phone: stripPrefix(u.phone), startedAt, lastActivity: Date.now(), userId: u.id, passwordSetupRequired: u.app_metadata?.password_setup_required === true });
+          setSession({
+            phone: stripPrefix(u.phone),
+            startedAt,
+            lastActivity: Date.now(),
+            userId: u.id,
+            passwordSetupRequired: u.app_metadata?.password_setup_required === true,
+          });
         }
       })
-      .catch((err) => { console.error("[auth] getUser failed", err); })
-      .finally(() => { clearTimeout(fallback); if (mounted) setAuthChecked(true); });
+      .catch((err) => {
+        console.error("[auth] getUser failed", err);
+      })
+      .finally(() => {
+        clearTimeout(fallback);
+        if (mounted) setAuthChecked(true);
+      });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
-      if (!sess?.user) { setSession(null); return; }
+      if (!sess?.user) {
+        setSession(null);
+        return;
+      }
       const u = sess.user;
       setSession({
         phone: stripPrefix(u.phone ?? ""),
@@ -108,7 +142,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         passwordSetupRequired: u.app_metadata?.password_setup_required === true,
       });
     });
-    return () => { mounted = false; sub.subscription.unsubscribe(); };
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
   useEffect(() => {
     const id = setInterval(() => force((x) => x + 1), 1000);
@@ -123,7 +160,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [state.lockedUntil]);
 
   // Session illimitée — conservé pour compat API, retourne toujours Infinity si connecté.
-  const sessionRemainingMs = useCallback(() => (session && !session.passwordSetupRequired ? Number.POSITIVE_INFINITY : 0), [session]);
+  const sessionRemainingMs = useCallback(
+    () => (session && !session.passwordSetupRequired ? Number.POSITIVE_INFINITY : 0),
+    [session],
+  );
 
   const touchSession = useCallback(() => {
     if (!session) return;
@@ -131,11 +171,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(next);
   }, [session]);
 
-  const logout = useCallback((reason: "user" | "expired" = "user") => {
-    if (session) logAuthEvent(reason === "expired" ? "session-expired" : "logout", session.phone);
-    void supabase.auth.signOut({ scope: "local" });
-    setSession(null);
-  }, [session]);
+  const logout = useCallback(
+    (reason: "user" | "expired" = "user") => {
+      if (session) logAuthEvent(reason === "expired" ? "session-expired" : "logout", session.phone);
+      void supabase.auth.signOut({ scope: "local" });
+      setSession(null);
+    },
+    [session],
+  );
 
   const requestOtp = useCallback(async (phone: string) => {
     const rate = checkRate(phone);
@@ -159,89 +202,105 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true as const };
   }, []);
 
-  const verifyOtp: Ctx["verifyOtp"] = useCallback(async (phone, code, accountPhone) => {
-    const rate = checkRate(phone);
-    if (!rate.ok) {
-      logAuthEvent("rate-limited", phone, `verify blocked (${rate.reason})`);
-      return { ok: false, reason: "rate-limited", rate };
-    }
-    // already permanently locked
-    if (state.lockedUntil === -1) { logAuthEvent("locked", phone, "permanent"); return { ok: false, reason: "permanent" }; }
-    // timed lock active
-    if (state.lockedUntil && Date.now() < state.lockedUntil) {
-      logAuthEvent("locked", phone, "1h");
-      return { ok: false, reason: "locked", lockedUntil: state.lockedUntil };
-    }
-    pushAttempt(phone);
-    const phoneOk = !accountPhone || accountPhone === phone;
-    if (!phoneOk) {
-      const failed = state.failedAttempts + 1;
-      logAuthEvent("verify-fail", phone, "wrong-phone");
-      const next: AuthState = { ...state, failedAttempts: failed, lastPhone: phone };
-      setState(next); save(next);
-      return { ok: false, reason: "wrong-phone", remaining: 3 - failed };
-    }
-    const res = await verifyOtpFn({
-      data: {
-        phone,
-        code,
-        profile: account
-          ? { firstName: account.firstName, lastName: account.lastName, region: account.region }
-          : undefined,
-      },
-    });
-    if (res.ok) {
-      const { error } = await supabase.auth.setSession(res.session);
-      if (error) {
-        logAuthEvent("verify-fail", phone, `set_session: ${error.message}`);
-        return { ok: false, reason: "wrong-code" };
+  const verifyOtp: Ctx["verifyOtp"] = useCallback(
+    async (phone, code, accountPhone) => {
+      const rate = checkRate(phone);
+      if (!rate.ok) {
+        logAuthEvent("rate-limited", phone, `verify blocked (${rate.reason})`);
+        return { ok: false, reason: "rate-limited", rate };
       }
-      // Nouvel appareil : le compte local (localStorage) peut être vide alors
-      // que le profil existe côté serveur. On le recharge pour réafficher
-      // nom/région correctement au lieu de laisser un compte local incomplet.
-      if (res.profile) {
-        saveAccount({
-          firstName: res.profile.firstName ?? account?.firstName ?? "",
-          lastName: res.profile.lastName ?? account?.lastName ?? "",
-          region: res.profile.region ?? account?.region ?? "",
+      // already permanently locked
+      if (state.lockedUntil === -1) {
+        logAuthEvent("locked", phone, "permanent");
+        return { ok: false, reason: "permanent" };
+      }
+      // timed lock active
+      if (state.lockedUntil && Date.now() < state.lockedUntil) {
+        logAuthEvent("locked", phone, "1h");
+        return { ok: false, reason: "locked", lockedUntil: state.lockedUntil };
+      }
+      pushAttempt(phone);
+      const phoneOk = !accountPhone || accountPhone === phone;
+      if (!phoneOk) {
+        const failed = state.failedAttempts + 1;
+        logAuthEvent("verify-fail", phone, "wrong-phone");
+        const next: AuthState = { ...state, failedAttempts: failed, lastPhone: phone };
+        setState(next);
+        save(next);
+        return { ok: false, reason: "wrong-phone", remaining: 3 - failed };
+      }
+      const res = await verifyOtpFn({
+        data: {
           phone,
-          userId: res.userId,
-        });
+          code,
+          profile: account
+            ? { firstName: account.firstName, lastName: account.lastName, region: account.region }
+            : undefined,
+        },
+      });
+      if (res.ok) {
+        const { error } = await supabase.auth.setSession(res.session);
+        if (error) {
+          logAuthEvent("verify-fail", phone, `set_session: ${error.message}`);
+          return { ok: false, reason: "wrong-code" };
+        }
+        // Nouvel appareil : le compte local (localStorage) peut être vide alors
+        // que le profil existe côté serveur. On le recharge pour réafficher
+        // nom/région correctement au lieu de laisser un compte local incomplet.
+        if (res.profile) {
+          saveAccount({
+            firstName: res.profile.firstName ?? account?.firstName ?? "",
+            lastName: res.profile.lastName ?? account?.lastName ?? "",
+            region: res.profile.region ?? account?.region ?? "",
+            phone,
+            userId: res.userId,
+          });
+        }
+        const fresh = { ...defaultState, lockCount: state.lockCount };
+        setState(fresh);
+        save(fresh);
+        logAuthEvent("verify-ok", phone);
+        return { ok: true };
       }
-      const fresh = { ...defaultState, lockCount: state.lockCount };
-      setState(fresh); save(fresh);
-      logAuthEvent("verify-ok", phone);
-      return { ok: true };
-    }
-    // Réponse serveur en échec : mise à jour du compteur local pour le lock UX.
-    const failed = state.failedAttempts + 1;
-    logAuthEvent("verify-fail", phone, res.reason ?? "wrong-code");
-    if (failed >= 3) {
-      const newLockCount = state.lockCount + 1;
-      const lockedUntil = newLockCount >= 2 ? -1 : Date.now() + LOCK_MS;
-      const next: AuthState = { failedAttempts: 0, lockCount: newLockCount, lockedUntil, lastPhone: phone };
-      setState(next); save(next);
-      logAuthEvent("locked", phone, lockedUntil === -1 ? "permanent" : "1h");
-      return { ok: false, reason: lockedUntil === -1 ? "permanent" : "locked", lockedUntil };
-    }
-    const next: AuthState = { ...state, failedAttempts: failed, lastPhone: phone };
-    setState(next); save(next);
-    if (res.reason === "expired") {
-      return { ok: false, reason: "wrong-code", remaining: 3 - failed };
-    }
-    if (res.reason === "locked") {
-      return { ok: false, reason: "locked" };
-    }
-    return {
-      ok: false,
-      reason: "wrong-code",
-      remaining: typeof res.remaining === "number" ? res.remaining : 3 - failed,
-    };
-  }, [state, account, saveAccount]);
+      // Réponse serveur en échec : mise à jour du compteur local pour le lock UX.
+      const failed = state.failedAttempts + 1;
+      logAuthEvent("verify-fail", phone, res.reason ?? "wrong-code");
+      if (failed >= 3) {
+        const newLockCount = state.lockCount + 1;
+        const lockedUntil = newLockCount >= 2 ? -1 : Date.now() + LOCK_MS;
+        const next: AuthState = {
+          failedAttempts: 0,
+          lockCount: newLockCount,
+          lockedUntil,
+          lastPhone: phone,
+        };
+        setState(next);
+        save(next);
+        logAuthEvent("locked", phone, lockedUntil === -1 ? "permanent" : "1h");
+        return { ok: false, reason: lockedUntil === -1 ? "permanent" : "locked", lockedUntil };
+      }
+      const next: AuthState = { ...state, failedAttempts: failed, lastPhone: phone };
+      setState(next);
+      save(next);
+      if (res.reason === "expired") {
+        return { ok: false, reason: "wrong-code", remaining: 3 - failed };
+      }
+      if (res.reason === "locked") {
+        return { ok: false, reason: "locked" };
+      }
+      return {
+        ok: false,
+        reason: "wrong-code",
+        remaining: typeof res.remaining === "number" ? res.remaining : 3 - failed,
+      };
+    },
+    [state, account, saveAccount],
+  );
 
   const resetLock = useCallback(() => {
     const fresh = defaultState;
-    setState(fresh); save(fresh);
+    setState(fresh);
+    save(fresh);
   }, []);
 
   return (
