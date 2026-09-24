@@ -111,10 +111,15 @@ Deno.serve(async (req) => {
         pendingState = true;
         continue;
       }
+      const validatedPicks = rowPicks as Array<{
+        marketId?: unknown;
+        selection?: unknown;
+        odds?: unknown;
+      }>;
       if (
         !rowPicks.length ||
-        rowPicks.some(
-          (p: any) =>
+        validatedPicks.some(
+          (p) =>
             p?.marketId !== "1x2" ||
             typeof p?.selection !== "string" ||
             typeof p?.odds !== "number",
@@ -130,7 +135,8 @@ Deno.serve(async (req) => {
             ? "2"
             : "X";
       let rowLosing = false;
-      for (const p of rowPicks as any[]) {
+      for (const p of validatedPicks) {
+        if (typeof p.odds !== "number" || typeof p.selection !== "string") continue;
         totalOdds *= p.odds;
         if (p.selection !== result) rowLosing = true;
       }

@@ -297,7 +297,9 @@ async function settleFootTicket(ticket: TicketRow, results: Map<string, FootMatc
   return { changed: true, status: row.status, prize: row.prize };
 }
 
-async function settleTicket(ticket: TicketRow, publishedResults: any[]) {
+type PublishedResult = { result?: unknown };
+
+async function settleTicket(ticket: TicketRow, publishedResults: PublishedResult[]) {
   if (ticket.status !== "pending") return { changed: false, reason: "already_settled" };
 
   if (ticket.game_id === "foot") {

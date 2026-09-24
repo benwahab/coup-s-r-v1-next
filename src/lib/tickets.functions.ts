@@ -166,7 +166,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
         }
         // PMU starters are validated against the real scheduled race, never
         // against a client-side catalog.
-        const pmuDb = supabaseAdmin as any;
+        const pmuDb = supabaseAdmin;
         const today = [
           nowParts.year,
           String(nowParts.month).padStart(2, "0"),

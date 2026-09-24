@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { adminCreateDrawResult, adminPublishDrawResult } from "@/lib/settlement.functions";
 
+type DrawResultPayload = { numbers: number[] } | { horses: number[] };
+
 export function ResultsTab() {
   const [gameId, setGameId] = useState<"loto" | "pmu">("loto");
   const [drawDate, setDrawDate] = useState(new Date().toISOString().slice(0, 10));
@@ -12,7 +14,7 @@ export function ResultsTab() {
     setBusy(true);
     setMessage(null);
     try {
-      let result: any;
+      let result: DrawResultPayload;
       if (gameId === "loto") {
         const numbers = values
           .split(/[,\s]+/)
@@ -37,8 +39,8 @@ export function ResultsTab() {
         }
         result = { horses };
       }
-      const created: any = await adminCreateDrawResult({
-        data: { gameId, drawDate, result } as any,
+      const created = await adminCreateDrawResult({
+        data: { gameId, drawDate, result },
       });
 
       const resultIds: string[] = created.resultIds ?? [created.result.id];
