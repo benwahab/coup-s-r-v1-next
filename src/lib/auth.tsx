@@ -145,12 +145,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     pushAttempt(phone);
     logAuthEvent("otp-request", phone);
-    // Serveur : génère + stocke un hash SHA-256 (TTL 5 min).
-    // Le code est renvoyé en clair uniquement parce que le mode démo est simulé.
+    // Le serveur génère le code, ne stocke que son empreinte et délègue sa
+    // livraison au fournisseur SMS configuré.
     const res = await sendOtp({ data: { phone } });
     if (!res.ok) {
-      logAuthEvent("rate-limited", phone, `server blocked (${res.reason})`);
-      return { ok: false as const, rate: { ok: false, reason: "phone" as const, retryInMs: 15 * 60 * 1000 } as RateCheck };
+      logAuthEvent("otp-unavailable", phone, `server blocked (${res.reason})`);
+      return {
+        ok: false as const,
+        reason: res.reason,
+        rate: { ok: false, reason: "phone" as const, retryInMs: 15 * 60 * 1000 } as RateCheck,
+      };
     }
     return { ok: true as const };
   }, []);

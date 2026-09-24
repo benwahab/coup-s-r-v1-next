@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { checkPhoneAccount } from "@/lib/account.functions";
 import { regions } from "@/lib/game-config";
-import { TERMS_VERSION, PRIVACY_VERSION, mockIp, makeUserId } from "@/lib/legal";
+import { TERMS_VERSION, PRIVACY_VERSION, makeUserId } from "@/lib/legal";
 import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
@@ -60,7 +60,7 @@ function ComptePage() {
         acceptedAt: Date.now(),
         termsVersion: TERMS_VERSION,
         privacyVersion: PRIVACY_VERSION,
-        ip: mockIp(),
+        ip: "",
         userId: account?.userId ?? makeUserId(phone),
       },
     });

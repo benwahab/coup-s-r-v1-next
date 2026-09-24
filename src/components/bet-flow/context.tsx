@@ -53,7 +53,6 @@ function useProviderValue(cfg: BetFlowConfig) {
   const [phone, setPhone] = useState(account?.phone ?? "");
   const [region, setRegion] = useState<string>(account?.region ?? regions[0]);
   const [validated, setValidated] = useState(false);
-  const [mmPwd, setMmPwd] = useState("");
   const [mmError, setMmError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
   const [simpleMode, setSimpleMode] = useState(true);
@@ -142,7 +141,7 @@ function useProviderValue(cfg: BetFlowConfig) {
     legs, drawName, minStake, maxStake, odds, lockedStake, skipStake, gameOpen, openHour,
     account, accountComplete, expressMode, setExpressMode,
     step, setStep, stake, setStake, phone, setPhone, region, setRegion,
-    validated, setValidated, mmPwd, setMmPwd, mmError, setMmError,
+    validated, setValidated, mmError, setMmError,
     paying, simpleMode, setSimpleMode, paymentId, setPaymentId,
     saving, duplicateMsg,
     visibleSteps, totalSteps, stepIndex, goNextFrom, goBackFrom,

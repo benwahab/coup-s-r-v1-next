@@ -36,7 +36,7 @@ export const Route = createFileRoute("/")({
     links: [
       { rel: "canonical", href: SITE_ORIGIN },
       // Précharge le hero (LCP de la home) au format WebP — variante réellement utilisée par la majorité des navigateurs.
-      { rel: "preload", as: "image", href: heroWebp, type: "image/webp", fetchpriority: "high" },
+      { rel: "preload", as: "image", href: heroWebp, type: "image/webp", fetchPriority: "high" },
     ],
   }),
   component: Index,
