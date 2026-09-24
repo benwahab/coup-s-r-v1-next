@@ -1,5 +1,5 @@
-// Mock SMS sender for LoNaNi — logs to console + localStorage so the Admin Ops tab can render history.
-// In production, wire to Twilio/GatewayAPI via /api/public/sms.
+// SMS delivery must be performed by an authenticated server endpoint backed by
+// a configured provider. Client code must never simulate or log a delivery.
 import type { Ticket, TicketLeg } from "./tickets";
 import { signTicketToken } from "./ticket-token.functions";
 
@@ -11,16 +11,8 @@ export interface SmsEntry {
   at: number;
 }
 
-const KEY = "lonani.sms";
-
 export function readSmsLog(): SmsEntry[] {
-  if (typeof window === "undefined") return [];
-  try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; }
-}
-
-function writeSmsLog(entries: SmsEntry[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(KEY, JSON.stringify(entries.slice(0, 200)));
+  return [];
 }
 
 export async function sendWinSms(ticket: Ticket, leg?: TicketLeg): Promise<SmsEntry> {
@@ -36,21 +28,13 @@ export async function sendWinSms(ticket: Ticket, leg?: TicketLeg): Promise<SmsEn
     body,
     at: Date.now(),
   };
-  const prev = readSmsLog();
-  writeSmsLog([entry, ...prev]);
-  // Hook prod (non-câblé tant que VITE_SMS_PROVIDER absent)
-  if (import.meta.env.VITE_SMS_PROVIDER) {
-    fetch("/api/public/sms", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ to: ticket.phone, text: body }) }).catch(() => undefined);
-  }
-  // eslint-disable-next-line no-console
-  console.info("[Coup Sûr SMS]", body);
-  return entry;
+  throw new Error(`sms_provider_not_configured:${entry.id}`);
 }
 
 // ============================================================================
 // Notifications de compte (suppression / annulation / expiration)
-// SMS mock + Email mock — journalisées dans le même log que les gains.
-// En prod, brancher /api/public/sms et /api/public/email.
+// Les notifications de compte restent indisponibles tant qu'un endpoint
+// serveur authentifié et son fournisseur ne sont pas configurés.
 // ============================================================================
 
 export type AccountNoticeKind = "deletion-requested" | "deletion-cancelled" | "deletion-expired";
@@ -82,16 +66,6 @@ export async function sendAccountNotice(
     body,
     at: Date.now(),
   };
-  const prev = readSmsLog();
-  writeSmsLog([entry, ...prev]);
-  // Hooks prod (non-câblés tant que providers absents)
-  if (typeof window !== "undefined" && import.meta.env.VITE_SMS_PROVIDER) {
-    fetch("/api/public/sms", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ to: target.phone, text: body }) }).catch(() => undefined);
-  }
-  if (typeof window !== "undefined" && target.email && import.meta.env.VITE_EMAIL_PROVIDER) {
-    fetch("/api/public/email", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ to: target.email, subject, text: body }) }).catch(() => undefined);
-  }
-  // eslint-disable-next-line no-console
-  console.info(`[Coup Sûr NOTICE ${kind}]`, body, target.email ? `→ email: ${target.email}` : "");
-  return entry;
+  void subject;
+  throw new Error(`notification_provider_not_configured:${entry.id}`);
 }

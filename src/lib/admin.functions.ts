@@ -7,7 +7,6 @@ import { writeAuditLog } from "./audit.server";
 
 type SB = SupabaseClient<Database>;
 
-const PaymentStatus = z.enum(["pending", "confirmed", "failed"]);
 const AdminPermission = z.enum([
   "complaints",
   "player_activity",
@@ -104,50 +103,6 @@ export const checkIsSuperAdmin = createServerFn({ method: "POST" })
     });
     if (error) return { isSuperAdmin: false };
     return { isSuperAdmin: data === true };
-  });
-
-export const updateMyPaymentStatus = createServerFn({ method: "POST" })
-  .middleware([requireConfiguredUser])
-  .inputValidator((data: unknown) =>
-    z.object({
-      reference: z.string().min(1),
-      status: PaymentStatus.refine((s) => s === "confirmed" || s === "failed"),
-    }).parse(data),
-  )
-  .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: payment, error: lookupError } = await supabaseAdmin
-      .from("payments")
-      .select("id, status, ticket_id, user_id")
-      .eq("reference", data.reference)
-      .eq("user_id", context.userId)
-      .maybeSingle();
-    if (lookupError) throw new Error(lookupError.message);
-    if (!payment) throw new Error("payment_not_found");
-    if (payment.status !== "pending") {
-      if (payment.status === data.status) return { ok: true as const, unchanged: true as const };
-      throw new Error("invalid_payment_state_transition");
-    }
-
-    // Le navigateur ne peut jamais choisir ni rattacher un ticket lors de la
-    // confirmation. Le lien payment -> ticket est créé uniquement par le RPC
-    // atomique de création du ticket après validation complète du ticket.
-    const { data: updatedPayment, error } = await supabaseAdmin
-      .from("payments")
-      .update({ status: data.status })
-      .eq("id", payment.id)
-      .eq("user_id", context.userId)
-      .eq("status", "pending")
-      .select("id,status,ticket_id")
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!updatedPayment) throw new Error("payment_state_conflict");
-    await writeAuditLog(supabaseAdmin, {
-      userId: context.userId,
-      action: "payment.demo.status_updated",
-      detail: { reference: data.reference, status: data.status, ticketId: null },
-    });
-    return { ok: true as const };
   });
 
 /**
@@ -402,7 +357,7 @@ export const adminGrantRole = createServerFn({ method: "POST" })
       .insert({ user_id: profile.id, role: "admin" })
       .select()
       .maybeSingle();
-    if (e2 && !e2.message.includes("duplicate")) throw new Error(e2.message);
+    if (e2 && e2.code !== "23505") throw new Error(e2.message);
     await writeAuditLog(supabaseAdmin, {
       userId: context.userId,
       action: "admin.role.granted",

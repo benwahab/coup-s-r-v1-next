@@ -25,8 +25,8 @@ function toE164(phone: string): string {
 
 /**
  * Creates a pending payment intent server-side.
- * DEMO: no external Mobile Money charge is performed here yet.
- * Production: the provider request must be made only after this server-side
+ * No external Mobile Money charge is performed here.
+ * The provider request must be made only after this server-side
  * intent is created, and confirmation must come from provider verification.
  */
 export const beginPayment = createServerFn({ method: "POST" })

@@ -133,7 +133,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
 
     const code = ticketCodeFromPayment(payment.id);
 
-    // Integrity checks for the demo game catalog. The browser may submit any
+    // Integrity checks for the game catalog. The browser may submit any
     // JSON it wants, so PMU/Loto selections are revalidated against the same
     // canonical definitions used by the UI before a ticket is persisted.
     const validatePicks = async (gameId: string, picks: Array<string | number>) => {
@@ -155,7 +155,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
           throw new Error("invalid_pmu_selection");
         }
         // PMU starters are validated against the real scheduled race, never
-        // against a client-side/mock catalog.
+        // against a client-side catalog.
         const pmuDb = supabaseAdmin as any;
         const today = [nowParts.year, String(nowParts.month).padStart(2, "0"), String(nowParts.day).padStart(2, "0")].join("-");
         const { data: races, error: raceError } = await pmuDb

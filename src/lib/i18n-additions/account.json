@@ -23,7 +23,7 @@
   "account.smsCode": { "fr": "Code SMS", "en": "SMS code", "ha": "Lambar SMS" },
   "account.sixDigits": { "fr": "6 chiffres", "en": "6 digits", "ha": "Lambobi 6" },
   "account.digitAriaLabel": { "fr": "Chiffre {n} sur 6", "en": "Digit {n} of 6", "ha": "Lamba {n} daga 6" },
-  "account.demoMode": { "fr": "Mode démo · code SMS simulé :", "en": "Demo mode · simulated SMS code:", "ha": "Yanayin demo · lambar SMS da aka kwaikwayo:" },
+  "account.demoMode": { "fr": "Service SMS indisponible", "en": "SMS service unavailable", "ha": "Babu sabis na SMS a yanzu" },
   "account.verifying": { "fr": "Vérification…", "en": "Verifying…", "ha": "Ana tabbatarwa…" },
   "account.signIn": { "fr": "Se connecter", "en": "Sign in", "ha": "Shiga" },
   "account.resendIn": { "fr": "Renvoyer le code dans {seconds}s", "en": "Resend code in {seconds}s", "ha": "Sake aika lamba cikin {seconds}s" },

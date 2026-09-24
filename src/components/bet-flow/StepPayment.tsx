@@ -1,4 +1,4 @@
-import { Check, CheckCircle2, Clock, Loader2, Save, ShieldCheck, Smartphone, X } from "lucide-react";
+import { CheckCircle2, Clock, Loader2, Save, ShieldCheck, Smartphone, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useBetFlow } from "./context";
 import { Card } from "./atoms";
@@ -7,7 +7,7 @@ export function StepPayment() {
   const { t } = useI18n();
   const {
     selectedPayment, phone, region, holder, gameOpen, openHour, odds,
-    totalStake, potentialWin, mmPwd, setMmPwd, mmError, setMmError,
+    totalStake, potentialWin, mmError,
     validated, setValidated, paying, saving, duplicateMsg,
     setStep, finish, saveDraft,
   } = useBetFlow();
@@ -59,19 +59,6 @@ export function StepPayment() {
         </div>
       )}
 
-      {gameOpen && (
-        <label className="mt-4 block">
-          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("mmPassword")} · {t("mmPasswordHint")}</span>
-          <input
-            type="password" inputMode="numeric" autoComplete="off" maxLength={6}
-            value={mmPwd}
-            onChange={(e) => { setMmPwd(e.target.value.replace(/\D/g, "")); setMmError(null); }}
-            className="mt-1 w-full rounded-2xl border border-input bg-background px-4 py-3 text-lg tracking-[0.5em] font-bold focus:border-primary outline-none"
-            placeholder="••••"
-          />
-        </label>
-      )}
-
       {mmError && (
         <div className="mt-3 flex items-start gap-2 rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">
           <X className="h-4 w-4 mt-0.5 shrink-0" />
@@ -95,14 +82,10 @@ export function StepPayment() {
       )}
 
       {gameOpen ? (
-        <button
-          type="button"
-          disabled={paying || mmPwd.length < 4 || !validated}
-          onClick={finish}
-          className="mt-5 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gold-gradient px-6 py-4 text-lg font-extrabold text-[var(--gold-foreground)] shadow-gold transition hover:brightness-105 disabled:opacity-70"
-        >
-          {paying ? <><Loader2 className="h-5 w-5 animate-spin" /> {t("paying")}</> : <><Check className="h-5 w-5" /> {t("confirmPayment")}</>}
-        </button>
+        <div className="mt-5 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm text-primary" role="status">
+          <div className="flex items-center gap-2 font-bold"><ShieldCheck className="h-4 w-4" /> Paiement temporairement indisponible</div>
+          <p className="mt-1 text-xs">Aucune mise ne sera enregistrée avant l’activation sécurisée d’Airtel Money.</p>
+        </div>
       ) : (
         <button
           type="button"

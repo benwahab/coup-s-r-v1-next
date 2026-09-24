@@ -6,7 +6,7 @@ import { type TicketLeg } from "@/lib/tickets";
 import { regions, paymentMethods, type GameId } from "@/lib/game-config";
 import { useAccount } from "@/lib/account";
 import { useDrafts } from "@/lib/drafts";
-import { beginPayment, checkDuplicate, failPayment, paymentKey } from "@/lib/payments";
+import { checkDuplicate, paymentKey } from "@/lib/payments";
 
 export interface BetFlowConfig {
   gameId: GameId;
@@ -53,7 +53,6 @@ function useProviderValue(cfg: BetFlowConfig) {
   const [phone, setPhone] = useState(account?.phone ?? "");
   const [region, setRegion] = useState<string>(account?.region ?? regions[0]);
   const [validated, setValidated] = useState(false);
-  const [mmPwd, setMmPwd] = useState("");
   const [mmError, setMmError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
   const [simpleMode, setSimpleMode] = useState(true);
@@ -97,7 +96,6 @@ function useProviderValue(cfg: BetFlowConfig) {
   const finish = async () => {
     setMmError(null);
     setDuplicateMsg(null);
-    if (!/^\d{4,6}$/.test(mmPwd)) { setMmError(t("mmPasswordHint")); return; }
     try {
       const selectionKey = allLegs.map((l) => `${l.gameId}#${l.picksLabel}`).join("||");
       const pk = await paymentKey({ phone, amount: totalStake, gameId, selection: selectionKey });
@@ -110,19 +108,6 @@ function useProviderValue(cfg: BetFlowConfig) {
         toast.error(msg);
         return;
       }
-      const intent = await beginPayment({
-        key: pk,
-        gameId,
-        phone,
-        amount: totalStake,
-        method: selectedPayment.id,
-      });
-      setPaying(true);
-      // A payment intent is not a payment. Until the configured mobile-money
-      // provider confirms the transaction server-side, no balance simulation,
-      // fake success, or ticket issuance is allowed.
-      await failPayment(intent.txRef);
-      setPaying(false);
       const unavailable = "Le paiement mobile n'est pas encore connecté à un fournisseur réel.";
       setMmError(unavailable);
       toast.error(unavailable);
@@ -156,7 +141,7 @@ function useProviderValue(cfg: BetFlowConfig) {
     legs, drawName, minStake, maxStake, odds, lockedStake, skipStake, gameOpen, openHour,
     account, accountComplete, expressMode, setExpressMode,
     step, setStep, stake, setStake, phone, setPhone, region, setRegion,
-    validated, setValidated, mmPwd, setMmPwd, mmError, setMmError,
+    validated, setValidated, mmError, setMmError,
     paying, simpleMode, setSimpleMode, paymentId, setPaymentId,
     saving, duplicateMsg,
     visibleSteps, totalSteps, stepIndex, goNextFrom, goBackFrom,

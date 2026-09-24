@@ -18,10 +18,13 @@ const VerifyInput = z.object({
   }).optional(),
 });
 
-/** Envoi d'un OTP simulé. Le code est retourné uniquement pour la démo. */
+/** Refuse l'OTP tant qu'un fournisseur SMS serveur n'est pas configuré. */
 export const sendOtp = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => PhoneInput.parse(data))
   .handler(async ({ data }) => {
+    if (!process.env['SMS_PROVIDER_URL'] || !process.env['SMS_PROVIDER_KEY']) {
+      return { ok: false as const, reason: "provider-unavailable" as const };
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { generateOtpCode, sha256Hex, toE164Phone } = await import("./otp.server");
     const phoneE164 = toE164Phone(data.phone);
@@ -38,8 +41,19 @@ export const sendOtp = createServerFn({ method: "POST" })
     if (invalidateError) throw new Error(`otp_invalidate_failed: ${invalidateError.message}`);
     const { error } = await supabaseAdmin.from("otp_codes").insert({ phone: phoneE164, code_hash: codeHash, expires_at: expiresAt, attempts: 0 });
     if (error) throw new Error(`otp_insert_failed: ${error.message}`);
-    console.info("[Coup Sûr DEMO] OTP", phoneE164, "→", code);
-    return { ok: true as const, code, ttlSec: Math.floor(OTP_TTL_MS / 1000) };
+    const smsResponse = await fetch(process.env['SMS_PROVIDER_URL'], {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${process.env['SMS_PROVIDER_KEY']}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ to: phoneE164, message: `Coup Sûr : votre code de connexion est ${code}. Il expire dans 5 minutes.` }),
+    });
+    if (!smsResponse.ok) {
+      await supabaseAdmin.from("otp_codes").update({ consumed_at: new Date().toISOString() }).eq("phone", phoneE164).is("consumed_at", null);
+      throw new Error("sms_delivery_failed");
+    }
+    return { ok: true as const, ttlSec: Math.floor(OTP_TTL_MS / 1000) };
   });
 
 /** Vérifie l'OTP et établit une session Supabase temporaire pour le setup du mot de passe. */
