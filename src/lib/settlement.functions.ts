@@ -502,7 +502,7 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
       losers = 0,
       skipped = 0;
     for (const ticket of (tickets ?? []) as TicketRow[]) {
-      const out = await settleTicket(ticket, publishedResults ?? []);
+      const out = await settleTicket(ticket, (publishedResults ?? []) as PublishedResult[]);
       if (!out.changed) {
         skipped++;
         continue;
