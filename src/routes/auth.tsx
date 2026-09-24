@@ -22,6 +22,9 @@ import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=160&quality=90
 import { useAuth } from "@/lib/auth";
 import { checkPhoneAccount } from "@/lib/account.functions";
 import { loginWithPassword, setUserPassword } from "@/lib/password.functions";
+import { getServerConfigStatus } from "@/lib/server-config.functions";
+
+const PENDING_KEY = "coupsur.auth.pending";
 
 const PhoneSchema = z.string().regex(/^\d{8}$/, "Saisissez un numéro nigérien à 8 chiffres.");
 const OtpSchema = z.string().regex(/^\d{6}$/, "Saisissez les 6 chiffres du code.");
