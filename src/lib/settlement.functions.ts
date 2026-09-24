@@ -297,7 +297,13 @@ async function settleFootTicket(ticket: TicketRow, results: Map<string, FootMatc
   return { changed: true, status: row.status, prize: row.prize };
 }
 
-type PublishedResult = { result?: unknown };
+type PublishedResultValue =
+  | FootMatchResult
+  | { matches?: FootMatchResult[] }
+  | { numbers: number[] }
+  | { horses: number[] };
+
+type PublishedResult = { result?: PublishedResultValue };
 
 async function settleTicket(ticket: TicketRow, publishedResults: PublishedResult[]) {
   if (ticket.status !== "pending") return { changed: false, reason: "already_settled" };
@@ -306,11 +312,11 @@ async function settleTicket(ticket: TicketRow, publishedResults: PublishedResult
     const results = new Map<string, FootMatchResult>();
     for (const row of publishedResults) {
       const value = row?.result;
-      if (value && typeof value.matchId === "string" && ["1", "X", "2"].includes(value.result)) {
+      if (value && "matchId" in value && typeof value.matchId === "string" && ["1", "X", "2"].includes(value.result)) {
         results.set(value.matchId, value as FootMatchResult);
       }
       // Backward compatibility for an older draft/published batch format.
-      if (Array.isArray(value?.matches)) {
+      if (value && "matches" in value && Array.isArray(value.matches)) {
         for (const m of value.matches) {
           if (m?.matchId && ["1", "X", "2"].includes(m.result)) results.set(m.matchId, m);
         }
@@ -324,13 +330,13 @@ async function settleTicket(ticket: TicketRow, publishedResults: PublishedResult
   if (ticket.game_id === "loto")
     evaluation = await evaluateLoto(
       Array.isArray(ticket.picks) ? ticket.picks : [],
-      result?.result,
+      result?.result as { numbers: number[] },
       ticket.stake,
     );
   if (ticket.game_id === "pmu")
     evaluation = await evaluatePmu(
       Array.isArray(ticket.picks) ? ticket.picks : [],
-      result?.result,
+      result?.result as { horses: number[] },
       ticket.stake,
       ticket.draw_date ?? "",
     );

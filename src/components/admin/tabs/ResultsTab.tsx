@@ -14,7 +14,7 @@ export function ResultsTab() {
     setBusy(true);
     setMessage(null);
     try {
-      let result: DrawResultPayload;
+      let result: DrawResultPayload = { numbers: [] };
       if (gameId === "loto") {
         const numbers = values
           .split(/[,\s]+/)
@@ -43,7 +43,7 @@ export function ResultsTab() {
         data: { gameId, drawDate, result },
       });
 
-      const resultIds: string[] = created.resultIds ?? [created.result.id];
+      const resultIds: string[] = [created.result.id];
       let settled = 0;
       let winners = 0;
       let losers = 0;
