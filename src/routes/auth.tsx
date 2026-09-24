@@ -1,637 +1,619 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  Phone,
-  ShieldAlert,
-  Loader2,
-  ArrowRight,
-  KeyRound,
-  AlertTriangle,
+  AlertCircle,
+  ArrowLeft,
+  Check,
   CheckCircle2,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Loader2,
+  LockKeyhole,
+  Phone,
   RefreshCw,
+  ShieldCheck,
+  UserPlus,
 } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=160&quality=90&url";
 import { useAuth } from "@/lib/auth";
-import { useAccount } from "@/lib/account";
 import { checkPhoneAccount } from "@/lib/account.functions";
 import { loginWithPassword, setUserPassword } from "@/lib/password.functions";
-import { useI18n } from "@/lib/i18n";
-import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
-import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=160&quality=90&url";
 
-// Validation client — miroir de la validation serveur dans otp.functions.ts.
-const PhoneSchema = z.string().regex(/^\d{8}$/, "Saisissez un numéro à 8 chiffres.");
-const OtpSchema = z.string().regex(/^\d{6}$/, "Le code OTP fait 6 chiffres.");
+const PhoneSchema = z.string().regex(/^\d{8}$/, "Saisissez un numéro nigérien à 8 chiffres.");
+const OtpSchema = z.string().regex(/^\d{6}$/, "Saisissez les 6 chiffres du code.");
 const PasswordSchema = z
   .string()
-  .min(8, "Le mot de passe doit contenir au moins 8 caractères.")
-  .max(128, "Mot de passe trop long.");
+  .min(8, "Utilisez au moins 8 caractères.")
+  .max(128, "Le mot de passe ne doit pas dépasser 128 caractères.");
+
+type Mode = "login" | "signup" | "recovery";
+type Step = "form" | "otp" | "new-password";
+type FieldErrors = Partial<Record<"phone" | "password" | "confirmation" | "terms" | "otp", string>>;
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Connexion — Coup Sûr" },
+      { title: "Connexion et création de compte — Coup Sûr" },
       {
         name: "description",
-        content: "Connectez-vous à Coup Sûr avec votre numéro de téléphone et votre mot de passe.",
+        content: "Connectez-vous ou créez votre compte Coup Sûr avec votre numéro nigérien.",
       },
+      { property: "og:title", content: "Connexion et création de compte — Coup Sûr" },
+      {
+        property: "og:description",
+        content: "Accédez en toute sécurité à votre compte Coup Sûr.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex, follow" },
     ],
   }),
   component: AuthPage,
 });
 
-function fmtMs(ms: number) {
-  const s = Math.ceil(ms / 1000);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-}
-
 function AuthPage() {
-  const navigate = useNavigate();
-  const { t } = useI18n();
-  const { account, isPhoneAvailable } = useAccount();
-  const { requestOtp, verifyOtp, remainingLockMs, isPermanent, failedAttempts } = useAuth();
-
-  const [step, setStep] = useState<"phone" | "otp" | "password-setup">("phone");
+  const navigate = useNavigate({ from: "/auth" });
+  const { requestOtp, verifyOtp, remainingLockMs, isPermanent } = useAuth();
+  const [mode, setMode] = useState<Mode>("login");
+  const [step, setStep] = useState<Step>("form");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [passwordBusy, setPasswordBusy] = useState(false);
-  const [phone, setPhone] = useState(account?.phone ?? "");
+  const [confirmation, setConfirmation] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [otp, setOtp] = useState("");
-  const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const [autoRead, setAutoRead] = useState<"idle" | "listening" | "ok" | "unavailable">("idle");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [status, setStatus] = useState<string | null>(null);
+  const [demoCode, setDemoCode] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
-  const [noAccountOpen, setNoAccountOpen] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
+  const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const lockMs = remainingLockMs();
-  const permanent = isPermanent();
-  // The legacy OTP lock is only a local UX safeguard for the OTP flow.
-  // It must never block a valid password login or password setup.
-  const locked = step === "otp" && (permanent || lockMs > 0);
-
-  useEffect(() => {
-    if (step !== "otp") return;
-    if (typeof window === "undefined") return;
-    const hasApi = "OTPCredential" in window;
-    if (!hasApi) {
-      setAutoRead("unavailable");
-      return;
-    }
-    setAutoRead("listening");
-    const ac = new AbortController();
-    abortRef.current = ac;
-    const otpCredentials = navigator.credentials as CredentialsContainer & {
-      get(options: {
-        otp: { transport: ["sms"] };
-        signal: AbortSignal;
-      }): Promise<Credential | null>;
-    };
-    otpCredentials
-      .get({ otp: { transport: ["sms"] }, signal: ac.signal })
-      .then((cred) => {
-        const code = (cred as unknown as { code?: string } | null)?.code;
-        if (code) {
-          setOtp(code);
-          setAutoRead("ok");
-        }
-      })
-      .catch(() => {
-        /* user denied / timeout */
-      });
-    return () => ac.abort();
-  }, [step]);
+  const otpLocked = step === "otp" && (isPermanent() || lockMs > 0);
 
   useEffect(() => {
     if (resendIn <= 0) return;
-    const id = setInterval(() => setResendIn((s) => Math.max(0, s - 1)), 1000);
-    return () => clearInterval(id);
+    const timer = window.setInterval(() => setResendIn((value) => Math.max(0, value - 1)), 1000);
+    return () => window.clearInterval(timer);
   }, [resendIn]);
 
-  const sendCode = async () => {
-    setError(null);
+  const switchMode = (nextMode: Mode) => {
+    setMode(nextMode);
+    setStep("form");
+    setPassword("");
+    setConfirmation("");
+    setTermsAccepted(false);
+    setOtp("");
+    setErrors({});
+    setStatus(null);
+    setDemoCode(null);
+    setResendIn(0);
+  };
+
+  const validatePhone = () => {
     const parsed = PhoneSchema.safeParse(phone);
-    if (!parsed.success) {
-      setError(parsed.error.issues[0].message);
+    if (parsed.success) return null;
+    return parsed.error.issues[0]?.message ?? "Numéro invalide.";
+  };
+
+  const validatePassword = (value: string) => {
+    const parsed = PasswordSchema.safeParse(value);
+    if (parsed.success) return null;
+    return parsed.error.issues[0]?.message ?? "Mot de passe invalide.";
+  };
+
+  const sendCode = async (intent: "signup" | "recovery", isResend = false) => {
+    const phoneError = validatePhone();
+    if (phoneError) {
+      setErrors({ phone: phoneError });
       return;
     }
 
-    setSending(true);
+    setBusy(true);
+    setErrors({});
+    setStatus(null);
     try {
-      const res = await requestOtp(phone);
-      if (!res.ok) {
-        if (res.reason === "provider-unavailable") {
-          const msg =
-            "La première connexion par SMS est temporairement indisponible. Réessayez plus tard.";
-          setError(msg);
-          toast.error(msg);
+      if (!isResend) {
+        const accountState = await checkPhoneAccount({ data: { phone } });
+        if (intent === "signup" && accountState.exists) {
+          setErrors({ phone: "Ce numéro est déjà associé à un compte." });
           return;
         }
-        const mins = Math.ceil((res.rate.retryInMs ?? 60_000) / 60_000);
-        const msg =
-          res.rate.reason === "phone"
-            ? t("account.rateLimitPhone", { mins })
-            : t("account.rateLimitDevice", { mins });
-        setError(msg);
-        toast.error(msg);
+        if (intent === "recovery" && !accountState.exists) {
+          setErrors({ phone: "Aucun compte n’est associé à ce numéro." });
+          return;
+        }
+      }
+
+      const result = await requestOtp(phone);
+      if (!result.ok) {
+        if (result.reason === "provider-unavailable") {
+          setErrors({ otp: "L’envoi du code est temporairement indisponible." });
+          return;
+        }
+        const minutes = Math.ceil((result.rate.retryInMs ?? 15 * 60_000) / 60_000);
+        setErrors({ otp: `Trop de demandes. Réessayez dans ${minutes} minute${minutes > 1 ? "s" : ""}.` });
         return;
       }
+
+      setDemoCode(result.demoCode);
+      setOtp("");
       setStep("otp");
-      setInfo(
-        res.demoCode
-          ? `MODE DÉMO (aucun SMS envoyé) — votre code : ${res.demoCode}. Valable 5 minutes.`
-          : t("account.codeSentTo") + " " + phone,
-      );
       setResendIn(60);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : t("account.sendFailed");
-      setError(t("account.sendFailed"));
-      toast.error(msg);
+      setStatus(
+        result.demoCode
+          ? "Mode démo actif : aucun SMS n’a été envoyé."
+          : `Un code de vérification a été envoyé au ${formatPhone(phone)}.`,
+      );
+    } catch {
+      setErrors({ otp: "Réseau indisponible. Vérifiez votre connexion puis réessayez." });
     } finally {
-      setSending(false);
+      setBusy(false);
     }
+  };
+
+  const submitLogin = async () => {
+    const nextErrors: FieldErrors = {};
+    const phoneError = validatePhone();
+    const passwordError = validatePassword(password);
+    if (phoneError) nextErrors.phone = phoneError;
+    if (passwordError) nextErrors.password = passwordError;
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    setBusy(true);
+    setStatus(null);
+    try {
+      const result = await loginWithPassword({ data: { phone, password } });
+      if (!result.ok) {
+        setErrors({
+          password:
+            result.reason === "rate-limited"
+              ? "Trop de tentatives. Réessayez dans 15 minutes."
+              : "Numéro ou mot de passe incorrect.",
+        });
+        return;
+      }
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await supabase.auth.setSession(result.session);
+      if (error) throw error;
+      toast.success("Connexion réussie.");
+      await navigate({ to: "/" });
+    } catch {
+      setErrors({ password: "Connexion impossible. Vérifiez votre réseau puis réessayez." });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitSignup = async () => {
+    const nextErrors: FieldErrors = {};
+    const phoneError = validatePhone();
+    const passwordError = validatePassword(password);
+    if (phoneError) nextErrors.phone = phoneError;
+    if (passwordError) nextErrors.password = passwordError;
+    if (password !== confirmation) nextErrors.confirmation = "Les mots de passe ne correspondent pas.";
+    if (!termsAccepted) nextErrors.terms = "Vous devez accepter les conditions et la politique de confidentialité.";
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+    await sendCode("signup");
+  };
+
+  const submitRecoveryPhone = async () => {
+    await sendCode("recovery");
   };
 
   const submitOtp = async () => {
-    setError(null);
-    setInfo(null);
     const parsed = OtpSchema.safeParse(otp);
     if (!parsed.success) {
-      setError(parsed.error.issues[0].message);
+      setErrors({ otp: parsed.error.issues[0]?.message ?? "Code invalide." });
       return;
     }
-    setVerifying(true);
+
+    setBusy(true);
+    setErrors({});
     try {
-      const res = await verifyOtp(phone, otp, account?.phone ?? null);
-      if (res.ok) {
-        setPassword("");
-        setPasswordConfirm("");
-        setStep("password-setup");
-        setInfo("OTP vérifié. Choisissez maintenant votre mot de passe.");
+      const result = await verifyOtp(phone, otp, null);
+      if (!result.ok) {
+        const messages = {
+          permanent: "Ce numéro est bloqué. Contactez l’assistance.",
+          locked: "Nombre maximal de tentatives atteint. Demandez un nouveau code plus tard.",
+          "rate-limited": "Trop de vérifications. Réessayez plus tard.",
+          "wrong-phone": "Le numéro ne correspond pas à cette demande.",
+          "wrong-code": `Code incorrect${typeof result.remaining === "number" ? ` — ${result.remaining} essai${result.remaining > 1 ? "s" : ""} restant${result.remaining > 1 ? "s" : ""}` : ""}.`,
+        };
+        setErrors({ otp: messages[result.reason ?? "wrong-code"] });
+        setOtp("");
+        otpRefs.current[0]?.focus();
         return;
       }
-      if (res.reason === "rate-limited") {
-        const mins = Math.ceil((res.rate?.retryInMs ?? 60_000) / 60_000);
-        setError(t("account.rateLimitOtp", { mins }));
-      } else if (res.reason === "permanent") {
-        setError(t("account.blockedContact"));
-      } else if (res.reason === "locked") {
-        setError(t("account.blockedHour"));
-      } else if (res.reason === "wrong-phone") {
-        setError(t("account.wrongPhone", { remaining: res.remaining ?? 0 }));
-      } else {
-        setError(t("account.wrongOtp", { remaining: res.remaining ?? 0 }));
-      }
-      setOtp("");
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : t("account.verifyFailed");
-      setError(t("account.verifyFailed"));
-      toast.error(msg);
-    } finally {
-      setVerifying(false);
-    }
-  };
 
-  const submitPasswordLogin = async () => {
-    setError(null);
-    const parsed = PasswordSchema.safeParse(password);
-    if (!parsed.success) {
-      setError(parsed.error.issues[0].message);
-      return;
-    }
-    setPasswordBusy(true);
-    try {
-      const res = await loginWithPassword({ data: { phone, password } });
-      if (!res.ok) {
-        if (res.reason === "rate-limited") {
-          const msg = "Trop de tentatives de connexion. Réessayez dans 15 minutes.";
-          setError(msg);
-          toast.error(msg);
-        } else {
-          setError("Numéro ou mot de passe incorrect.");
-        }
+      if (mode === "signup") {
+        await finishPasswordSetup(password, "Votre compte est prêt.");
         return;
       }
-      const { error: sessionError } = await (
-        await import("@/integrations/supabase/client")
-      ).supabase.auth.setSession(res.session);
-      if (sessionError) throw sessionError;
-      toast.success(t("account.welcomeToast"));
-      navigate({ to: "/" });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Connexion impossible.");
+      setPassword("");
+      setConfirmation("");
+      setStep("new-password");
+      setStatus("Numéro vérifié. Choisissez maintenant un nouveau mot de passe.");
+    } catch {
+      setErrors({ otp: "Vérification impossible. Vérifiez votre réseau puis réessayez." });
     } finally {
-      setPasswordBusy(false);
+      setBusy(false);
     }
   };
 
-  const submitPasswordSetup = async () => {
-    setError(null);
-    const parsed = PasswordSchema.safeParse(password);
-    if (!parsed.success) {
-      setError(parsed.error.issues[0].message);
-      return;
-    }
-    if (password !== passwordConfirm) {
-      setError("Les deux mots de passe ne correspondent pas.");
-      return;
-    }
-    setPasswordBusy(true);
+  const finishPasswordSetup = async (newPassword: string, successMessage: string) => {
     try {
-      await setUserPassword({ data: { password } });
-      const { error: refreshError } = await (
-        await import("@/integrations/supabase/client")
-      ).supabase.auth.refreshSession();
-      if (refreshError) throw refreshError;
-      toast.success("Mot de passe créé avec succès.");
-      navigate({ to: "/" });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Impossible d'enregistrer le mot de passe.");
-    } finally {
-      setPasswordBusy(false);
+      await setUserPassword({ data: { password: newPassword } });
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { error } = await supabase.auth.refreshSession();
+      if (error) throw error;
+      toast.success(successMessage);
+      await navigate({ to: "/" });
+    } catch {
+      setErrors({ password: "Impossible d’enregistrer le mot de passe. Réessayez." });
     }
   };
 
-  const setDigit = (idx: number, val: string) => {
-    const clean = val.replace(/\D/g, "");
-    if (!clean) {
-      const arr = otp.split("");
-      arr[idx] = "";
-      setOtp(arr.join("").slice(0, 6));
+  const submitNewPassword = async () => {
+    const nextErrors: FieldErrors = {};
+    const passwordError = validatePassword(password);
+    if (passwordError) nextErrors.password = passwordError;
+    if (password !== confirmation) nextErrors.confirmation = "Les mots de passe ne correspondent pas.";
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    setBusy(true);
+    await finishPasswordSetup(password, "Mot de passe modifié. Vous êtes connecté.");
+    setBusy(false);
+  };
+
+  const updateOtp = (index: number, value: string) => {
+    const digits = value.replace(/\D/g, "");
+    const slots = otp.padEnd(6, " ").split("");
+    if (!digits) {
+      slots[index] = " ";
+      setOtp(slots.join("").trimEnd());
       return;
     }
-    const arr = otp.padEnd(6, " ").split("");
-    for (let i = 0; i < clean.length && idx + i < 6; i++) arr[idx + i] = clean[i];
-    const next = arr.join("").replace(/\s/g, "").slice(0, 6);
-    setOtp(next);
-    const focusIdx = Math.min(5, idx + clean.length);
-    inputsRef.current[focusIdx]?.focus();
+    for (let offset = 0; offset < digits.length && index + offset < 6; offset += 1) {
+      slots[index + offset] = digits[offset];
+    }
+    setOtp(slots.join("").replace(/\s/g, "").slice(0, 6));
+    otpRefs.current[Math.min(5, index + digits.length)]?.focus();
   };
+
+  const goBack = () => {
+    if (step === "form") {
+      switchMode("login");
+      return;
+    }
+    setStep("form");
+    setOtp("");
+    setErrors({});
+    setStatus(null);
+    setDemoCode(null);
+  };
+
+  const title =
+    step === "otp"
+      ? mode === "signup"
+        ? "Vérifiez votre numéro"
+        : "Vérification de sécurité"
+      : step === "new-password"
+        ? "Nouveau mot de passe"
+        : mode === "signup"
+          ? "Créer votre compte"
+          : mode === "recovery"
+            ? "Mot de passe oublié ?"
+            : "Connexion";
+
+  const subtitle =
+    step === "otp"
+      ? `${mode === "signup" ? "Un code de vérification a été envoyé" : "Entrez le code envoyé"} au ${formatPhone(phone)}.`
+      : step === "new-password"
+        ? "Choisissez un nouveau mot de passe sécurisé."
+        : mode === "signup"
+          ? "Rejoignez Coup Sûr et jouez simplement depuis votre téléphone."
+          : mode === "recovery"
+            ? "Entrez votre numéro de téléphone pour récupérer votre compte."
+            : "Connectez-vous à votre compte Coup Sûr.";
 
   return (
-    <>
-      <PremiumPhoneCard>
-        <div className="pt-1 space-y-2.5">
-          <div className="text-center pb-1">
-            <div className="mx-auto h-11 w-11">
-              <img
-                src={logoCoupSur}
-                alt="Coup Sûr"
-                className="h-full w-full object-contain drop-shadow-[0_10px_24px_rgba(0,0,0,0.45)]"
-              />
-            </div>
-            <h1 className="mt-1.5 font-display text-lg font-extrabold tracking-tight text-white">
-              COUP <span className="text-[#00C896]">SÛR</span>
-            </h1>
-            <p className="mt-1.5 font-display text-base font-extrabold text-white">
-              {t("account.welcome")}
-            </p>
-            <p className="mt-0.5 text-[11px] text-white/60">{t("account.loginSubtitle")}</p>
-          </div>
-          {locked && (
-            <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-3 text-red-100 backdrop-blur-sm">
-              <div className="flex items-center gap-2 font-bold text-sm">
-                <ShieldAlert className="h-4 w-4" />
-                {permanent ? t("account.blockedPermanent") : t("account.blockedTemp")}
-              </div>
-              {permanent ? (
-                <p className="mt-1.5 text-xs">{t("account.contactSupport")}</p>
-              ) : (
-                <p className="mt-1.5 text-xs tabular-nums">
-                  {t("account.retryIn", { time: fmtMs(lockMs) })}
-                </p>
-              )}
-            </div>
+    <main className="relative min-h-[calc(100dvh-64px)] overflow-hidden bg-hero px-4 py-6 sm:py-10">
+      <div className="pointer-events-none absolute inset-0 grid-bg opacity-30" aria-hidden />
+      <section className="relative mx-auto w-full max-w-md" aria-labelledby="auth-title">
+        <div className="mb-6 flex justify-center">
+          <Link to="/" aria-label="Retour à l’accueil Coup Sûr">
+            <img src={logoCoupSur} alt="Coup Sûr" className="h-16 w-16 object-contain" />
+          </Link>
+        </div>
+
+        <div className="rounded-lg border border-border bg-card/95 p-5 shadow-elevated backdrop-blur sm:p-7">
+          {(mode !== "login" || step !== "form") && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={goBack}
+              className="mb-4 -ml-2 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft /> Retour
+            </Button>
           )}
 
-          {step === "phone" && (
-            <>
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">
-                  Connexion
-                </div>
-                <p className="mt-0.5 text-[11px] text-white/60">
-                  Connectez-vous avec votre numéro et votre mot de passe.
-                </p>
+          <header className="mb-6">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-accent/15 text-accent">
+              {mode === "login" ? <LockKeyhole /> : mode === "signup" ? <UserPlus /> : <KeyRound />}
+            </div>
+            <h1 id="auth-title" className="font-display text-2xl font-bold text-foreground">{title}</h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">{subtitle}</p>
+          </header>
+
+          {step === "form" && mode === "login" && (
+            <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); void submitLogin(); }} noValidate>
+              <PhoneField phone={phone} onChange={setPhone} error={errors.phone} autoFocus />
+              <PasswordField
+                label="Mot de passe"
+                value={password}
+                onChange={setPassword}
+                visible={showPassword}
+                onToggle={() => setShowPassword((value) => !value)}
+                error={errors.password}
+                autoComplete="current-password"
+              />
+              <div className="flex justify-end">
+                <Button type="button" variant="link" className="h-auto p-0 text-accent" onClick={() => switchMode("recovery")}>
+                  Mot de passe oublié ?
+                </Button>
               </div>
-              <label className="cs-field group block">
-                <span className="cs-field-label">{t("account.phoneLabel")}</span>
-                <div className="cs-field-wrap">
-                  <Phone className="h-5 w-5 text-white/60 group-focus-within:text-[#00C896] transition-colors" />
-                  <span className="text-sm font-semibold text-white/70">+227</span>
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel"
-                    maxLength={8}
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                    placeholder="90 00 00 00"
-                    disabled={locked}
-                    className="flex-1 bg-transparent text-lg font-bold tracking-wider text-white placeholder-white/30 outline-none disabled:opacity-50"
-                  />
-                </div>
-              </label>
-              <label className="cs-field group block">
-                <span className="cs-field-label">Mot de passe</span>
-                <div className="cs-field-wrap">
-                  <KeyRound className="h-5 w-5 text-white/60 group-focus-within:text-[#00C896] transition-colors" />
-                  <input
-                    type="password"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Votre mot de passe"
-                    disabled={locked}
-                    className="flex-1 bg-transparent text-sm font-semibold text-white placeholder-white/30 outline-none disabled:opacity-50"
-                  />
-                </div>
-              </label>
-              {error && <Alert variant="error">{error}</Alert>}
-              <button
-                onClick={submitPasswordLogin}
-                disabled={locked || passwordBusy || phone.length !== 8 || password.length < 8}
-                className={["cs-cta", locked ? "cs-cta-locked" : ""].join(" ")}
-              >
-                {passwordBusy ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ArrowRight className="h-4 w-4" />
-                )}
-                {passwordBusy ? "Connexion..." : "Se connecter"}
-              </button>
-              <button
-                type="button"
-                onClick={sendCode}
-                disabled={locked || sending || phone.length !== 8}
-                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-bold text-white/90 backdrop-blur transition hover:bg-white/10 disabled:opacity-60"
-              >
-                <KeyRound className="h-4 w-4" />
-                Créer un compte / mot de passe oublié
-              </button>
-              <p className="text-[11px] text-white/60 text-center">
-                Saisissez votre numéro (+227) : un code SMS valable 5 minutes vous sera envoyé, puis
-                vous choisirez et confirmerez votre mot de passe.
+              <PrimaryButton busy={busy} idleLabel="Se connecter" busyLabel="Connexion…" />
+              <p className="text-center text-sm text-muted-foreground">
+                Vous n’avez pas encore de compte ?{" "}
+                <Button type="button" variant="link" className="h-auto p-0 text-accent" onClick={() => switchMode("signup")}>
+                  Créer un compte
+                </Button>
               </p>
-            </>
+            </form>
+          )}
+
+          {step === "form" && mode === "signup" && (
+            <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); void submitSignup(); }} noValidate>
+              <PhoneField phone={phone} onChange={setPhone} error={errors.phone} autoFocus />
+              <PasswordField
+                label="Mot de passe"
+                value={password}
+                onChange={setPassword}
+                visible={showPassword}
+                onToggle={() => setShowPassword((value) => !value)}
+                error={errors.password}
+                autoComplete="new-password"
+                showIndicator
+              />
+              <PasswordField
+                label="Confirmation du mot de passe"
+                value={confirmation}
+                onChange={setConfirmation}
+                visible={showConfirmation}
+                onToggle={() => setShowConfirmation((value) => !value)}
+                error={errors.confirmation}
+                autoComplete="new-password"
+                valid={confirmation.length > 0 && confirmation === password}
+              />
+              <label className="flex cursor-pointer items-start gap-3 text-sm leading-5 text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(event) => setTermsAccepted(event.target.checked)}
+                  className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-primary)]"
+                />
+                <span>
+                  J’accepte les <Link to="/conditions" className="font-semibold text-accent underline-offset-4 hover:underline">conditions d’utilisation</Link> et la <Link to="/confidentialite" className="font-semibold text-accent underline-offset-4 hover:underline">politique de confidentialité</Link>.
+                </span>
+              </label>
+              {errors.terms && <FieldError>{errors.terms}</FieldError>}
+              <PrimaryButton busy={busy} idleLabel="Créer mon compte" busyLabel="Création…" />
+              <p className="text-center text-sm text-muted-foreground">
+                Vous avez déjà un compte ?{" "}
+                <Button type="button" variant="link" className="h-auto p-0 text-accent" onClick={() => switchMode("login")}>
+                  Se connecter
+                </Button>
+              </p>
+            </form>
+          )}
+
+          {step === "form" && mode === "recovery" && (
+            <form className="space-y-5" onSubmit={(event) => { event.preventDefault(); void submitRecoveryPhone(); }} noValidate>
+              <PhoneField phone={phone} onChange={setPhone} error={errors.phone} autoFocus />
+              {errors.otp && <Notice variant="error">{errors.otp}</Notice>}
+              <PrimaryButton busy={busy} idleLabel="Continuer" busyLabel="Vérification…" />
+            </form>
           )}
 
           {step === "otp" && (
-            <>
+            <form className="space-y-5" onSubmit={(event) => { event.preventDefault(); void submitOtp(); }} noValidate>
+              {demoCode && (
+                <Notice variant="demo">
+                  <strong>MODE DÉMO — aucun SMS envoyé.</strong>
+                  <span className="mt-1 block">Votre code est <span className="font-display text-lg font-bold tracking-[0.18em]">{demoCode}</span>.</span>
+                </Notice>
+              )}
+              {!demoCode && status && <Notice variant="success">{status}</Notice>}
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">
-                  {t("account.step2")}
-                </div>
-                <h2 className="font-display text-lg font-extrabold text-white">
-                  {t("account.enterCode")}
-                </h2>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-xs text-white/70 backdrop-blur">
-                {t("account.codeSentTo")} <span className="font-bold text-white">+227 {phone}</span>
-                .{" "}
-                <button
-                  onClick={() => {
-                    setStep("phone");
-                    setOtp("");
-                  }}
-                  className="font-bold text-[#00C896] hover:underline"
-                >
-                  {t("account.modify")}
-                </button>
-              </div>
-
-              {autoRead === "listening" && (
-                <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/80">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("account.autoReadListening")}
-                </div>
-              )}
-              {autoRead === "ok" && (
-                <div className="flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs font-semibold text-emerald-200">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> {t("account.autoReadOk")}
-                </div>
-              )}
-              {autoRead === "unavailable" && (
-                <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/70">
-                  <AlertTriangle className="h-3.5 w-3.5" /> {t("account.autoReadUnavailable")}
-                </div>
-              )}
-
-              <div className="block">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-widest text-white/80">
-                    {t("account.smsCode")}
-                  </span>
-                  <span className="text-[11px] text-white/50">{t("account.sixDigits")}</span>
-                </div>
-                <div className="mt-3 grid grid-cols-6 gap-1.5">
-                  {Array.from({ length: 6 }).map((_, i) => (
+                <div className="grid grid-cols-6 gap-2">
+                  {Array.from({ length: 6 }, (_, index) => (
                     <input
-                      key={i}
-                      ref={(el) => {
-                        inputsRef.current[i] = el;
-                      }}
+                      key={index}
+                      ref={(element) => { otpRefs.current[index] = element; }}
                       type="tel"
                       inputMode="numeric"
-                      autoComplete={i === 0 ? "one-time-code" : "off"}
+                      autoComplete={index === 0 ? "one-time-code" : "off"}
                       maxLength={1}
-                      aria-label={t("account.digitAriaLabel", { n: i + 1 })}
-                      value={otp[i] ?? ""}
-                      disabled={locked}
-                      onChange={(e) => setDigit(i, e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Backspace" && !otp[i] && i > 0) {
-                          inputsRef.current[i - 1]?.focus();
-                        }
+                      aria-label={`Chiffre ${index + 1} du code`}
+                      aria-invalid={Boolean(errors.otp)}
+                      value={otp[index] ?? ""}
+                      disabled={busy || otpLocked}
+                      onChange={(event) => updateOtp(index, event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Backspace" && !otp[index] && index > 0) otpRefs.current[index - 1]?.focus();
                       }}
-                      onPaste={(e) => {
-                        const txt = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-                        if (txt) {
-                          e.preventDefault();
-                          setDigit(0, txt);
-                        }
+                      onPaste={(event) => {
+                        const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+                        if (!pasted) return;
+                        event.preventDefault();
+                        updateOtp(0, pasted);
                       }}
-                      className="cs-otp"
+                      className="h-12 min-w-0 rounded-md border border-input bg-background/50 text-center font-display text-xl font-bold text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/25 disabled:opacity-50"
                     />
                   ))}
                 </div>
+                {errors.otp && <FieldError>{errors.otp}</FieldError>}
               </div>
-
-              {error && <Alert variant="error">{error}</Alert>}
-              {info && !error && <Alert variant="success">{info}</Alert>}
-
-              <button
-                onClick={submitOtp}
-                disabled={locked || otp.length !== 6 || verifying}
-                className="cs-cta"
+              {otpLocked && <Notice variant="error">Nombre maximal de tentatives atteint. Réessayez plus tard.</Notice>}
+              <PrimaryButton busy={busy} idleLabel="Vérifier" busyLabel="Vérification…" disabled={otpLocked || otp.length !== 6} />
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 w-full bg-transparent"
+                disabled={busy || otpLocked || resendIn > 0}
+                onClick={() => void sendCode(mode === "signup" ? "signup" : "recovery", true)}
               >
-                {verifying ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ArrowRight className="h-4 w-4" />
-                )}
-                {verifying ? t("account.verifying") : t("account.signIn")}
-              </button>
-              <button
-                onClick={sendCode}
-                disabled={locked || sending || resendIn > 0}
-                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-bold text-white/90 backdrop-blur transition hover:bg-white/10 disabled:opacity-60"
-              >
-                <RefreshCw className={`h-4 w-4 ${sending ? "animate-spin" : ""}`} />
-                {resendIn > 0
-                  ? t("account.resendIn", { seconds: resendIn })
-                  : t("account.resendSms")}
-              </button>
-            </>
-          )}
-          {step === "password-setup" && (
-            <>
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/60">
-                  Sécurité du compte
-                </div>
-                <h2 className="font-display text-lg font-extrabold text-white">
-                  Choisissez votre mot de passe
-                </h2>
-                <p className="mt-1 text-xs text-white/60">
-                  Votre OTP a été vérifié. Ce mot de passe sera utilisé pour vos prochaines
-                  connexions.
-                </p>
-              </div>
-              <label className="cs-field group block">
-                <span className="cs-field-label">Nouveau mot de passe</span>
-                <div className="cs-field-wrap">
-                  <KeyRound className="h-5 w-5 text-white/60 group-focus-within:text-[#00C896] transition-colors" />
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    minLength={8}
-                    maxLength={128}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="8 caractères minimum"
-                    className="flex-1 bg-transparent text-sm font-semibold text-white placeholder-white/30 outline-none"
-                  />
-                </div>
-              </label>
-              <label className="cs-field group block">
-                <span className="cs-field-label">Confirmer le mot de passe</span>
-                <div className="cs-field-wrap">
-                  <CheckCircle2 className="h-5 w-5 text-white/60 group-focus-within:text-[#00C896] transition-colors" />
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    minLength={8}
-                    maxLength={128}
-                    value={passwordConfirm}
-                    onChange={(e) => setPasswordConfirm(e.target.value)}
-                    placeholder="Retapez votre mot de passe"
-                    className="flex-1 bg-transparent text-sm font-semibold text-white placeholder-white/30 outline-none"
-                  />
-                </div>
-              </label>
-              {error && <Alert variant="error">{error}</Alert>}
-              {info && !error && <Alert variant="success">{info}</Alert>}
-              <button
-                onClick={submitPasswordSetup}
-                disabled={passwordBusy || password.length < 8 || password !== passwordConfirm}
-                className="cs-cta"
-              >
-                {passwordBusy ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4" />
-                )}
-                {passwordBusy ? "Enregistrement..." : "Créer mon mot de passe"}
-              </button>
-              <button
-                onClick={() => {
-                  setStep("phone");
-                  setOtp("");
-                  setPassword("");
-                  setPasswordConfirm("");
-                  setError(null);
-                }}
-                className="flex min-h-11 w-full items-center justify-center rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-bold text-white/90"
-              >
-                Retour à la connexion
-              </button>
-            </>
+                <RefreshCw className={busy ? "animate-spin" : ""} />
+                {resendIn > 0 ? `Renvoyer le code dans ${resendIn} s` : "Renvoyer le code"}
+              </Button>
+            </form>
           )}
 
-          <p className="pt-2 text-center text-[11px] text-white/60 leading-relaxed">
-            {t("account.termsIntro")}{" "}
-            <a href="/conditions" className="font-semibold text-[#00C896] hover:underline">
-              {t("account.termsLink")}
-            </a>{" "}
-            {t("account.termsAnd")}{" "}
-            <a href="/confidentialite" className="font-semibold text-[#00C896] hover:underline">
-              {t("account.privacyLink")}
-            </a>
-            .
-          </p>
+          {step === "new-password" && (
+            <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); void submitNewPassword(); }} noValidate>
+              {status && <Notice variant="success">{status}</Notice>}
+              <PasswordField
+                label="Nouveau mot de passe"
+                value={password}
+                onChange={setPassword}
+                visible={showPassword}
+                onToggle={() => setShowPassword((value) => !value)}
+                error={errors.password}
+                autoComplete="new-password"
+                showIndicator
+                autoFocus
+              />
+              <PasswordField
+                label="Confirmer le mot de passe"
+                value={confirmation}
+                onChange={setConfirmation}
+                visible={showConfirmation}
+                onToggle={() => setShowConfirmation((value) => !value)}
+                error={errors.confirmation}
+                autoComplete="new-password"
+                valid={confirmation.length > 0 && confirmation === password}
+              />
+              <PrimaryButton busy={busy} idleLabel="Enregistrer le mot de passe" busyLabel="Enregistrement…" />
+            </form>
+          )}
         </div>
-      </PremiumPhoneCard>
 
-      {noAccountOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in p-0 sm:p-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl border border-border bg-card shadow-elevated overflow-hidden">
-            <div className="flex items-start gap-3 border-b border-border/60 bg-gradient-to-br from-primary/15 to-transparent p-5">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary/20 text-primary">
-                <ShieldAlert className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-display text-lg font-extrabold">
-                  {t("account.noAccountTitle")}
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">{t("account.noAccountDesc")}</p>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 p-5">
-              <a
-                href="/compte"
-                className="w-full rounded-2xl bg-primary px-4 py-3 text-center text-sm font-extrabold uppercase tracking-wide text-primary-foreground hover:brightness-110"
-              >
-                {t("createAccount")}
-              </a>
-              <button
-                onClick={() => setNoAccountOpen(false)}
-                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground hover:border-primary/50"
-              >
-                {t("account.cancel")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+        <p className="mt-5 text-center text-xs text-muted-foreground">
+          Vos identifiants sont protégés par Supabase Auth.
+        </p>
+      </section>
+    </main>
   );
 }
 
-function Alert({ children, variant }: { children: React.ReactNode; variant: "error" | "success" }) {
-  const cls =
-    variant === "error"
-      ? "border-red-500/40 bg-red-500/10 text-red-100"
-      : "border-emerald-400/40 bg-emerald-400/10 text-emerald-100";
+function PhoneField({ phone, onChange, error, autoFocus = false }: { phone: string; onChange: (value: string) => void; error?: string; autoFocus?: boolean }) {
   return (
-    <div className={`flex items-start gap-2 rounded-xl border ${cls} p-3 text-sm`}>
-      {variant === "error" ? (
-        <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-      ) : (
-        <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-foreground">Numéro de téléphone</span>
+      <span className={`flex h-12 items-center rounded-md border bg-background/50 transition focus-within:ring-2 focus-within:ring-accent/25 ${error ? "border-destructive" : "border-input focus-within:border-accent"}`}>
+        <span className="flex h-full items-center gap-2 border-r border-input px-3 font-semibold text-foreground">
+          <Phone className="h-4 w-4 text-accent" /> +227
+        </span>
+        <input
+          type="tel"
+          inputMode="numeric"
+          autoComplete="tel-national"
+          maxLength={8}
+          autoFocus={autoFocus}
+          value={phone}
+          onChange={(event) => onChange(event.target.value.replace(/\D/g, ""))}
+          placeholder="90 00 00 00"
+          aria-invalid={Boolean(error)}
+          className="min-w-0 flex-1 bg-transparent px-3 text-base font-semibold text-foreground outline-none placeholder:text-muted-foreground/60"
+        />
+      </span>
+      {error && <FieldError>{error}</FieldError>}
+    </label>
+  );
+}
+
+function PasswordField({ label, value, onChange, visible, onToggle, error, autoComplete, showIndicator = false, valid = false, autoFocus = false }: { label: string; value: string; onChange: (value: string) => void; visible: boolean; onToggle: () => void; error?: string; autoComplete: "current-password" | "new-password"; showIndicator?: boolean; valid?: boolean; autoFocus?: boolean }) {
+  const validLength = PasswordSchema.safeParse(value).success;
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-foreground">{label}</span>
+      <span className={`flex h-12 items-center rounded-md border bg-background/50 transition focus-within:ring-2 focus-within:ring-accent/25 ${error ? "border-destructive" : "border-input focus-within:border-accent"}`}>
+        <KeyRound className="ml-3 h-4 w-4 shrink-0 text-accent" />
+        <input
+          type={visible ? "text" : "password"}
+          autoComplete={autoComplete}
+          minLength={8}
+          maxLength={128}
+          autoFocus={autoFocus}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="8 caractères minimum"
+          aria-invalid={Boolean(error)}
+          className="min-w-0 flex-1 bg-transparent px-3 text-base text-foreground outline-none placeholder:text-muted-foreground/60"
+        />
+        <Button type="button" variant="ghost" size="icon" onClick={onToggle} className="mr-1 h-10 w-10 text-muted-foreground" aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}>
+          {visible ? <EyeOff /> : <Eye />}
+        </Button>
+      </span>
+      {showIndicator && value.length > 0 && (
+        <p className={`mt-2 flex items-center gap-1.5 text-xs ${validLength ? "text-success" : "text-muted-foreground"}`}>
+          {validLength ? <CheckCircle2 className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+          {validLength ? "Mot de passe valide" : "Au moins 8 caractères"}
+        </p>
       )}
-      <span>{children}</span>
+      {valid && !error && (
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-success"><Check className="h-3.5 w-3.5" /> Les mots de passe correspondent</p>
+      )}
+      {error && <FieldError>{error}</FieldError>}
+    </label>
+  );
+}
+
+function PrimaryButton({ busy, idleLabel, busyLabel, disabled = false }: { busy: boolean; idleLabel: string; busyLabel: string; disabled?: boolean }) {
+  return (
+    <Button type="submit" size="lg" disabled={busy || disabled} className="h-12 w-full font-bold">
+      {busy ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
+      {busy ? busyLabel : idleLabel}
+    </Button>
+  );
+}
+
+function FieldError({ children }: { children: ReactNode }) {
+  return <p className="mt-2 flex items-start gap-1.5 text-xs text-destructive"><AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />{children}</p>;
+}
+
+function Notice({ children, variant }: { children: ReactNode; variant: "error" | "success" | "demo" }) {
+  const styles = variant === "error" ? "border-destructive/40 bg-destructive/10 text-destructive-foreground" : variant === "demo" ? "border-warning/50 bg-warning/10 text-foreground" : "border-success/40 bg-success/10 text-foreground";
+  return (
+    <div role={variant === "error" ? "alert" : "status"} className={`rounded-md border p-3 text-sm leading-5 ${styles}`}>
+      {children}
     </div>
   );
+}
+
+function formatPhone(phone: string) {
+  const clean = phone.replace(/\D/g, "").slice(0, 8);
+  return `+227 ${clean.replace(/(\d{2})(?=\d)/g, "$1 ")}`;
 }
