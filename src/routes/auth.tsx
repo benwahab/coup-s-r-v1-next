@@ -76,6 +76,75 @@ function AuthPage() {
 
   const lockMs = remainingLockMs();
   const otpLocked = step === "otp" && (isPermanent() || lockMs > 0);
+  const [config, setConfig] = useState<
+    { state: "checking" } | { state: "ready" } | { state: "error"; message: string }
+  >({ state: "checking" });
+
+  const checkConfig = async () => {
+    setConfig({ state: "checking" });
+    const clientOk =
+      !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (!clientOk) {
+      setConfig({
+        state: "error",
+        message:
+          "L’application n’a pas l’adresse du serveur Coup Sûr. Les formulaires ne peuvent pas être envoyés.",
+      });
+      return;
+    }
+    try {
+      const res = await getServerConfigStatus();
+      setConfig(
+        res.ready
+          ? { state: "ready" }
+          : {
+              state: "error",
+              message: `Le serveur n’est pas prêt (manque : ${res.missing.join(", ")}). Les formulaires ne peuvent pas être envoyés.`,
+            },
+      );
+    } catch {
+      setConfig({
+        state: "error",
+        message: "Serveur injoignable. Vérifiez votre connexion puis réessayez.",
+      });
+    }
+  };
+
+  // Restaure l'étape du code après un rechargement de la page (mauvaise
+  // connexion, mise à jour de l'aperçu). Ni mot de passe ni code n'est stocké.
+  useEffect(() => {
+    void checkConfig();
+    try {
+      const raw = sessionStorage.getItem(PENDING_KEY);
+      if (!raw) return;
+      const p = JSON.parse(raw) as {
+        mode: Mode;
+        phone: string;
+        demoCode: string | null;
+        sentAt: number;
+      };
+      if (Date.now() - p.sentAt > 5 * 60_000) {
+        sessionStorage.removeItem(PENDING_KEY);
+        return;
+      }
+      setMode(p.mode);
+      setPhone(p.phone);
+      setDemoCode(p.demoCode);
+      setStep("otp");
+      setResendIn(Math.max(0, 60 - Math.floor((Date.now() - p.sentAt) / 1000)));
+      setStatus(p.demoCode ? "Mode démo actif : aucun SMS n’a été envoyé." : null);
+    } catch {
+      /* stockage indisponible */
+    }
+  }, []);
+
+  const clearPending = () => {
+    try {
+      sessionStorage.removeItem(PENDING_KEY);
+    } catch {
+      /* ignore */
+    }
+  };
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -88,6 +157,7 @@ function AuthPage() {
   }, [mode, step]);
 
   const switchMode = (nextMode: Mode) => {
+    clearPending();
     setMode(nextMode);
     setStep("form");
     setPassword("");
