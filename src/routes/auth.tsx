@@ -138,7 +138,9 @@ function AuthPage() {
           return;
         }
         const minutes = Math.ceil((result.rate.retryInMs ?? 15 * 60_000) / 60_000);
-        setErrors({ otp: `Trop de demandes. Réessayez dans ${minutes} minute${minutes > 1 ? "s" : ""}.` });
+        setErrors({
+          otp: `Trop de demandes. Réessayez dans ${minutes} minute${minutes > 1 ? "s" : ""}.`,
+        });
         return;
       }
 
@@ -198,8 +200,10 @@ function AuthPage() {
     const passwordError = validatePassword(password);
     if (phoneError) nextErrors.phone = phoneError;
     if (passwordError) nextErrors.password = passwordError;
-    if (password !== confirmation) nextErrors.confirmation = "Les mots de passe ne correspondent pas.";
-    if (!termsAccepted) nextErrors.terms = "Vous devez accepter les conditions et la politique de confidentialité.";
+    if (password !== confirmation)
+      nextErrors.confirmation = "Les mots de passe ne correspondent pas.";
+    if (!termsAccepted)
+      nextErrors.terms = "Vous devez accepter les conditions et la politique de confidentialité.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
     await sendCode("signup");
@@ -266,7 +270,8 @@ function AuthPage() {
     const nextErrors: FieldErrors = {};
     const passwordError = validatePassword(password);
     if (passwordError) nextErrors.password = passwordError;
-    if (password !== confirmation) nextErrors.confirmation = "Les mots de passe ne correspondent pas.";
+    if (password !== confirmation)
+      nextErrors.confirmation = "Les mots de passe ne correspondent pas.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -353,12 +358,21 @@ function AuthPage() {
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-accent/15 text-accent">
               {mode === "login" ? <LockKeyhole /> : mode === "signup" ? <UserPlus /> : <KeyRound />}
             </div>
-            <h1 id="auth-title" className="font-display text-2xl font-bold text-foreground">{title}</h1>
+            <h1 id="auth-title" className="font-display text-2xl font-bold text-foreground">
+              {title}
+            </h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">{subtitle}</p>
           </header>
 
           {step === "form" && mode === "login" && (
-            <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); void submitLogin(); }} noValidate>
+            <form
+              className="space-y-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submitLogin();
+              }}
+              noValidate
+            >
               <PhoneField phone={phone} onChange={setPhone} error={errors.phone} autoFocus />
               <PasswordField
                 label="Mot de passe"
@@ -370,14 +384,24 @@ function AuthPage() {
                 autoComplete="current-password"
               />
               <div className="flex justify-end">
-                <Button type="button" variant="link" className="h-auto p-0 text-accent" onClick={() => switchMode("recovery")}>
+                <Button
+                  type="button"
+                  variant="link"
+                  className="h-auto p-0 text-accent"
+                  onClick={() => switchMode("recovery")}
+                >
                   Mot de passe oublié ?
                 </Button>
               </div>
               <PrimaryButton busy={busy} idleLabel="Se connecter" busyLabel="Connexion…" />
               <p className="text-center text-sm text-muted-foreground">
                 Vous n’avez pas encore de compte ?{" "}
-                <Button type="button" variant="link" className="h-auto p-0 text-accent" onClick={() => switchMode("signup")}>
+                <Button
+                  type="button"
+                  variant="link"
+                  className="h-auto p-0 text-accent"
+                  onClick={() => switchMode("signup")}
+                >
                   Créer un compte
                 </Button>
               </p>
@@ -385,7 +409,14 @@ function AuthPage() {
           )}
 
           {step === "form" && mode === "signup" && (
-            <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); void submitSignup(); }} noValidate>
+            <form
+              className="space-y-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submitSignup();
+              }}
+              noValidate
+            >
               <PhoneField phone={phone} onChange={setPhone} error={errors.phone} autoFocus />
               <PasswordField
                 label="Mot de passe"
@@ -415,14 +446,33 @@ function AuthPage() {
                   className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-primary)]"
                 />
                 <span>
-                  J’accepte les <Link to="/conditions" className="font-semibold text-accent underline-offset-4 hover:underline">conditions d’utilisation</Link> et la <Link to="/confidentialite" className="font-semibold text-accent underline-offset-4 hover:underline">politique de confidentialité</Link>.
+                  J’accepte les{" "}
+                  <Link
+                    to="/conditions"
+                    className="font-semibold text-accent underline-offset-4 hover:underline"
+                  >
+                    conditions d’utilisation
+                  </Link>{" "}
+                  et la{" "}
+                  <Link
+                    to="/confidentialite"
+                    className="font-semibold text-accent underline-offset-4 hover:underline"
+                  >
+                    politique de confidentialité
+                  </Link>
+                  .
                 </span>
               </label>
               {errors.terms && <FieldError>{errors.terms}</FieldError>}
               <PrimaryButton busy={busy} idleLabel="Créer mon compte" busyLabel="Création…" />
               <p className="text-center text-sm text-muted-foreground">
                 Vous avez déjà un compte ?{" "}
-                <Button type="button" variant="link" className="h-auto p-0 text-accent" onClick={() => switchMode("login")}>
+                <Button
+                  type="button"
+                  variant="link"
+                  className="h-auto p-0 text-accent"
+                  onClick={() => switchMode("login")}
+                >
                   Se connecter
                 </Button>
               </p>
@@ -430,7 +480,14 @@ function AuthPage() {
           )}
 
           {step === "form" && mode === "recovery" && (
-            <form className="space-y-5" onSubmit={(event) => { event.preventDefault(); void submitRecoveryPhone(); }} noValidate>
+            <form
+              className="space-y-5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submitRecoveryPhone();
+              }}
+              noValidate
+            >
               <PhoneField phone={phone} onChange={setPhone} error={errors.phone} autoFocus />
               {errors.otp && <Notice variant="error">{errors.otp}</Notice>}
               <PrimaryButton busy={busy} idleLabel="Continuer" busyLabel="Vérification…" />
@@ -438,11 +495,24 @@ function AuthPage() {
           )}
 
           {step === "otp" && (
-            <form className="space-y-5" onSubmit={(event) => { event.preventDefault(); void submitOtp(); }} noValidate>
+            <form
+              className="space-y-5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submitOtp();
+              }}
+              noValidate
+            >
               {demoCode && (
                 <Notice variant="demo">
                   <strong>MODE DÉMO — aucun SMS envoyé.</strong>
-                  <span className="mt-1 block">Votre code est <span className="font-display text-lg font-bold tracking-[0.18em]">{demoCode}</span>.</span>
+                  <span className="mt-1 block">
+                    Votre code est{" "}
+                    <span className="font-display text-lg font-bold tracking-[0.18em]">
+                      {demoCode}
+                    </span>
+                    .
+                  </span>
                 </Notice>
               )}
               {!demoCode && status && <Notice variant="success">{status}</Notice>}
@@ -451,7 +521,9 @@ function AuthPage() {
                   {Array.from({ length: 6 }, (_, index) => (
                     <input
                       key={index}
-                      ref={(element) => { otpRefs.current[index] = element; }}
+                      ref={(element) => {
+                        otpRefs.current[index] = element;
+                      }}
                       type="tel"
                       inputMode="numeric"
                       autoComplete={index === 0 ? "one-time-code" : "off"}
@@ -462,10 +534,14 @@ function AuthPage() {
                       disabled={busy || otpLocked}
                       onChange={(event) => updateOtp(index, event.target.value)}
                       onKeyDown={(event) => {
-                        if (event.key === "Backspace" && !otp[index] && index > 0) otpRefs.current[index - 1]?.focus();
+                        if (event.key === "Backspace" && !otp[index] && index > 0)
+                          otpRefs.current[index - 1]?.focus();
                       }}
                       onPaste={(event) => {
-                        const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+                        const pasted = event.clipboardData
+                          .getData("text")
+                          .replace(/\D/g, "")
+                          .slice(0, 6);
                         if (!pasted) return;
                         event.preventDefault();
                         updateOtp(0, pasted);
@@ -476,8 +552,17 @@ function AuthPage() {
                 </div>
                 {errors.otp && <FieldError>{errors.otp}</FieldError>}
               </div>
-              {otpLocked && <Notice variant="error">Nombre maximal de tentatives atteint. Réessayez plus tard.</Notice>}
-              <PrimaryButton busy={busy} idleLabel="Vérifier" busyLabel="Vérification…" disabled={otpLocked || otp.length !== 6} />
+              {otpLocked && (
+                <Notice variant="error">
+                  Nombre maximal de tentatives atteint. Réessayez plus tard.
+                </Notice>
+              )}
+              <PrimaryButton
+                busy={busy}
+                idleLabel="Vérifier"
+                busyLabel="Vérification…"
+                disabled={otpLocked || otp.length !== 6}
+              />
               <Button
                 type="button"
                 variant="outline"
@@ -492,7 +577,14 @@ function AuthPage() {
           )}
 
           {step === "new-password" && (
-            <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); void submitNewPassword(); }} noValidate>
+            <form
+              className="space-y-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submitNewPassword();
+              }}
+              noValidate
+            >
               {status && <Notice variant="success">{status}</Notice>}
               <PasswordField
                 label="Nouveau mot de passe"
@@ -515,7 +607,11 @@ function AuthPage() {
                 autoComplete="new-password"
                 valid={confirmation.length > 0 && confirmation === password}
               />
-              <PrimaryButton busy={busy} idleLabel="Enregistrer le mot de passe" busyLabel="Enregistrement…" />
+              <PrimaryButton
+                busy={busy}
+                idleLabel="Enregistrer le mot de passe"
+                busyLabel="Enregistrement…"
+              />
             </form>
           )}
         </div>
@@ -528,11 +624,23 @@ function AuthPage() {
   );
 }
 
-function PhoneField({ phone, onChange, error, autoFocus = false }: { phone: string; onChange: (value: string) => void; error?: string; autoFocus?: boolean }) {
+function PhoneField({
+  phone,
+  onChange,
+  error,
+  autoFocus = false,
+}: {
+  phone: string;
+  onChange: (value: string) => void;
+  error?: string;
+  autoFocus?: boolean;
+}) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-semibold text-foreground">Numéro de téléphone</span>
-      <span className={`flex h-12 items-center rounded-md border bg-background/50 transition focus-within:ring-2 focus-within:ring-accent/25 ${error ? "border-destructive" : "border-input focus-within:border-accent"}`}>
+      <span
+        className={`flex h-12 items-center rounded-md border bg-background/50 transition focus-within:ring-2 focus-within:ring-accent/25 ${error ? "border-destructive" : "border-input focus-within:border-accent"}`}
+      >
         <span className="flex h-full items-center gap-2 border-r border-input px-3 font-semibold text-foreground">
           <Phone className="h-4 w-4 text-accent" /> +227
         </span>
@@ -554,12 +662,36 @@ function PhoneField({ phone, onChange, error, autoFocus = false }: { phone: stri
   );
 }
 
-function PasswordField({ label, value, onChange, visible, onToggle, error, autoComplete, showIndicator = false, valid = false, autoFocus = false }: { label: string; value: string; onChange: (value: string) => void; visible: boolean; onToggle: () => void; error?: string; autoComplete: "current-password" | "new-password"; showIndicator?: boolean; valid?: boolean; autoFocus?: boolean }) {
+function PasswordField({
+  label,
+  value,
+  onChange,
+  visible,
+  onToggle,
+  error,
+  autoComplete,
+  showIndicator = false,
+  valid = false,
+  autoFocus = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  visible: boolean;
+  onToggle: () => void;
+  error?: string;
+  autoComplete: "current-password" | "new-password";
+  showIndicator?: boolean;
+  valid?: boolean;
+  autoFocus?: boolean;
+}) {
   const validLength = PasswordSchema.safeParse(value).success;
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-semibold text-foreground">{label}</span>
-      <span className={`flex h-12 items-center rounded-md border bg-background/50 transition focus-within:ring-2 focus-within:ring-accent/25 ${error ? "border-destructive" : "border-input focus-within:border-accent"}`}>
+      <span
+        className={`flex h-12 items-center rounded-md border bg-background/50 transition focus-within:ring-2 focus-within:ring-accent/25 ${error ? "border-destructive" : "border-input focus-within:border-accent"}`}
+      >
         <KeyRound className="ml-3 h-4 w-4 shrink-0 text-accent" />
         <input
           type={visible ? "text" : "password"}
@@ -573,25 +705,50 @@ function PasswordField({ label, value, onChange, visible, onToggle, error, autoC
           aria-invalid={Boolean(error)}
           className="min-w-0 flex-1 bg-transparent px-3 text-base text-foreground outline-none placeholder:text-muted-foreground/60"
         />
-        <Button type="button" variant="ghost" size="icon" onClick={onToggle} className="mr-1 h-10 w-10 text-muted-foreground" aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onToggle}
+          className="mr-1 h-10 w-10 text-muted-foreground"
+          aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+        >
           {visible ? <EyeOff /> : <Eye />}
         </Button>
       </span>
       {showIndicator && value.length > 0 && (
-        <p className={`mt-2 flex items-center gap-1.5 text-xs ${validLength ? "text-success" : "text-muted-foreground"}`}>
-          {validLength ? <CheckCircle2 className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+        <p
+          className={`mt-2 flex items-center gap-1.5 text-xs ${validLength ? "text-success" : "text-muted-foreground"}`}
+        >
+          {validLength ? (
+            <CheckCircle2 className="h-3.5 w-3.5" />
+          ) : (
+            <ShieldCheck className="h-3.5 w-3.5" />
+          )}
           {validLength ? "Mot de passe valide" : "Au moins 8 caractères"}
         </p>
       )}
       {valid && !error && (
-        <p className="mt-2 flex items-center gap-1.5 text-xs text-success"><Check className="h-3.5 w-3.5" /> Les mots de passe correspondent</p>
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-success">
+          <Check className="h-3.5 w-3.5" /> Les mots de passe correspondent
+        </p>
       )}
       {error && <FieldError>{error}</FieldError>}
     </label>
   );
 }
 
-function PrimaryButton({ busy, idleLabel, busyLabel, disabled = false }: { busy: boolean; idleLabel: string; busyLabel: string; disabled?: boolean }) {
+function PrimaryButton({
+  busy,
+  idleLabel,
+  busyLabel,
+  disabled = false,
+}: {
+  busy: boolean;
+  idleLabel: string;
+  busyLabel: string;
+  disabled?: boolean;
+}) {
   return (
     <Button type="submit" size="lg" disabled={busy || disabled} className="h-12 w-full font-bold">
       {busy ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
@@ -601,13 +758,32 @@ function PrimaryButton({ busy, idleLabel, busyLabel, disabled = false }: { busy:
 }
 
 function FieldError({ children }: { children: ReactNode }) {
-  return <p className="mt-2 flex items-start gap-1.5 text-xs text-destructive"><AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />{children}</p>;
+  return (
+    <p className="mt-2 flex items-start gap-1.5 text-xs text-destructive">
+      <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      {children}
+    </p>
+  );
 }
 
-function Notice({ children, variant }: { children: ReactNode; variant: "error" | "success" | "demo" }) {
-  const styles = variant === "error" ? "border-destructive/40 bg-destructive/10 text-destructive-foreground" : variant === "demo" ? "border-warning/50 bg-warning/10 text-foreground" : "border-success/40 bg-success/10 text-foreground";
+function Notice({
+  children,
+  variant,
+}: {
+  children: ReactNode;
+  variant: "error" | "success" | "demo";
+}) {
+  const styles =
+    variant === "error"
+      ? "border-destructive/40 bg-destructive/10 text-destructive-foreground"
+      : variant === "demo"
+        ? "border-warning/50 bg-warning/10 text-foreground"
+        : "border-success/40 bg-success/10 text-foreground";
   return (
-    <div role={variant === "error" ? "alert" : "status"} className={`rounded-md border p-3 text-sm leading-5 ${styles}`}>
+    <div
+      role={variant === "error" ? "alert" : "status"}
+      className={`rounded-md border p-3 text-sm leading-5 ${styles}`}
+    >
       {children}
     </div>
   );
