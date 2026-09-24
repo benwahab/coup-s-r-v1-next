@@ -3,7 +3,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { beginPayment as beginPaymentServer, checkPaymentDuplicate } from "./payment.functions";
-import { updateMyPaymentStatus } from "./admin.functions";
 import type { Ticket } from "./tickets";
 
 const WINDOW_MS = 30_000; // fenêtre anti-doublon : 30s
@@ -59,25 +58,13 @@ export async function beginPayment(input: {
       gameId: input.gameId as "pmu" | "loto" | "foot",
       phone: input.phone,
       amount: input.amount,
-      method: input.method ?? "mock",
+      method: input.method ?? "airtel",
     },
   });
   if (res.duplicate) {
     throw new Error("duplicate_payment:" + res.intent.txRef);
   }
   return res.intent;
-}
-
-/** Marque l'intention comme confirmée (ticket émis). */
-export async function confirmPayment(txRef: string) {
-  // The payment-to-ticket link is created atomically by the server-side
-  // ticket creation RPC. The client never supplies a ticket id here.
-  await updateMyPaymentStatus({ data: { reference: txRef, status: "confirmed" } });
-}
-
-/** Marque l'intention comme échouée (annule le blocage anti-doublon). */
-export async function failPayment(txRef: string) {
-  await updateMyPaymentStatus({ data: { reference: txRef, status: "failed" } });
 }
 
 /** Liste des intentions de paiement du joueur courant. */

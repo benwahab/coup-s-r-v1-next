@@ -35,7 +35,7 @@ interface Ctx extends AuthState {
   sessionRemainingMs: () => number;
   touchSession: () => void;
   logout: (reason?: "user" | "expired") => void;
-  requestOtp: (phone: string) => Promise<{ ok: true; code: string } | { ok: false; rate: RateCheck }>; // returns mock code
+  requestOtp: (phone: string) => Promise<{ ok: true } | { ok: false; rate: RateCheck; reason?: "rate-limited" | "provider-unavailable" }>;
   verifyOtp: (phone: string, code: string, accountPhone: string | null) => Promise<{
     ok: boolean;
     reason?: "wrong-phone" | "wrong-code" | "locked" | "permanent" | "rate-limited";
@@ -77,7 +77,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true;
     // Garde-fou : ne jamais laisser l'écran vide si la vérification ne répond pas.
     const fallback = setTimeout(() => { if (mounted) setAuthChecked(true); }, 1000);
-    supabase.auth.getUser()
+    let initialUserRequest: ReturnType<typeof supabase.auth.getUser>;
+    try {
+      initialUserRequest = supabase.auth.getUser();
+    } catch (err) {
+      console.error("[auth] getUser initialization failed", err);
+      clearTimeout(fallback);
+      setAuthChecked(true);
+      return () => { mounted = false; };
+    }
+    initialUserRequest
       .then(({ data }) => {
         if (!mounted) return;
         const u = data.user;
@@ -143,7 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logAuthEvent("rate-limited", phone, `server blocked (${res.reason})`);
       return { ok: false as const, rate: { ok: false, reason: "phone" as const, retryInMs: 15 * 60 * 1000 } as RateCheck };
     }
-    return { ok: true as const, code: res.code };
+    return { ok: true as const };
   }, []);
 
   const verifyOtp: Ctx["verifyOtp"] = useCallback(async (phone, code, accountPhone) => {

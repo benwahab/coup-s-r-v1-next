@@ -53,7 +53,6 @@ function AuthPage() {
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [autoRead, setAutoRead] = useState<"idle" | "listening" | "ok" | "unavailable">("idle");
-  const [demoCode, setDemoCode] = useState<string | null>(null);
   const [resendIn, setResendIn] = useState(0);
   const [noAccountOpen, setNoAccountOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -114,6 +113,12 @@ function AuthPage() {
     try {
       const res = await requestOtp(phone);
       if (!res.ok) {
+        if (res.reason === "provider-unavailable") {
+          const msg = "La première connexion par SMS est temporairement indisponible. Réessayez plus tard.";
+          setError(msg);
+          toast.error(msg);
+          return;
+        }
         const mins = Math.ceil((res.rate.retryInMs ?? 60_000) / 60_000);
         const msg = res.rate.reason === "phone"
           ? t("account.rateLimitPhone", { mins })
@@ -122,7 +127,6 @@ function AuthPage() {
         toast.error(msg);
         return;
       }
-      setDemoCode(res.code);
       setStep("otp");
       setInfo(t("account.codeSentTo") + " " + phone);
       setResendIn(60);
@@ -388,12 +392,6 @@ function AuthPage() {
                         ))}
                       </div>
                     </div>
-
-                    {demoCode && (
-                      <div className="rounded-xl border border-dashed border-white/15 bg-white/5 px-3 py-2 text-center text-[11px] text-white/60">
-                        {t("account.demoMode")} <span className="font-bold tabular-nums text-white">{demoCode}</span>
-                      </div>
-                    )}
 
                     {error && <Alert variant="error">{error}</Alert>}
                     {info && !error && <Alert variant="success">{info}</Alert>}
