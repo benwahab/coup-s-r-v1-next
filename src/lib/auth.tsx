@@ -75,15 +75,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState(load());
     // Session initiale + abonnement aux changements d'auth Supabase.
     let mounted = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!mounted) return;
-      const u = data.user;
-      if (u && u.phone) {
-        const startedAt = u.last_sign_in_at ? new Date(u.last_sign_in_at).getTime() : Date.now();
-        setSession({ phone: stripPrefix(u.phone), startedAt, lastActivity: Date.now(), userId: u.id, passwordSetupRequired: u.app_metadata?.password_setup_required === true });
-      }
-      setAuthChecked(true);
-    });
+    // Garde-fou : ne jamais laisser l'écran vide si la vérification ne répond pas.
+    const fallback = setTimeout(() => { if (mounted) setAuthChecked(true); }, 4000);
+    supabase.auth.getUser()
+      .then(({ data }) => {
+        if (!mounted) return;
+        const u = data.user;
+        if (u && u.phone) {
+          const startedAt = u.last_sign_in_at ? new Date(u.last_sign_in_at).getTime() : Date.now();
+          setSession({ phone: stripPrefix(u.phone), startedAt, lastActivity: Date.now(), userId: u.id, passwordSetupRequired: u.app_metadata?.password_setup_required === true });
+        }
+      })
+      .catch((err) => { console.error("[auth] getUser failed", err); })
+      .finally(() => { clearTimeout(fallback); if (mounted) setAuthChecked(true); });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
       if (!sess?.user) { setSession(null); return; }
       const u = sess.user;
