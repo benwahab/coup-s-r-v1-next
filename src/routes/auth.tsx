@@ -90,7 +90,10 @@ function AuthPage() {
     const ac = new AbortController();
     abortRef.current = ac;
     const otpCredentials = navigator.credentials as CredentialsContainer & {
-      get(options: { otp: { transport: ["sms"] }; signal: AbortSignal }): Promise<Credential | null>;
+      get(options: {
+        otp: { transport: ["sms"] };
+        signal: AbortSignal;
+      }): Promise<Credential | null>;
     };
     otpCredentials
       .get({ otp: { transport: ["sms"] }, signal: ac.signal })
