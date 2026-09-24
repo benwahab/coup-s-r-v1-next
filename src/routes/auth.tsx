@@ -307,6 +307,9 @@ function AuthPage() {
     if (passwordError) nextErrors.password = passwordError;
     if (password !== confirmation)
       nextErrors.confirmation = "Les mots de passe ne correspondent pas.";
+    if (firstName.trim().length < 2) nextErrors.firstName = "Saisissez votre prénom.";
+    if (lastName.trim().length < 2) nextErrors.lastName = "Saisissez votre nom.";
+    if (!region) nextErrors.region = "Choisissez votre région.";
     if (!termsAccepted)
       nextErrors.terms = "Vous devez accepter les conditions et la politique de confidentialité.";
     setErrors(nextErrors);
