@@ -124,7 +124,6 @@ function AuthPage() {
       return;
     }
 
-
     setSending(true);
     try {
       const res = await requestOtp(phone);
@@ -379,8 +378,8 @@ function AuthPage() {
                 Créer un compte / mot de passe oublié
               </button>
               <p className="text-[11px] text-white/60 text-center">
-                Saisissez votre numéro (+227) : un code SMS valable 5 minutes vous sera envoyé,
-                puis vous choisirez et confirmerez votre mot de passe.
+                Saisissez votre numéro (+227) : un code SMS valable 5 minutes vous sera envoyé, puis
+                vous choisirez et confirmerez votre mot de passe.
               </p>
             </>
           )}

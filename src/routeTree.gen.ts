@@ -9,75 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as ResultatsRouteImport } from './routes/resultats'
-import { Route as PronosticsRouteImport } from './routes/pronostics'
-import { Route as PmuRouteImport } from './routes/pmu'
-import { Route as PariFootRouteImport } from './routes/pari-foot'
-import { Route as MesTicketsRouteImport } from './routes/mes-tickets'
-import { Route as LotoBalsaRouteImport } from './routes/loto-balsa'
-import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
-import { Route as ConditionsRouteImport } from './routes/conditions'
-import { Route as CompteRouteImport } from './routes/compte'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as VerifyTokenRouteImport } from './routes/verify.$token'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CompteRouteImport } from './routes/compte'
+import { Route as ConditionsRouteImport } from './routes/conditions'
+import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
+import { Route as LotoBalsaRouteImport } from './routes/loto-balsa'
+import { Route as MesTicketsRouteImport } from './routes/mes-tickets'
+import { Route as PariFootRouteImport } from './routes/pari-foot'
+import { Route as PmuRouteImport } from './routes/pmu'
+import { Route as PronosticsRouteImport } from './routes/pronostics'
+import { Route as ResultatsRouteImport } from './routes/resultats'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TicketIdRouteImport } from './routes/ticket.$id'
+import { Route as VerifyTokenRouteImport } from './routes/verify.$token'
 
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResultatsRoute = ResultatsRouteImport.update({
-  id: '/resultats',
-  path: '/resultats',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PronosticsRoute = PronosticsRouteImport.update({
-  id: '/pronostics',
-  path: '/pronostics',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PmuRoute = PmuRouteImport.update({
-  id: '/pmu',
-  path: '/pmu',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PariFootRoute = PariFootRouteImport.update({
-  id: '/pari-foot',
-  path: '/pari-foot',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MesTicketsRoute = MesTicketsRouteImport.update({
-  id: '/mes-tickets',
-  path: '/mes-tickets',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LotoBalsaRoute = LotoBalsaRouteImport.update({
-  id: '/loto-balsa',
-  path: '/loto-balsa',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
-  id: '/confidentialite',
-  path: '/confidentialite',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConditionsRoute = ConditionsRouteImport.update({
-  id: '/conditions',
-  path: '/conditions',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CompteRoute = CompteRouteImport.update({
-  id: '/compte',
-  path: '/compte',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -85,19 +35,69 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VerifyTokenRoute = VerifyTokenRouteImport.update({
-  id: '/verify/$token',
-  path: '/verify/$token',
+const CompteRoute = CompteRouteImport.update({
+  id: '/compte',
+  path: '/compte',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConditionsRoute = ConditionsRouteImport.update({
+  id: '/conditions',
+  path: '/conditions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
+  id: '/confidentialite',
+  path: '/confidentialite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LotoBalsaRoute = LotoBalsaRouteImport.update({
+  id: '/loto-balsa',
+  path: '/loto-balsa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MesTicketsRoute = MesTicketsRouteImport.update({
+  id: '/mes-tickets',
+  path: '/mes-tickets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PariFootRoute = PariFootRouteImport.update({
+  id: '/pari-foot',
+  path: '/pari-foot',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PmuRoute = PmuRouteImport.update({
+  id: '/pmu',
+  path: '/pmu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PronosticsRoute = PronosticsRouteImport.update({
+  id: '/pronostics',
+  path: '/pronostics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResultatsRoute = ResultatsRouteImport.update({
+  id: '/resultats',
+  path: '/resultats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TicketIdRoute = TicketIdRouteImport.update({
   id: '/ticket/$id',
   path: '/ticket/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyTokenRoute = VerifyTokenRouteImport.update({
+  id: '/verify/$token',
+  path: '/verify/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -227,81 +227,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/resultats': {
-      id: '/resultats'
-      path: '/resultats'
-      fullPath: '/resultats'
-      preLoaderRoute: typeof ResultatsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pronostics': {
-      id: '/pronostics'
-      path: '/pronostics'
-      fullPath: '/pronostics'
-      preLoaderRoute: typeof PronosticsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pmu': {
-      id: '/pmu'
-      path: '/pmu'
-      fullPath: '/pmu'
-      preLoaderRoute: typeof PmuRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pari-foot': {
-      id: '/pari-foot'
-      path: '/pari-foot'
-      fullPath: '/pari-foot'
-      preLoaderRoute: typeof PariFootRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mes-tickets': {
-      id: '/mes-tickets'
-      path: '/mes-tickets'
-      fullPath: '/mes-tickets'
-      preLoaderRoute: typeof MesTicketsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/loto-balsa': {
-      id: '/loto-balsa'
-      path: '/loto-balsa'
-      fullPath: '/loto-balsa'
-      preLoaderRoute: typeof LotoBalsaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/confidentialite': {
-      id: '/confidentialite'
-      path: '/confidentialite'
-      fullPath: '/confidentialite'
-      preLoaderRoute: typeof ConfidentialiteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/conditions': {
-      id: '/conditions'
-      path: '/conditions'
-      fullPath: '/conditions'
-      preLoaderRoute: typeof ConditionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/compte': {
-      id: '/compte'
-      path: '/compte'
-      fullPath: '/compte'
-      preLoaderRoute: typeof CompteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -311,18 +241,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/verify/$token': {
-      id: '/verify/$token'
-      path: '/verify/$token'
-      fullPath: '/verify/$token'
-      preLoaderRoute: typeof VerifyTokenRouteImport
+    '/compte': {
+      id: '/compte'
+      path: '/compte'
+      fullPath: '/compte'
+      preLoaderRoute: typeof CompteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/conditions': {
+      id: '/conditions'
+      path: '/conditions'
+      fullPath: '/conditions'
+      preLoaderRoute: typeof ConditionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confidentialite': {
+      id: '/confidentialite'
+      path: '/confidentialite'
+      fullPath: '/confidentialite'
+      preLoaderRoute: typeof ConfidentialiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/loto-balsa': {
+      id: '/loto-balsa'
+      path: '/loto-balsa'
+      fullPath: '/loto-balsa'
+      preLoaderRoute: typeof LotoBalsaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mes-tickets': {
+      id: '/mes-tickets'
+      path: '/mes-tickets'
+      fullPath: '/mes-tickets'
+      preLoaderRoute: typeof MesTicketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pari-foot': {
+      id: '/pari-foot'
+      path: '/pari-foot'
+      fullPath: '/pari-foot'
+      preLoaderRoute: typeof PariFootRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pmu': {
+      id: '/pmu'
+      path: '/pmu'
+      fullPath: '/pmu'
+      preLoaderRoute: typeof PmuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pronostics': {
+      id: '/pronostics'
+      path: '/pronostics'
+      fullPath: '/pronostics'
+      preLoaderRoute: typeof PronosticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resultats': {
+      id: '/resultats'
+      path: '/resultats'
+      fullPath: '/resultats'
+      preLoaderRoute: typeof ResultatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ticket/$id': {
@@ -330,6 +323,13 @@ declare module '@tanstack/react-router' {
       path: '/ticket/$id'
       fullPath: '/ticket/$id'
       preLoaderRoute: typeof TicketIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/$token': {
+      id: '/verify/$token'
+      path: '/verify/$token'
+      fullPath: '/verify/$token'
+      preLoaderRoute: typeof VerifyTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
