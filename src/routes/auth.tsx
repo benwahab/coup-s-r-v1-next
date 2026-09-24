@@ -266,7 +266,11 @@ function AuthPage() {
       toast.success(successMessage);
       await navigate({ to: "/" });
     } catch {
-      setErrors({ password: "Impossible d’enregistrer le mot de passe. Réessayez." });
+      setErrors(
+        step === "otp"
+          ? { otp: "Impossible de finaliser le compte. Réessayez." }
+          : { password: "Impossible d’enregistrer le mot de passe. Réessayez." },
+      );
     }
   };
 
