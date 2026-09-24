@@ -24,9 +24,10 @@ const VerifyInput = z.object({
 export const sendOtp = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => PhoneInput.parse(data))
   .handler(async ({ data }) => {
-    if (!process.env["SMS_PROVIDER_URL"] || !process.env["SMS_PROVIDER_KEY"]) {
-      return { ok: false as const, reason: "provider-unavailable" as const };
-    }
+    // MODE DÉMO OTP : sans fournisseur SMS configuré, le code est renvoyé à
+    // l'écran (clairement signalé DÉMO) au lieu d'être envoyé par SMS.
+    // Il disparaît automatiquement dès que SMS_PROVIDER_URL/KEY sont définis.
+    const demoMode = !process.env["SMS_PROVIDER_URL"] || !process.env["SMS_PROVIDER_KEY"];
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { generateOtpCode, sha256Hex, toE164Phone } = await import("./otp.server");
     const phoneE164 = toE164Phone(data.phone);
@@ -53,7 +54,10 @@ export const sendOtp = createServerFn({ method: "POST" })
       .from("otp_codes")
       .insert({ phone: phoneE164, code_hash: codeHash, expires_at: expiresAt, attempts: 0 });
     if (error) throw new Error(`otp_insert_failed: ${error.message}`);
-    const smsResponse = await fetch(process.env["SMS_PROVIDER_URL"], {
+    if (demoMode) {
+      return { ok: true as const, ttlSec: Math.floor(OTP_TTL_MS / 1000), demoCode: code };
+    }
+    const smsResponse = await fetch(process.env["SMS_PROVIDER_URL"]!, {
       method: "POST",
       headers: {
         authorization: `Bearer ${process.env["SMS_PROVIDER_KEY"]}`,
@@ -72,7 +76,7 @@ export const sendOtp = createServerFn({ method: "POST" })
         .is("consumed_at", null);
       throw new Error("sms_delivery_failed");
     }
-    return { ok: true as const, ttlSec: Math.floor(OTP_TTL_MS / 1000) };
+    return { ok: true as const, ttlSec: Math.floor(OTP_TTL_MS / 1000), demoCode: null };
   });
 
 /** Vérifie l'OTP et établit une session Supabase temporaire pour le setup du mot de passe. */

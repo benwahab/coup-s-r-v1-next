@@ -124,25 +124,6 @@ function AuthPage() {
       return;
     }
 
-    // Aucun compte pour ce numéro sur CET appareil : avant de conclure qu'il
-    // n'existe pas du tout, on vérifie côté serveur (l'utilisateur peut avoir
-    // créé son compte sur un autre téléphone — le registre local ne le sait pas).
-    if (isPhoneAvailable(phone).ok) {
-      setSending(true);
-      let existsOnServer = false;
-      try {
-        const check = await checkPhoneAccount({ data: { phone } });
-        existsOnServer = check.exists;
-      } catch {
-        /* pas de réponse serveur : on retombe sur "aucun compte" */
-      }
-      setSending(false);
-      if (!existsOnServer) {
-        setNoAccountOpen(true);
-        return;
-      }
-    }
-
     setSending(true);
     try {
       const res = await requestOtp(phone);
@@ -164,7 +145,11 @@ function AuthPage() {
         return;
       }
       setStep("otp");
-      setInfo(t("account.codeSentTo") + " " + phone);
+      setInfo(
+        res.demoCode
+          ? `MODE DÉMO (aucun SMS envoyé) — votre code : ${res.demoCode}. Valable 5 minutes.`
+          : t("account.codeSentTo") + " " + phone,
+      );
       setResendIn(60);
     } catch (e) {
       const msg = e instanceof Error ? e.message : t("account.sendFailed");
@@ -393,8 +378,8 @@ function AuthPage() {
                 Créer un compte / mot de passe oublié
               </button>
               <p className="text-[11px] text-white/60 text-center">
-                Saisissez votre numéro (+227) : un code SMS valable 5 minutes vous sera envoyé,
-                puis vous choisirez et confirmerez votre mot de passe.
+                Saisissez votre numéro (+227) : un code SMS valable 5 minutes vous sera envoyé, puis
+                vous choisirez et confirmerez votre mot de passe.
               </p>
             </>
           )}
