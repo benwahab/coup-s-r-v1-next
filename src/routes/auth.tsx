@@ -372,7 +372,20 @@ function AuthPage() {
 
   const finishPasswordSetup = async (newPassword: string, successMessage: string) => {
     try {
-      await setUserPassword({ data: { password: newPassword } });
+      const set = await setUserPassword({ data: { password: newPassword } });
+      if (!set.ok) {
+        // Numéro déjà vérifié : on demande seulement un autre mot de passe.
+        clearPending();
+        setPassword("");
+        setConfirmation("");
+        setStep("new-password");
+        setStatus(null);
+        setErrors({
+          password:
+            "Ce mot de passe a déjà fuité lors d’un piratage sur un autre site et n’est pas sûr. Choisissez-en un autre.",
+        });
+        return;
+      }
       // Ouvre une session neuve avec le mot de passe définitif (la session
       // temporaire issue de l'OTP ne donne plus accès aux actions protégées).
       const login = await loginWithPassword({ data: { phone, password: newPassword } });
