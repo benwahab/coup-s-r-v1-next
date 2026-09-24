@@ -222,6 +222,14 @@ function AuthPage() {
       }
 
       setDemoCode(result.demoCode);
+      try {
+        sessionStorage.setItem(
+          PENDING_KEY,
+          JSON.stringify({ mode: intent, phone, demoCode: result.demoCode, sentAt: Date.now() }),
+        );
+      } catch {
+        /* stockage indisponible */
+      }
       setOtp("");
       setStep("otp");
       setResendIn(60);
@@ -315,7 +323,9 @@ function AuthPage() {
         return;
       }
 
-      if (mode === "signup") {
+      clearPending();
+      // Après un rechargement, le mot de passe (jamais stocké) doit être ressaisi.
+      if (mode === "signup" && password) {
         await finishPasswordSetup(password, "Votre compte est prêt.");
         return;
       }
@@ -340,6 +350,7 @@ function AuthPage() {
       const { supabase } = await import("@/integrations/supabase/client");
       const { error } = await supabase.auth.setSession(login.session);
       if (error) throw error;
+      clearPending();
       toast.success(successMessage);
       await navigate({ to: "/" });
     } catch {
@@ -381,6 +392,7 @@ function AuthPage() {
   };
 
   const goBack = () => {
+    clearPending();
     if (step === "form") {
       switchMode("login");
       return;
@@ -448,6 +460,25 @@ function AuthPage() {
             </h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">{subtitle}</p>
           </header>
+
+          {config.state === "checking" && (
+            <div role="status" className="mb-4 flex items-center gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Vérification du serveur…
+            </div>
+          )}
+          {config.state === "error" && (
+            <div role="alert" className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{config.message}</span>
+              </div>
+              <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => void checkConfig()}>
+                <RefreshCw /> Réessayer
+              </Button>
+            </div>
+          )}
+          <fieldset disabled={config.state !== "ready"} className="contents">
+
 
           {step === "form" && mode === "login" && (
             <form
