@@ -390,16 +390,11 @@ function AuthPage() {
                 className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-bold text-white/90 backdrop-blur transition hover:bg-white/10 disabled:opacity-60"
               >
                 <KeyRound className="h-4 w-4" />
-                Première connexion / mot de passe oublié
+                Créer un compte / mot de passe oublié
               </button>
               <p className="text-[11px] text-white/60 text-center">
-                {t("account.noAccount")}{" "}
-                <a
-                  href="/compte"
-                  className="font-bold text-[#00C896] underline-offset-2 hover:underline"
-                >
-                  {t("createAccount")}
-                </a>
+                Saisissez votre numéro (+227) : un code SMS valable 5 minutes vous sera envoyé,
+                puis vous choisirez et confirmerez votre mot de passe.
               </p>
             </>
           )}
