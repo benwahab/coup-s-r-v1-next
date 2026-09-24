@@ -260,8 +260,12 @@ function AuthPage() {
   const finishPasswordSetup = async (newPassword: string, successMessage: string) => {
     try {
       await setUserPassword({ data: { password: newPassword } });
+      // Ouvre une session neuve avec le mot de passe définitif (la session
+      // temporaire issue de l'OTP ne donne plus accès aux actions protégées).
+      const login = await loginWithPassword({ data: { phone, password: newPassword } });
+      if (!login.ok) throw new Error("login_after_setup_failed");
       const { supabase } = await import("@/integrations/supabase/client");
-      const { error } = await supabase.auth.refreshSession();
+      const { error } = await supabase.auth.setSession(login.session);
       if (error) throw error;
       toast.success(successMessage);
       await navigate({ to: "/" });
