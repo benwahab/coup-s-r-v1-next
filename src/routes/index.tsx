@@ -298,7 +298,7 @@ function Index() {
 
           {/* Jackpot principal — PMU */}
           <div className="mt-6 grid gap-3 lg:grid-cols-3 items-stretch">
-            <div className="rounded-3xl border border-gold/40 bg-gradient-to-br from-gold/15 via-white/[0.03] to-transparent p-5 shadow-gold backdrop-blur">
+            <div className="rounded-3xl border border-gold/30 bg-gradient-to-br from-gold/10 via-white/[0.03] to-transparent p-5 backdrop-blur">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-gold/90">
                   {t("jackpot")} — {t("dailyQuinte")}
@@ -334,7 +334,7 @@ function Index() {
                 ))}
               </div>
 
-              <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3">
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-white/60 min-h-4">
                   {pmuEvt
                     ? pmuEvt.stage === "openAt"
