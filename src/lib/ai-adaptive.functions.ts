@@ -3,6 +3,7 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const MODEL_VERSION = "adaptive-v1";
 
@@ -28,7 +29,7 @@ async function storePrediction(gameId:string, referenceId:string, predictionDate
   return data;
 }
 
-export const generateAdaptivePmu = createServerFn({method:"POST"})
+export const generateAdaptivePmu = createServerFn({method:"POST"}).middleware([requireSupabaseAuth])
   .inputValidator((data:unknown)=>z.object({raceId:z.string().uuid()}).parse(data))
   .handler(async ({data})=>{
     const {data:race,error:re}=await supabaseAdmin.from("pmu_races").select("id,race_date,name,start_at,status").eq("id",data.raceId).maybeSingle();
@@ -70,7 +71,7 @@ export const generateAdaptivePmu = createServerFn({method:"POST"})
     return {prediction,modelVersion:MODEL_VERSION};
   });
 
-export const generateAdaptiveLoto = createServerFn({method:"POST"})
+export const generateAdaptiveLoto = createServerFn({method:"POST"}).middleware([requireSupabaseAuth])
   .inputValidator((data:unknown)=>z.object({drawDate:z.string().regex(/^\d{4}-\d{2}-\d{2}$/)}).parse(data))
   .handler(async ({data})=>{
     const {data:rows,error}=await supabaseAdmin.from("draw_results").select("draw_date,result").eq("game_id","loto").eq("status","published").lte("draw_date",data.drawDate).order("draw_date",{ascending:false}).limit(100);
@@ -86,7 +87,7 @@ export const generateAdaptiveLoto = createServerFn({method:"POST"})
     return {prediction,modelVersion:MODEL_VERSION};
   });
 
-export const generateAdaptiveFoot = createServerFn({method:"POST"})
+export const generateAdaptiveFoot = createServerFn({method:"POST"}).middleware([requireSupabaseAuth])
   .inputValidator((data:unknown)=>z.object({fixtureId:z.string().uuid()}).parse(data))
   .handler(async ({data})=>{
     const {data:f,error:fe}=await supabaseAdmin.from("foot_fixtures").select("id,league_name,kickoff_at,home_team,away_team,odds_home,odds_draw,odds_away,status,home_score,away_score").eq("id",data.fixtureId).maybeSingle();
