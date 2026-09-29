@@ -292,12 +292,12 @@ function Index() {
 
           {/* Jackpot principal — PMU */}
           <div className="mt-6 grid gap-3 lg:grid-cols-3 items-stretch">
-            <div className="rounded-3xl border border-gold/30 bg-gradient-to-br from-gold/10 via-white/[0.03] to-transparent p-5 backdrop-blur">
+            <div className="rounded-3xl border border-teal-400/30 bg-gradient-to-br from-teal-400/10 via-white/[0.03] to-transparent p-5 backdrop-blur">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-gold/90">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-teal-300">
                   {t("jackpot")} — {t("dailyQuinte")}
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gold">
+                <span className="inline-flex items-center gap-1 rounded-full bg-teal-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-200">
                   <CalendarDays className="h-3 w-3" /> {todayLabel}
                 </span>
               </div>
@@ -379,7 +379,7 @@ function Index() {
               </div>
 
               {/* Nom du tirage du jour */}
-              <div className="mt-1 font-display text-lg font-extrabold text-gold leading-tight">
+              <div className="mt-1 font-display text-lg font-extrabold text-teal-200 leading-tight">
                 {lotoDrawName}
               </div>
 
@@ -397,7 +397,7 @@ function Index() {
                   <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/60">
                     <Trophy className="h-3 w-3" /> {t("totalPaidToday")}
                   </div>
-                  <div className="mt-0.5 font-display text-xl font-extrabold tabular-nums text-gold">
+                  <div className="mt-0.5 font-display text-xl font-extrabold tabular-nums text-teal-200">
                     {todayPaid === null ? "—" : formatFcfa(todayPaid)}{" "}
                     <span className="text-[10px] font-semibold text-white/70">{t("fcfa")}</span>
                   </div>
