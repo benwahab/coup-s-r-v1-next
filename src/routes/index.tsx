@@ -18,12 +18,7 @@ import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { formatFcfa, formatHour } from "@/lib/utils";
 import { nextDailyEvent, diffParts, drawNameForDate, nigerDateLabel } from "@/lib/schedule";
-import heroJpg from "@/assets/hero-winners.jpg";
-// Variantes optimisées (vite-imagetools) — WebP couvre ~97 % du parc, AVIF ~90 %.
-// image-set() ci-dessous laisse le navigateur choisir le format le plus léger,
-// le JPG restant en fallback.
-import heroWebp from "@/assets/hero-winners.jpg?format=webp&w=1600&quality=72&url";
-import heroAvif from "@/assets/hero-winners.jpg?format=avif&w=1600&quality=55&url";
+import heroBackground from "@/assets/coup-sur-home-background.webp";
 import ogImage from "@/assets/og-coup-sur.png.asset.json";
 import { SITE_ORIGIN, absoluteOgUrl } from "@/lib/og";
 
@@ -54,7 +49,7 @@ export const Route = createFileRoute("/")({
     links: [
       { rel: "canonical", href: SITE_ORIGIN },
       // Précharge le hero (LCP de la home) au format WebP — variante réellement utilisée par la majorité des navigateurs.
-      { rel: "preload", as: "image", href: heroWebp, type: "image/webp", fetchPriority: "high" },
+      { rel: "preload", as: "image", href: heroBackground, type: "image/webp", fetchPriority: "high" },
     ],
   }),
   component: Index,
@@ -259,9 +254,8 @@ function Index() {
         <div
           className="absolute inset-0 bg-cover bg-center opacity-30 sm:opacity-40"
           style={{
-            // image-set() : le navigateur choisit AVIF > WebP > JPG selon le support.
-            backgroundImage: `image-set(url(${heroAvif}) type("image/avif"), url(${heroWebp}) type("image/webp"), url(${heroJpg}) type("image/jpeg"))`,
-            backgroundPosition: "right center",
+            backgroundImage: `url(${heroBackground})`,
+            backgroundPosition: "center center",
           }}
           aria-hidden
         />
