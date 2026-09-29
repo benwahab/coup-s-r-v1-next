@@ -15,6 +15,7 @@ const AdminPermission = z.enum([
   "player_stats",
   "region_stats",
   "security_logs",
+  "supervision",
   "operations",
 ]);
 export type AdminPermission = z.infer<typeof AdminPermission>;
@@ -460,6 +461,171 @@ export const adminRevokeRole = createServerFn({ method: "POST" })
       detail: { targetUserId: data.userId, role: "admin" },
     });
     return { ok: true as const };
+  });
+
+
+export interface MonitoringSnapshot {
+  windowMinutes: number;
+  totalEvents: number;
+  errorRate: number;
+  timeoutRate: number;
+  avgLatencyMs: number;
+  p95LatencyMs: number;
+  services: { service: string; events: number; errors: number; avgLatencyMs: number }[];
+  recentEvents: {
+    id: string;
+    createdAt: string;
+    source: string;
+    level: string;
+    service: string;
+    endpoint: string | null;
+    method: string | null;
+    status: number | null;
+    durationMs: number | null;
+    traceId: string;
+    environment: string;
+    message: string | null;
+  }[];
+  incidents: {
+    id: string;
+    createdAt: string;
+    startedAt: string;
+    service: string;
+    metric: string;
+    severity: string;
+    status: string;
+    title: string;
+    detail: unknown;
+  }[];
+  alertRules: { id: string; metric: string; threshold: number; enabled: boolean }[];
+  dbStats: Record<string, unknown>;
+}
+
+export const adminGetMonitoringSnapshot = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .handler(async ({ context }) => {
+    await assertAdminPermission(context.supabase as SB, context.userId, "supervision");
+    const since = new Date(Date.now() - 60 * 60_000).toISOString();
+    const [{ data: events, error: eventsError }, { data: rules, error: rulesError }, { data: incidents, error: incidentsError }] =
+      await Promise.all([
+        context.supabase
+          .from("monitoring_events")
+          .select("id,created_at,source,level,service,endpoint,method,status,duration_ms,trace_id,environment,message")
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .limit(1000),
+        context.supabase
+          .from("monitoring_alert_rules")
+          .select("id,metric,threshold,enabled")
+          .order("metric", { ascending: true }),
+        context.supabase
+          .from("monitoring_incidents")
+          .select("id,created_at,started_at,service,metric,severity,status,title,detail")
+          .in("status", ["open", "acknowledged"])
+          .order("created_at", { ascending: false })
+          .limit(100),
+      ]);
+    if (eventsError) throw new Error("monitoring_events_failed");
+    if (rulesError) throw new Error("monitoring_rules_failed");
+    if (incidentsError) throw new Error("monitoring_incidents_failed");
+
+    const rows = events ?? [];
+    const errors = rows.filter((e) => (e.status ?? 200) >= 500 || e.level === "ERROR" || e.level === "CRITICAL");
+    const timeouts = rows.filter((e) => e.status === 408 || e.status === 504 || /timeout|timed out|délai/i.test(e.message ?? ""));
+    const latencies = rows.map((e) => e.duration_ms).filter((v): v is number => typeof v === "number" && Number.isFinite(v)).sort((a,b) => a-b);
+    const p95 = latencies.length ? latencies[Math.min(latencies.length - 1, Math.ceil(latencies.length * 0.95) - 1)] : 0;
+    const serviceMap = new Map<string, { events: number; errors: number; totalMs: number; latencyCount: number }>();
+    for (const e of rows) {
+      const item = serviceMap.get(e.service) ?? { events: 0, errors: 0, totalMs: 0, latencyCount: 0 };
+      item.events += 1;
+      if ((e.status ?? 200) >= 500 || e.level === "ERROR" || e.level === "CRITICAL") item.errors += 1;
+      if (typeof e.duration_ms === "number") { item.totalMs += e.duration_ms; item.latencyCount += 1; }
+      serviceMap.set(e.service, item);
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: dbStats } = await supabaseAdmin.rpc("monitoring_db_stats");
+    return {
+      windowMinutes: 60,
+      totalEvents: rows.length,
+      errorRate: rows.length ? Number(((errors.length / rows.length) * 100).toFixed(2)) : 0,
+      timeoutRate: rows.length ? Number(((timeouts.length / rows.length) * 100).toFixed(2)) : 0,
+      avgLatencyMs: latencies.length ? Math.round(latencies.reduce((a,b) => a+b, 0) / latencies.length) : 0,
+      p95LatencyMs: Math.round(p95),
+      services: Array.from(serviceMap, ([service, v]) => ({
+        service,
+        events: v.events,
+        errors: v.errors,
+        avgLatencyMs: v.latencyCount ? Math.round(v.totalMs / v.latencyCount) : 0,
+      })).sort((a,b) => b.events - a.events),
+      recentEvents: rows.slice(0, 100).map((e) => ({
+        id: e.id, createdAt: e.created_at, source: e.source, level: e.level, service: e.service,
+        endpoint: e.endpoint, method: e.method, status: e.status, durationMs: e.duration_ms,
+        traceId: e.trace_id, environment: e.environment, message: e.message,
+      })),
+      incidents: (incidents ?? []).map((i) => ({
+        id: i.id, createdAt: i.created_at, startedAt: i.started_at, service: i.service,
+        metric: i.metric, severity: i.severity, status: i.status, title: i.title, detail: i.detail,
+      })),
+      alertRules: (rules ?? []).map((r) => ({ id: r.id, metric: r.metric, threshold: r.threshold, enabled: r.enabled })),
+      dbStats: (dbStats && typeof dbStats === "object" && !Array.isArray(dbStats)) ? dbStats as Record<string, unknown> : {},
+    } satisfies MonitoringSnapshot;
+  });
+
+export interface SecurityLogRow {
+  id: string;
+  createdAt: string;
+  action: string;
+  userId: string | null;
+  phone: string | null;
+  ip: string | null;
+  detail: unknown;
+}
+
+export const adminListSecurityLogs = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .inputValidator((data: unknown) =>
+    z.object({
+      days: z.number().int().min(1).max(30).default(7),
+      search: z.string().trim().max(100).default(""),
+      action: z.string().trim().max(100).default(""),
+      page: z.number().int().min(1).max(1000).default(1),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdminPermission(context.supabase as SB, context.userId, "security_logs");
+    const since = new Date(Date.now() - data.days * 86400_000).toISOString();
+    let query = context.supabase
+      .from("audit_logs")
+      .select("id,created_at,action,user_id,ip,detail")
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (data.action) query = query.ilike("action", "%" + data.action + "%");
+    if (data.search) {
+      const safe = data.search.replace(/[%_]/g, "");
+      query = query.or("action.ilike.%" + safe + "%,ip.ilike.%" + safe + "%");
+    }
+    const { data: rows, error } = await query.range((data.page - 1) * 50, data.page * 50 - 1);
+    if (error) throw new Error("security_logs_failed");
+    const userIds = Array.from(new Set((rows ?? []).map((r) => r.user_id).filter((id): id is string => !!id)));
+    const profiles = userIds.length
+      ? (await context.supabase.from("profiles").select("id,phone").in("id", userIds)).data ?? []
+      : [];
+    const phoneById = new Map(profiles.map((p) => [p.id, p.phone]));
+    const sanitized = (value: unknown): unknown => {
+      if (typeof value === "string") return value.replace(/(password|token|secret|otp|pin|apikey|api_key)[^,;}]*/gi, "$1=[masqué]").slice(0, 1000);
+      if (Array.isArray(value)) return value.slice(0, 20).map(sanitized);
+      if (value && typeof value === "object") return Object.fromEntries(Object.entries(value as Record<string, unknown>).slice(0, 30).map(([k,v]) => [k, sanitized(v)]));
+      return value;
+    };
+    const mapped = (rows ?? []).map((r) => ({
+      id: r.id, createdAt: r.created_at, action: r.action, userId: r.user_id,
+      phone: r.user_id ? phoneById.get(r.user_id) ?? null : null, ip: r.ip, detail: sanitized(r.detail),
+    }));
+    const filtered = data.search && /^\d{8}$/.test(data.search)
+      ? mapped.filter((r) => r.phone === data.search || r.userId === data.search)
+      : mapped;
+    return { logs: filtered, page: data.page, hasMore: (rows ?? []).length === 50 };
   });
 
 export type ReadinessStatus = "ok" | "warning" | "error";
