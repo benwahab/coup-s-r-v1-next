@@ -53,6 +53,11 @@ const PERMISSIONS: { id: AdminPermission; label: string; description: string }[]
     description: "Consulter les journaux de sécurité autorisés",
   },
   {
+    id: "supervision",
+    label: "Supervision technique",
+    description: "Consulter l'état technique, les métriques et les incidents",
+  },
+  {
     id: "operations",
     label: "Opérations",
     description: "Gérer les horaires et opérations autorisées",
