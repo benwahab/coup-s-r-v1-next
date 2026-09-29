@@ -297,7 +297,7 @@ function Index() {
           </p>
 
           {/* Jackpot principal — PMU */}
-          <div className="mt-6 grid gap-3 lg:grid-cols-3">
+          <div className="mt-6 grid gap-3 lg:grid-cols-3 items-stretch">
             <div className="rounded-3xl border border-gold/40 bg-gradient-to-br from-gold/15 via-white/[0.03] to-transparent p-5 shadow-gold backdrop-blur">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-gold/90">
@@ -471,8 +471,6 @@ function Index() {
                 {t("playNow")} <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-          </div>
-
           {/* Pari Foot — affiches importantes, classiques et meilleures cotes */}
           <div className="rounded-3xl border border-teal-400/30 bg-gradient-to-br from-teal-400/10 via-white/[0.03] to-transparent p-5 backdrop-blur">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -535,6 +533,8 @@ function Index() {
             >
               Voir les matchs <ArrowRight className="h-4 w-4" />
             </Link>
+          </div>
+
           </div>
 
           <div className="mt-6 grid grid-cols-3 gap-2 max-w-xl">
