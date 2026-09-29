@@ -668,18 +668,21 @@ export const superAdminGetProductionReadiness = createServerFn({ method: "POST" 
         auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
       });
       const email = `hibp-probe-${crypto.randomUUID()}@coup-sur.local`;
-      const { data, error } = await anon.auth.signUp({ email, password: "Password123!" });
+      // Mot de passe notoirement compromis mais suffisamment complexe pour que
+      // "weak_password" seul ne puisse pas être pris comme preuve HIBP.
+      const probePassword = "P@ssw0rd123!";
+      const { data, error } = await anon.auth.signUp({ email, password: probePassword });
       const reasons = (error as { reasons?: string[] } | null)?.reasons ?? [];
-      if (error && (error.code === "weak_password" || reasons.includes("pwned"))) {
-        hibp = reasons.includes("pwned") || /pwned|leaked|compromis/i.test(error.message)
-          ? { id: "hibp", label: "Mots de passe compromis", status: "ok", detail: "Protection active : les mots de passe piratés sont refusés." }
-          : { id: "hibp", label: "Mots de passe compromis", status: "warning", detail: "Des règles de mot de passe sont actives, mais la protection contre les mots de passe piratés n’a pas pu être confirmée." };
+      if (error && (reasons.includes("pwned") || /pwned|leaked|compromis/i.test(error.message))) {
+        hibp = { id: "hibp", label: "Mots de passe compromis", status: "ok", detail: "Protection active : un mot de passe compromis de sonde a été refusé." };
+      } else if (error && error.code === "weak_password") {
+        hibp = { id: "hibp", label: "Mots de passe compromis", status: "warning", detail: "Supabase a refusé la sonde comme mot de passe faible, sans preuve suffisante de détection HIBP." };
       } else if (!error && data.user) {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         await supabaseAdmin.from("user_roles").delete().eq("user_id", data.user.id);
         await supabaseAdmin.from("profiles").delete().eq("id", data.user.id);
         await supabaseAdmin.auth.admin.deleteUser(data.user.id);
-        hibp = { id: "hibp", label: "Mots de passe compromis", status: "error", detail: "Protection désactivée : un mot de passe piraté a été accepté. Activez « Prevent use of leaked passwords » dans Supabase (Authentication → Attack Protection)." };
+        hibp = { id: "hibp", label: "Mots de passe compromis", status: "error", detail: "Protection non confirmée : la sonde a été acceptée. Activez « Prevent use of leaked passwords » dans Supabase (Authentication → Attack Protection)." };
       } else {
         hibp = { id: "hibp", label: "Mots de passe compromis", status: "warning", detail: "Vérification impossible pour le moment. Réessayez plus tard." };
       }
