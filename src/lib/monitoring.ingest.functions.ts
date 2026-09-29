@@ -13,6 +13,7 @@ const ClientEvent = z.object({
   page: z.string().max(200).optional(),
   appVersion: z.string().max(50).optional(),
   device: z.string().max(50).optional(),
+  userAgent: z.string().max(500).optional(),
 });
 
 export const ingestClientEvents = createServerFn({ method: "POST" })
@@ -33,7 +34,7 @@ export const ingestClientEvents = createServerFn({ method: "POST" })
       duration_ms: Math.round(e.durationMs),
       spans: [{ name: "Navigateur", ms: Math.round(e.durationMs) }],
       page: sanitize(e.page, 200),
-      user_agent: typeof navigator === "undefined" ? null : null,
+      user_agent: sanitize(e.userAgent ?? null, 500),
       device: sanitize(e.device, 50),
       app_version: sanitize(e.appVersion, 50),
       message: sanitize(e.message ?? null),
