@@ -874,6 +874,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      monitoring_db_stats: { Args: never; Returns: Json }
       set_admin_permissions_atomic: {
         Args: {
           p_actor_user_id: string
