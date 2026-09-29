@@ -285,9 +285,7 @@ function Index() {
             </span>
           </h1>
           <p className="mt-4 max-w-xl text-base sm:text-lg text-white/75">
-            PMU et Loto Balsa suivent leur cycle quotidien ; le Pari Foot dépend des fixtures
-            réelles disponibles. Le paiement actuellement connecté est Airtel Money. Reçu QR
-            sécurisé.
+            PMU, Loto Balsa et Pari Foot : tentez votre chance, jouez en toute simplicité et gagnez depuis votre téléphone.
           </p>
 
           {/* Jackpot principal — PMU */}
