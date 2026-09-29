@@ -481,7 +481,7 @@ function AuthPage() {
           </Link>
         </div>
 
-        <div className="rounded-lg border border-border bg-card/95 p-5 shadow-elevated backdrop-blur sm:p-7">
+        <div className="rounded-2xl border border-white/10 bg-card/70 p-5 shadow-elevated backdrop-blur-xl sm:p-7">
           {(mode !== "login" || step !== "form") && (
             <Button
               type="button"
@@ -586,7 +586,7 @@ function AuthPage() {
                   value={region}
                   onChange={(event) => setRegion(event.target.value)}
                   aria-invalid={Boolean(errors.region)}
-                  className="h-12 w-full rounded-md border border-input bg-background px-3 text-base text-foreground outline-none focus:border-accent"
+                  className="h-12 w-full rounded-md border border-input/80 bg-background/35 px-3 text-base text-foreground outline-none transition-all duration-200 hover:border-accent/45 hover:bg-background/45 focus:border-accent focus:bg-background/50"
                 >
                   <option value="">Choisissez votre région</option>
                   {NIGER_REGIONS.map((r) => (
@@ -621,7 +621,7 @@ function AuthPage() {
                   type="checkbox"
                   checked={termsAccepted}
                   onChange={(event) => setTermsAccepted(event.target.checked)}
-                  className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-primary)]"
+                  className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-[var(--color-primary)] transition-transform duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
                 />
                 <span>
                   J’accepte les{" "}
@@ -724,7 +724,7 @@ function AuthPage() {
                         event.preventDefault();
                         updateOtp(0, pasted);
                       }}
-                      className="h-12 min-w-0 rounded-md border border-input bg-background/50 text-center font-display text-xl font-bold text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/25 disabled:opacity-50"
+                      className="h-12 min-w-0 rounded-md border border-input/80 bg-background/30 text-center font-display text-xl font-bold text-foreground outline-none transition-all duration-200 hover:border-accent/45 hover:bg-background/40 focus:border-accent focus:bg-background/45 focus:ring-2 focus:ring-accent/20 disabled:opacity-50"
                     />
                   ))}
                 </div>
@@ -829,7 +829,7 @@ function TextField({
         autoFocus={autoFocus}
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={Boolean(error)}
-        className="h-12 w-full rounded-md border border-input bg-background px-3 text-base text-foreground outline-none focus:border-accent"
+        className="h-12 w-full rounded-md border border-input/80 bg-background/35 px-3 text-base text-foreground outline-none transition-all duration-200 hover:border-accent/45 hover:bg-background/45 focus:border-accent focus:bg-background/50"
       />
       {error && <FieldError>{error}</FieldError>}
     </label>
@@ -851,7 +851,7 @@ function PhoneField({
     <label className="block">
       <span className="mb-2 block text-sm font-semibold text-foreground">Numéro de téléphone</span>
       <span
-        className={`flex h-12 items-center rounded-md border bg-background/50 transition focus-within:ring-2 focus-within:ring-accent/25 ${error ? "border-destructive" : "border-input focus-within:border-accent"}`}
+        className={`flex h-12 items-center rounded-md border bg-background/35 transition-all duration-200 hover:border-accent/45 hover:bg-background/45 focus-within:bg-background/50 focus-within:ring-2 focus-within:ring-accent/20 ${error ? "border-destructive" : "border-input/80 focus-within:border-accent"}`}
       >
         <span className="flex h-full items-center gap-2 border-r border-input px-3 font-semibold text-foreground">
           <Phone className="h-4 w-4 text-accent" /> +227
@@ -902,7 +902,7 @@ function PasswordField({
     <label className="block">
       <span className="mb-2 block text-sm font-semibold text-foreground">{label}</span>
       <span
-        className={`flex h-12 items-center rounded-md border bg-background/50 transition focus-within:ring-2 focus-within:ring-accent/25 ${error ? "border-destructive" : "border-input focus-within:border-accent"}`}
+        className={`flex h-12 items-center rounded-md border bg-background/35 transition-all duration-200 hover:border-accent/45 hover:bg-background/45 focus-within:bg-background/50 focus-within:ring-2 focus-within:ring-accent/20 ${error ? "border-destructive" : "border-input/80 focus-within:border-accent"}`}
       >
         <KeyRound className="ml-3 h-4 w-4 shrink-0 text-accent" />
         <input
@@ -962,7 +962,7 @@ function PrimaryButton({
   disabled?: boolean;
 }) {
   return (
-    <Button type="submit" size="lg" disabled={busy || disabled} className="h-12 w-full font-bold">
+    <Button type="submit" size="lg" disabled={busy || disabled} className="h-12 w-full font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0">
       {busy ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
       {busy ? busyLabel : idleLabel}
     </Button>
