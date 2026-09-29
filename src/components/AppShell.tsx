@@ -1,15 +1,8 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import {
-  Home,
-  Trophy,
-  Sparkles,
-  Ticket as TicketIcon,
-  ShieldCheck,
-  Globe2,
-  UserCircle2,
-  LogIn,
-  LogOut,
+  Home, Trophy, Sparkles, Ticket as TicketIcon, ShieldCheck, Globe2,
+  UserCircle2, LogIn, LogOut,
 } from "lucide-react";
 import { useI18n, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
@@ -31,14 +24,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const onCompte = pathname.startsWith("/compte");
   const onAdmin = pathname.startsWith("/admin");
   const showGlobalBackdrop = !onAuth && !onCompte;
-
-  // Les jeux, résultats et pages légales restent consultables sans connexion.
-  // Seuls les espaces contenant des données privées exigent une session.
   const navigate = useNavigate();
   const protectedRoute =
     onAdmin || pathname.startsWith("/mes-tickets") || pathname.startsWith("/ticket/");
   const blocked = authChecked && !authed && protectedRoute;
   const pending = !authChecked && protectedRoute;
+
   useEffect(() => {
     if (blocked) navigate({ to: "/auth", replace: true });
   }, [blocked, navigate]);
@@ -46,11 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (pending || blocked) {
     return (
       <div className="grid min-h-dvh place-items-center bg-background px-4">
-        <div
-          className="flex flex-col items-center gap-3 text-center"
-          role="status"
-          aria-live="polite"
-        >
+        <div className="flex flex-col items-center gap-3 text-center" role="status" aria-live="polite">
           <img src={logoCoupSur} alt="Coup Sûr" className="h-20 w-20 object-contain" />
           <div>
             <div className="font-display text-xl font-bold text-foreground">Coup Sûr</div>
@@ -84,68 +71,38 @@ export function AppShell({ children }: { children: ReactNode }) {
               <img src={logoCoupSur} alt="" className="h-8 w-8 object-contain" />
             </div>
             <div className="min-w-0">
-              <div className="font-display text-lg font-bold leading-none truncate">
-                {t("appName")}
-              </div>
-              <div className="text-[11px] uppercase tracking-widest text-muted-foreground truncate">
-                {t("tagline")}
-              </div>
+              <div className="font-display text-lg font-bold leading-none truncate">{t("appName")}</div>
+              <div className="text-[11px] uppercase tracking-widest text-muted-foreground truncate">{t("tagline")}</div>
             </div>
           </Link>
           <div className="flex items-center gap-1.5">
-            <span
-              title={t("shell.forbiddenMinors")}
-              className="hidden xs:inline-flex h-7 items-center justify-center rounded-full border border-red-500/60 bg-red-500/10 px-2 font-display text-[10px] font-black uppercase tracking-wider text-red-400 sm:inline-flex"
-            >
-              -18
-            </span>
+            <span title={t("shell.forbiddenMinors")} className="hidden xs:inline-flex h-7 items-center justify-center rounded-full border border-red-500/60 bg-red-500/10 px-2 font-display text-[10px] font-black uppercase tracking-wider text-red-400 sm:inline-flex">-18</span>
             {!authed && !onAuth && (
-              <Link
-                to="/auth"
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition shadow-soft",
-                  locked
-                    ? "bg-red-500 text-white hover:bg-red-600"
-                    : "bg-gold-gradient text-[var(--gold-foreground)] shadow-gold hover:brightness-110",
-                )}
-              >
+              <Link to="/auth" className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition shadow-soft",
+                locked ? "bg-red-500 text-white hover:bg-red-600" : "bg-gold-gradient text-[var(--gold-foreground)] shadow-gold hover:brightness-110",
+              )}>
                 <LogIn className="h-3.5 w-3.5" />
                 <span>{locked ? t("shell.locked") : t("shell.login")}</span>
               </Link>
             )}
             {authed && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    logout("user");
-                    void navigate({ to: "/auth", replace: true });
-                  }}
-                  aria-label={t("shell.logout")}
-                  title={session ? t("shell.connectedAs", { phone: session.phone }) : ""}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-300 transition hover:bg-red-500/20"
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                  <span className="hidden xs:inline sm:inline">{t("shell.logout")}</span>
-                </button>
-              </>
+              <button type="button" onClick={() => { logout("user"); void navigate({ to: "/auth", replace: true }); }}
+                aria-label={t("shell.logout")}
+                title={session ? t("shell.connectedAs", { phone: session.phone }) : ""}
+                className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-bold text-red-300 transition hover:bg-red-500/20">
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden xs:inline sm:inline">{t("shell.logout")}</span>
+              </button>
             )}
-            {!onCompte && (
-              <Link
-                to="/compte"
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition"
-              >
+            {!authed && !onCompte && (
+              <Link to="/compte" className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition">
                 <UserCircle2 className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">
-                  {account ? account.firstName : t("createAccount")}
-                </span>
+                <span className="hidden sm:inline">{account ? account.firstName : t("createAccount")}</span>
               </Link>
             )}
             {isAdmin && (
-              <Link
-                to="/admin"
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition"
-              >
+              <Link to="/admin" className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition">
                 <ShieldCheck className="h-3.5 w-3.5" /> {t("admin")}
               </Link>
             )}
@@ -153,12 +110,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-
       <main className={cn("flex-1", showGlobalBackdrop && "pb-24")}>{children}</main>
-
       {onAuth && <SiteFooter />}
-
-      {/* Mobile bottom nav — masquée sur /auth et /compte */}
       {showGlobalBackdrop && (
         <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-card/95 backdrop-blur shadow-elevated">
           <ul className="mx-auto grid max-w-6xl grid-cols-4">
@@ -166,15 +119,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               const active = it.exact ? pathname === it.to : pathname.startsWith(it.to);
               return (
                 <li key={it.to}>
-                  <Link
-                    to={it.to as "/"}
-                    className={cn(
-                      "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition",
-                      active ? "text-primary" : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <it.icon className={cn("h-5 w-5", active && "text-primary")} />
-                    {it.label}
+                  <Link to={it.to as "/"} className={cn(
+                    "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition",
+                    active ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                  )}>
+                    <it.icon className={cn("h-5 w-5", active && "text-primary")} />{it.label}
                   </Link>
                 </li>
               );
@@ -191,42 +140,22 @@ function LangSwitch({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void 
     <div className="inline-flex items-center rounded-full border border-border bg-card p-0.5 text-xs font-semibold">
       <Globe2 className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
       {(["fr", "en"] as const).map((l) => (
-        <button
-          key={l}
-          onClick={() => setLang(l)}
-          className={cn(
-            "ml-1 rounded-full px-2.5 py-1 uppercase transition",
-            lang === l ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground",
-          )}
-        >
-          {l}
-        </button>
+        <button key={l} onClick={() => setLang(l)} className={cn(
+          "ml-1 rounded-full px-2.5 py-1 uppercase transition",
+          lang === l ? "bg-primary text-primary-foreground shadow-soft" : "text-muted-foreground",
+        )}>{l}</button>
       ))}
     </div>
   );
 }
 
-export function PageHeader({
-  title,
-  subtitle,
-  icon,
-}: {
-  title: string;
-  subtitle?: string;
-  icon?: ReactNode;
-}) {
+export function PageHeader({ title, subtitle, icon }: { title: string; subtitle?: string; icon?: ReactNode }) {
   return (
     <div className="mx-auto max-w-6xl px-4 pt-6 pb-2">
       <div className="flex items-center gap-3">
-        {icon && (
-          <div className="grid h-11 w-11 place-items-center rounded-xl bg-gold-gradient text-[var(--gold-foreground)] shadow-gold">
-            {icon}
-          </div>
-        )}
+        {icon && <div className="grid h-11 w-11 place-items-center rounded-xl bg-gold-gradient text-[var(--gold-foreground)] shadow-gold">{icon}</div>}
         <div className="min-w-0">
-          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight truncate">
-            {title}
-          </h1>
+          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight truncate">{title}</h1>
           {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
         </div>
       </div>
