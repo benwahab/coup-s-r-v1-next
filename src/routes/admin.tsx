@@ -9,6 +9,8 @@ import {
   Circle,
   Send,
   Settings,
+  Activity,
+  FileSearch,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -40,6 +42,8 @@ import { OpsTab } from "@/components/admin/tabs/OpsTab";
 import { ProductionReadiness } from "@/components/admin/ProductionReadiness";
 import { ResultsTab } from "@/components/admin/tabs/ResultsTab";
 import { AdminsSection } from "@/components/admin/AdminsSection";
+import { MonitoringTab } from "@/components/admin/tabs/MonitoringTab";
+import { SecurityLogsTab } from "@/components/admin/tabs/SecurityLogsTab";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -58,7 +62,9 @@ type Tab =
   | "ops"
   | "results"
   | "claims"
-  | "admins";
+  | "admins"
+  | "supervision"
+  | "security_logs";
 
 function AdminPage() {
   const { t } = useI18n();
@@ -123,7 +129,11 @@ function AdminPage() {
               ? "results"
               : adminPermissions.includes("complaints")
                 ? "claims"
-                : "dashboard";
+                : adminPermissions.includes("supervision")
+                  ? "supervision"
+                  : adminPermissions.includes("security_logs")
+                    ? "security_logs"
+                    : "dashboard";
     setTab(first);
   }, [permissionsReady, adminPermissions, tab]);
 
@@ -499,6 +509,8 @@ function AdminPage() {
     { id: "results", label: "Résultats", icon: ListChecks },
     { id: "claims", label: "Réclamations", icon: ShieldCheck },
     { id: "admins", label: t("admin.ops.title"), icon: Settings },
+    { id: "supervision", label: "Supervision", icon: Activity },
+    { id: "security_logs", label: "Journaux sécurité", icon: FileSearch },
   ];
 
   const visibleNav =
@@ -520,6 +532,12 @@ function AdminPage() {
               return can("complaints");
             case "ops":
               return can("operations");
+            case "supervision":
+              return can("supervision");
+            case "security_logs":
+              return can("security_logs");
+            case "admins":
+              return false;
             default:
               return false;
           }
@@ -666,6 +684,15 @@ function AdminPage() {
               />
             )}
             {adminPermissions === "all" && tab === "admins" && <AdminsSection />}
+            {can("supervision") && tab === "supervision" && <MonitoringTab />}
+            {can("security_logs") && tab === "security_logs" && <SecurityLogsTab />}
+            {adminPermissions !== "all" && visibleNav.length === 0 && (
+              <section className="rounded-3xl border border-border bg-card p-8 text-center shadow-soft">
+                <ShieldCheck className="mx-auto h-10 w-10 text-muted-foreground" />
+                <h2 className="mt-3 font-display text-lg font-bold">Administration</h2>
+                <p className="mt-2 text-sm text-muted-foreground">Votre compte administrateur est actif, mais aucune permission ne vous a encore été attribuée.</p>
+              </section>
+            )}
             {can("complaints") && tab === "claims" && (
               <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
                 <h2 className="font-display text-lg font-bold">Réclamations</h2>
