@@ -4,6 +4,7 @@ import { requireConfiguredUser } from "@/lib/secure-user.functions";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { writeAuditLog } from "./audit.server";
 import { nigerParts, nigerInstant } from "@/lib/schedule";
+import { evaluatePublishedAiPredictions } from "./ai-adaptive.functions";
 
 const drawResultSchema = z.discriminatedUnion("gameId", [
   z.object({
@@ -448,6 +449,8 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
       .select("id,game_id,draw_date,status")
       .single();
     if (error) throw new Error(error.message);
+
+    await evaluatePublishedAiPredictions(result.game_id, result.id, result.result);
 
     await writeAuditLog(supabaseAdmin, {
       userId: context.userId,
