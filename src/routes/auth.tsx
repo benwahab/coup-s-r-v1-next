@@ -472,16 +472,18 @@ function AuthPage() {
             : "Connectez-vous à votre compte Coup Sûr.";
 
   return (
-    <main className="relative min-h-[calc(100dvh-64px)] overflow-hidden bg-hero px-4 py-6 sm:py-10">
-      <div className="pointer-events-none absolute inset-0 grid-bg opacity-30" aria-hidden />
-      <section className="relative mx-auto w-full max-w-md" aria-labelledby="auth-title">
+    <main className="relative min-h-[calc(100dvh-64px)] overflow-hidden px-4 py-6 sm:py-10">
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url("/coup-sur-auth-background.webp")' }} aria-hidden />
+      <div className="pointer-events-none absolute inset-0 bg-black/30" aria-hidden />
+      <div className="pointer-events-none absolute inset-0 grid-bg opacity-15" aria-hidden />
+      <section className="relative z-10 mx-auto w-full max-w-md" aria-labelledby="auth-title">
         <div className="mb-6 flex justify-center">
           <Link to="/" aria-label="Retour à l’accueil Coup Sûr">
             <img src={logoCoupSur} alt="Coup Sûr" className="h-16 w-16 object-contain" />
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-card/70 p-5 shadow-elevated backdrop-blur-xl sm:p-7">
+        <div className="rounded-2xl border border-white/20 bg-card/60 p-5 shadow-elevated backdrop-blur-2xl sm:p-7">
           {(mode !== "login" || step !== "form") && (
             <Button
               type="button"
