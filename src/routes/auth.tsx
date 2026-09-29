@@ -483,7 +483,7 @@ function AuthPage() {
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-white/20 bg-card/60 p-5 shadow-elevated backdrop-blur-2xl sm:p-7">
+        <div className="rounded-2xl border border-white/25 bg-card/45 p-5 shadow-elevated backdrop-blur-2xl ring-1 ring-white/5 sm:p-7">
           {(mode !== "login" || step !== "form") && (
             <Button
               type="button"
