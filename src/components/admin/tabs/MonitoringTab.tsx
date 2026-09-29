@@ -1,0 +1,88 @@
+import { useCallback, useEffect, useState } from "react";
+import { Activity, AlertTriangle, Database, RefreshCw, Server, Timer, XCircle } from "lucide-react";
+import { adminGetMonitoringSnapshot, type MonitoringSnapshot } from "@/lib/admin.functions";
+
+function pct(v: number) { return `${v.toFixed(2)}%`; }
+
+export function MonitoringTab() {
+  const [data, setData] = useState<MonitoringSnapshot | null>(null);
+  const [busy, setBusy] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    try { setData(await adminGetMonitoringSnapshot()); }
+    catch { setError("Impossible de charger la supervision technique."); }
+    finally { setBusy(false); }
+  }, []);
+
+  useEffect(() => {
+    void load();
+    const timer = window.setInterval(() => void load(), 60_000);
+    return () => window.clearInterval(timer);
+  }, [load]);
+
+  const healthy = data ? data.errorRate < 5 && data.timeoutRate < 3 && data.p95LatencyMs < 1000 && data.incidents.length === 0 : false;
+
+  return (
+    <section className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-display text-xl font-bold">Supervision technique</h2>
+          <p className="text-xs text-muted-foreground">Fenêtre glissante des 60 dernières minutes · actualisation automatique chaque minute</p>
+        </div>
+        <button onClick={() => void load()} disabled={busy} className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-2 text-xs font-semibold">
+          <RefreshCw className={busy ? "h-4 w-4 animate-spin" : "h-4 w-4"} /> Actualiser
+        </button>
+      </div>
+      {error && <p className="rounded-2xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
+      {data && (
+        <>
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center gap-2">
+              {healthy ? <Activity className="h-5 w-5 text-primary" /> : <AlertTriangle className="h-5 w-5 text-amber-500" />}
+              <span className="font-bold">{healthy ? "État global stable" : "Points d'attention détectés"}</span>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{data.totalEvents} événements observés sur la période.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              ["Taux d'erreur", pct(data.errorRate), XCircle],
+              ["Timeouts", pct(data.timeoutRate), Timer],
+              ["Latence moyenne", `${data.avgLatencyMs} ms`, Activity],
+              ["P95 latence", `${data.p95LatencyMs} ms`, Server],
+            ].map(([label, value, Icon]) => {
+              const I = Icon as typeof Activity;
+              return <div key={String(label)} className="rounded-2xl border border-border bg-card p-4"><I className="h-4 w-4 text-primary" /><div className="mt-2 text-xs text-muted-foreground">{label}</div><div className="text-xl font-bold">{value}</div></div>;
+            })}
+          </div>
+          <div className="grid gap-4 xl:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <h3 className="font-bold">Services observés</h3>
+              <div className="mt-3 space-y-2">{data.services.length ? data.services.map(s => <div key={s.service} className="flex items-center justify-between rounded-xl bg-secondary/30 px-3 py-2 text-xs"><span>{s.service}</span><span>{s.events} év. · {s.errors} err. · {s.avgLatencyMs} ms</span></div>) : <p className="text-xs text-muted-foreground">Aucun événement.</p>}</div>
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <h3 className="font-bold">Incidents ouverts</h3>
+              <div className="mt-3 space-y-2">{data.incidents.length ? data.incidents.map(i => <div key={i.id} className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs"><div className="font-semibold">{i.title}</div><div className="mt-1 text-muted-foreground">{i.service} · {i.metric} · {i.severity} · {i.status}</div></div>) : <p className="text-xs text-muted-foreground">Aucun incident ouvert.</p>}</div>
+            </div>
+          </div>
+          <div className="grid gap-4 xl:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <h3 className="font-bold">Seuils d'alerte</h3>
+              <div className="mt-3 space-y-2">{data.alertRules.map(r => <div key={r.id} className="flex justify-between rounded-xl bg-secondary/30 px-3 py-2 text-xs"><span>{r.metric}</span><span>{r.enabled ? r.threshold : "désactivé"}</span></div>)}</div>
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <div className="flex items-center gap-2"><Database className="h-4 w-4 text-primary" /><h3 className="font-bold">Base de données</h3></div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">{Object.entries(data.dbStats).map(([k,v]) => <div key={k} className="rounded-xl bg-secondary/30 p-2"><div className="text-muted-foreground">{k}</div><div className="font-semibold">{String(v)}</div></div>)}</div>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <h3 className="font-bold">Événements récents</h3>
+            <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b border-border text-muted-foreground"><th className="p-2">Heure</th><th className="p-2">Service</th><th className="p-2">Endpoint</th><th className="p-2">Statut</th><th className="p-2">Durée</th><th className="p-2">Trace</th></tr></thead><tbody>{data.recentEvents.slice(0,50).map(e => <tr key={e.id} className="border-b border-border/50"><td className="p-2 whitespace-nowrap">{new Date(e.createdAt).toLocaleString("fr-FR")}</td><td className="p-2">{e.service}</td><td className="p-2 max-w-[240px] truncate">{e.endpoint ?? "—"}</td><td className="p-2">{e.status ?? "—"} · {e.level}</td><td className="p-2">{e.durationMs ?? "—"} ms</td><td className="p-2 font-mono">{e.traceId}</td></tr>)}</tbody></table></div>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
