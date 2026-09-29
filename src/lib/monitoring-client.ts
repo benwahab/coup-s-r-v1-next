@@ -9,7 +9,7 @@ export interface ClientCall {
   message?: string;
 }
 
-type BufferedCall = ClientCall & { page: string; device: string; appVersion: string };
+type BufferedCall = ClientCall & { page: string; device: string; appVersion: string; userAgent: string };
 const buffer: BufferedCall[] = [];
 let flushTimer: number | null = null;
 let flushing = false;
@@ -40,6 +40,7 @@ export function recordClientCall(call: ClientCall): void {
     page: window.location.pathname.slice(0, 200),
     device: /Mobi|Android/i.test(navigator.userAgent) ? "mobile" : "desktop",
     appVersion: document.documentElement.dataset.appVersion ?? "v1",
+    userAgent: navigator.userAgent.slice(0, 500),
   });
   while (buffer.length > 50) buffer.shift();
   if (buffer.length >= 10) void flush();
