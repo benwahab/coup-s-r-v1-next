@@ -28,7 +28,7 @@ export const monitoringMiddleware = createMiddleware({ type: "function" })
     }
   })
   .server(async ({ next, context, serverFnMeta, method }) => {
-    if (isUntracked(serverFnMeta.name)) return next();
+    if (isUntracked(serverFnMeta.name)) return next({ context: { traceId: newTraceId() } });
     const rawTrace = (context as { traceId?: unknown }).traceId;
     const traceId =
       typeof rawTrace === "string" && /^trace_[0-9A-F]{8}$/.test(rawTrace) ? rawTrace : newTraceId();
