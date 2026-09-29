@@ -10,6 +10,7 @@ import {
   CalendarDays,
   Trophy,
   Users,
+  Goal,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
@@ -131,6 +132,16 @@ function Index() {
   const pmuEvt = pmuSchedule ? pmuEvtRaw : null;
   const [lastPmu, setLastPmu] = useState<{ date: string; horses: number[] } | null>(null);
   const [lastLoto, setLastLoto] = useState<{ date: string; numbers: number[] } | null>(null);
+  const [footHighlights, setFootHighlights] = useState<
+    Array<{
+      id: string;
+      league: string;
+      kickoffAt: string;
+      home: string;
+      away: string;
+      odds: { home: number; draw: number; away: number };
+    }>
+  >([]);
   useEffect(() => {
     const loadResults = async () => {
       const [{ data: pmuRows }, { data: lotoRows }] = await Promise.all([
@@ -172,6 +183,60 @@ function Index() {
     };
     void loadResults();
   }, []);
+  useEffect(() => {
+    const loadFootHighlights = async () => {
+      const now = new Date().toISOString();
+      const { data } = await supabase
+        .from("foot_fixtures")
+        .select("id,league_name,kickoff_at,home_team,away_team,odds_home,odds_draw,odds_away")
+        .eq("status", "scheduled")
+        .gte("kickoff_at", now)
+        .order("kickoff_at", { ascending: true })
+        .limit(100);
+
+      const rows = (data ?? [])
+        .filter(
+          (m) =>
+            m.odds_home != null &&
+            m.odds_draw != null &&
+            m.odds_away != null &&
+            Number(m.odds_home) > 0 &&
+            Number(m.odds_draw) > 0 &&
+            Number(m.odds_away) > 0,
+        )
+        .map((m) => ({
+          id: m.id,
+          league: m.league_name,
+          kickoffAt: m.kickoff_at,
+          home: m.home_team,
+          away: m.away_team,
+          odds: {
+            home: Number(m.odds_home),
+            draw: Number(m.odds_draw),
+            away: Number(m.odds_away),
+          },
+        }));
+
+      const majorCompetition = (league: string) =>
+        /champions|ligue des champions|premier league|la liga|laliga|serie a|bundesliga|ligue 1|europa|conference league|coupe du monde|world cup|can|afcon/i.test(
+          league,
+        );
+
+      const score = (m: (typeof rows)[number]) => {
+        const maxOdd = Math.max(m.odds.home, m.odds.draw, m.odds.away);
+        return (majorCompetition(m.league) ? 100 : 0) + maxOdd + (m.league ? 1 : 0);
+      };
+
+      const selected = [...rows]
+        .sort((a, b) => score(b) - score(a))
+        .slice(0, 3);
+
+      setFootHighlights(selected);
+    };
+
+    void loadFootHighlights();
+  }, []);
+
   const lotoEvtRaw = useLiveStage(
     lotoSchedule?.open_hour ?? 0,
     lotoSchedule?.close_hour ?? 0,
@@ -232,7 +297,7 @@ function Index() {
           </p>
 
           {/* Jackpot principal — PMU */}
-          <div className="mt-6 grid gap-3 lg:grid-cols-[1.4fr_1fr]">
+          <div className="mt-6 grid gap-3 lg:grid-cols-3">
             <div className="rounded-3xl border border-gold/40 bg-gradient-to-br from-gold/15 via-white/[0.03] to-transparent p-5 shadow-gold backdrop-blur">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-gold/90">
@@ -408,6 +473,70 @@ function Index() {
             </div>
           </div>
 
+          {/* Pari Foot — affiches importantes, classiques et meilleures cotes */}
+          <div className="rounded-3xl border border-teal-400/30 bg-gradient-to-br from-teal-400/10 via-white/[0.03] to-transparent p-5 backdrop-blur">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-teal-300">
+                <Goal className="h-3.5 w-3.5" /> Pari Foot
+              </span>
+              <span className="rounded-full bg-teal-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-200">
+                À venir
+              </span>
+            </div>
+
+            <div className="mt-3">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-white/55">
+                Grandes affiches
+              </div>
+              {footHighlights.length > 0 ? (
+                <div className="mt-2 space-y-2">
+                  {footHighlights.map((m) => {
+                    const maxOdd = Math.max(m.odds.home, m.odds.draw, m.odds.away);
+                    return (
+                      <div key={m.id} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
+                        <div className="flex items-center justify-between gap-2 text-[9px] text-white/55">
+                          <span className="truncate">{m.league}</span>
+                          <span className="shrink-0">
+                            {new Date(m.kickoffAt).toLocaleDateString("fr-FR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                            })}{" "}
+                            ·{" "}
+                            {new Date(m.kickoffAt).toLocaleTimeString("fr-FR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: false,
+                            })}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex items-center gap-2 text-[11px] font-bold">
+                          <span className="min-w-0 truncate">{m.home}</span>
+                          <span className="text-white/40">–</span>
+                          <span className="min-w-0 truncate text-right">{m.away}</span>
+                        </div>
+                        <div className="mt-1 flex items-center justify-between text-[9px]">
+                          <span className="text-white/50">Meilleure cote</span>
+                          <span className="font-bold tabular-nums text-teal-200">×{maxOdd.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="mt-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-4 text-center text-[10px] text-white/55">
+                  Les prochaines affiches apparaîtront dès que les matchs réels seront disponibles.
+                </div>
+              )}
+            </div>
+
+            <Link
+              to="/pari-foot"
+              className="mt-4 inline-flex items-center gap-2 rounded-full bg-gold-gradient px-5 py-2.5 font-bold text-[var(--gold-foreground)] shadow-gold transition hover:brightness-110"
+            >
+              Voir les matchs <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+
           <div className="mt-6 grid grid-cols-3 gap-2 max-w-xl">
             {[
               { icon: Zap, label: "3 clics" },
@@ -423,68 +552,6 @@ function Index() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Games */}
-      <section id="jeux" className="mx-auto max-w-6xl px-4 py-10">
-        <h2 className="font-display text-2xl sm:text-3xl font-bold">{t("chooseGame")}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Sélectionnez un jeu pour commencer à parier.
-        </p>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            { id: "pmu" as const, name: "PMU", emoji: "🐎", color: "from-gold/80 to-gold/30" },
-            {
-              id: "loto" as const,
-              name: "Loto Balsa",
-              emoji: "🎱",
-              color: "from-primary/80 to-primary/30",
-            },
-            {
-              id: "foot" as const,
-              name: "Pari Foot",
-              emoji: "⚽",
-              color: "from-teal-500/80 to-teal-500/30",
-            },
-          ].map((g) => (
-            <Link
-              key={g.id}
-              to={gameLinks[g.id]}
-              className="group relative overflow-hidden rounded-3xl border border-border bg-card-gradient p-6 shadow-soft transition hover:-translate-y-0.5 hover:shadow-elevated"
-            >
-              <div
-                className={`absolute -right-8 -top-8 grid h-28 w-28 place-items-center rounded-full bg-gradient-to-br ${g.color} text-5xl shadow-elevated`}
-              >
-                <span className="-translate-y-1">{g.emoji}</span>
-              </div>
-              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                {t("play")}
-              </div>
-              <div className="mt-1 font-display text-2xl font-bold">{g.name}</div>
-              <div className="mt-1 text-sm text-muted-foreground">
-                {g.id === "pmu" ? t("pmuDesc") : g.id === "loto" ? t("lotoDesc") : t("footDesc")}
-              </div>
-              <div className="mt-6 flex items-center justify-between">
-                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
-                  {t("closes")} :{" "}
-                  {g.id === "pmu"
-                    ? pmuSchedule
-                      ? formatHour(pmuSchedule.close_hour)
-                      : "—"
-                    : g.id === "loto"
-                      ? lotoSchedule
-                        ? formatHour(lotoSchedule.close_hour)
-                        : "—"
-                      : "—"}
-                </span>
-                <span className="inline-flex items-center gap-1 text-sm font-bold text-primary group-hover:translate-x-0.5 transition">
-                  {t("playNow")} <ArrowRight className="h-4 w-4" />
-                </span>
-              </div>
-            </Link>
-          ))}
         </div>
       </section>
 
