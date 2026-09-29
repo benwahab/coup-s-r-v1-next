@@ -450,7 +450,24 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    await evaluatePublishedAiPredictions(result.game_id, result.id, result.result);
+    const aiReference =
+      result.game_id === "loto"
+        ? result.draw_date
+        : result.game_id === "pmu"
+          ? (
+              await supabaseAdmin
+                .from("pmu_races")
+                .select("id")
+                .eq("race_date", result.draw_date)
+                .eq("status", "finished")
+                .order("start_at", { ascending: true })
+                .limit(1)
+                .maybeSingle()
+            ).data?.id
+          : result.id;
+    if (aiReference) {
+      await evaluatePublishedAiPredictions(result.game_id, aiReference, result.result);
+    }
 
     await writeAuditLog(supabaseAdmin, {
       userId: context.userId,
