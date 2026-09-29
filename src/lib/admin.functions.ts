@@ -598,8 +598,7 @@ export const adminListSecurityLogs = createServerFn({ method: "POST" })
       .from("audit_logs")
       .select("id,created_at,action,user_id,ip,detail")
       .gte("created_at", since)
-      .order("created_at", { ascending: false })
-      .limit(100);
+      .order("created_at", { ascending: false });
     if (data.action) query = query.ilike("action", "%" + data.action + "%");
     if (data.search) {
       const safe = data.search.replace(/[%_]/g, "");
@@ -668,9 +667,9 @@ export const superAdminGetProductionReadiness = createServerFn({ method: "POST" 
         auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
       });
       const email = `hibp-probe-${crypto.randomUUID()}@coup-sur.local`;
-      // Mot de passe notoirement compromis mais suffisamment complexe pour que
-      // "weak_password" seul ne puisse pas être pris comme preuve HIBP.
-      const probePassword = "P@ssw0rd123!";
+      // Mot de passe documenté comme compromis dans HIBP ; on vérifie en priorité
+      // les signaux explicites de détection "pwned"/"leaked" retournés par Auth.
+      const probePassword = "P@ssw0rd123";
       const { data, error } = await anon.auth.signUp({ email, password: probePassword });
       const reasons = (error as { reasons?: string[] } | null)?.reasons ?? [];
       if (error && (reasons.includes("pwned") || /pwned|leaked|compromis/i.test(error.message))) {
