@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     if (!error) upserted += rows.length;
   }
 
-  // Reuse the server settlement endpoint so provider updates and ticket
+  // Evaluate stored AI predictions against provider-authoritative finished fixtures.\n  const evaluationCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();\n  const { data: finishedFixtures } = await supabase\n    .from("foot_fixtures")\n    .select("id,home_score,away_score,status,updated_at")\n    .eq("status", "finished")\n    .gte("updated_at", evaluationCutoff)\n    .limit(500);\n  for (const fixture of finishedFixtures ?? []) {\n    if (fixture.home_score == null || fixture.away_score == null) continue;\n    const actual = fixture.home_score > fixture.away_score ? "1" : fixture.home_score < fixture.away_score ? "2" : "X";\n    const { data: predictions } = await supabase\n      .from("ai_predictions")\n      .select("id,prediction")\n      .eq("game_id", "foot")\n      .eq("reference_id", fixture.id)\n      .eq("status", "published");\n    for (const prediction of predictions ?? []) {\n      const p = prediction.prediction as { outcome?: string };\n      if (p.outcome !== "1" && p.outcome !== "X" && p.outcome !== "2") continue;\n      await supabase.from("ai_predictions").update({\n        status: "evaluated", actual_result: actual, correct: p.outcome === actual,\n        score: p.outcome === actual ? 1 : 0, evaluated_at: new Date().toISOString(),\n      }).eq("id", prediction.id);\n    }\n  }\n\n  // Reuse the server settlement endpoint so provider updates and ticket
   // settlement remain one trusted server-side path.
   const { data: pending } = await supabase
     .from("foot_picks")
