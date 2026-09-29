@@ -391,6 +391,147 @@ export type Database = {
         }
         Relationships: []
       }
+      monitoring_alert_rules: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          metric: string
+          threshold: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          metric: string
+          threshold: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          metric?: string
+          threshold?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      monitoring_events: {
+        Row: {
+          app_version: string | null
+          created_at: string
+          device: string | null
+          duration_ms: number | null
+          endpoint: string | null
+          environment: string
+          id: string
+          level: string
+          message: string | null
+          method: string | null
+          page: string | null
+          service: string
+          session_hash: string | null
+          source: string
+          spans: Json
+          status: number | null
+          trace_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          app_version?: string | null
+          created_at?: string
+          device?: string | null
+          duration_ms?: number | null
+          endpoint?: string | null
+          environment?: string
+          id?: string
+          level?: string
+          message?: string | null
+          method?: string | null
+          page?: string | null
+          service: string
+          session_hash?: string | null
+          source: string
+          spans?: Json
+          status?: number | null
+          trace_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          app_version?: string | null
+          created_at?: string
+          device?: string | null
+          duration_ms?: number | null
+          endpoint?: string | null
+          environment?: string
+          id?: string
+          level?: string
+          message?: string | null
+          method?: string | null
+          page?: string | null
+          service?: string
+          session_hash?: string | null
+          source?: string
+          spans?: Json
+          status?: number | null
+          trace_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      monitoring_incidents: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string
+          detail: Json
+          id: string
+          metric: string
+          resolution: string | null
+          resolved_at: string | null
+          service: string
+          severity: string
+          started_at: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          metric: string
+          resolution?: string | null
+          resolved_at?: string | null
+          service: string
+          severity: string
+          started_at?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          metric?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          service?: string
+          severity?: string
+          started_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       otp_codes: {
         Row: {
           attempts: number
