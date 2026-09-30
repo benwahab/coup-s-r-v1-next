@@ -80,7 +80,7 @@ export const checkIsAdmin = createServerFn({ method: "POST" })
   });
 
 export const getMyAdminPermissions = createServerFn({ method: "POST" })
-  .middleware([requireConfiguredUser])
+  .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data: superAdmin, error: superError } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
@@ -102,7 +102,7 @@ export const getMyAdminPermissions = createServerFn({ method: "POST" })
   });
 
 export const checkIsSuperAdmin = createServerFn({ method: "POST" })
-  .middleware([requireConfiguredUser])
+  .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
