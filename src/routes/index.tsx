@@ -370,16 +370,16 @@ function Index() {
             </div>
 
             {/* Loto Balsa — secondary card (quotidien, sans jackpot affiché) */}
-            <div className="group relative overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 via-white/[0.03] to-transparent p-5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-[0_12px_40px_-18px_rgba(34,197,94,0.45)]">
-              <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl transition-opacity duration-300 group-hover:bg-primary/15" aria-hidden />
+            <div className="group relative overflow-hidden rounded-3xl border border-teal-400/30 bg-gradient-to-br from-teal-400/10 via-white/[0.03] to-transparent p-5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-teal-300/50 hover:shadow-[0_12px_40px_-18px_rgba(45,212,191,0.45)]">
+              <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-teal-400/10 blur-3xl transition-opacity duration-300 group-hover:bg-teal-300/15" aria-hidden />
               <div className="pointer-events-none absolute -bottom-20 -left-10 h-32 w-32 rounded-full bg-teal-400/10 blur-3xl" aria-hidden />
 
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-primary">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-teal-300">
                   <Trophy className="h-3.5 w-3.5" />
                   Loto Balsa
                 </span>
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                <span className="inline-flex items-center gap-1 rounded-full bg-teal-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-200">
                   <Clock className="h-3 w-3" /> {t("today")} {todayLabel}
                 </span>
               </div>
@@ -395,7 +395,7 @@ function Index() {
                   <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/60">
                     <Users className="h-3 w-3" /> {t("todayWinners")}
                   </div>
-                  <div className="mt-0.5 font-display text-2xl font-extrabold tabular-nums text-primary">
+                  <div className="mt-0.5 font-display text-2xl font-extrabold tabular-nums text-teal-200">
                     {todayWinnersCount ?? "—"}
                   </div>
                 </div>
