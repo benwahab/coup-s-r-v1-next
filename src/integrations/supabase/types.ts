@@ -442,33 +442,42 @@ export type Database = {
       game_schedules: {
         Row: {
           close_hour: number
+          daily_stats_date: string
           draw_hour: number
           draw_minute: number
           enabled: boolean
           game_id: string
           open_hour: number
+          today_paid_fcfa: number | null
+          today_winners_count: number | null
           timezone: string
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           close_hour: number
+          daily_stats_date?: string
           draw_hour: number
           draw_minute: number
           enabled?: boolean
           game_id: string
           open_hour: number
+          today_paid_fcfa?: number | null
+          today_winners_count?: number | null
           timezone?: string
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           close_hour?: number
+          daily_stats_date?: string
           draw_hour?: number
           draw_minute?: number
           enabled?: boolean
           game_id?: string
           open_hour?: number
+          today_paid_fcfa?: number | null
+          today_winners_count?: number | null
           timezone?: string
           updated_at?: string
           updated_by?: string | null
