@@ -579,7 +579,7 @@ export interface SecurityLogRow {
   userId: string | null;
   phone: string | null;
   ip: string | null;
-  detail: unknown;
+  detail: import("@/integrations/supabase/types").Json;
 }
 
 export const adminListSecurityLogs = createServerFn({ method: "POST" })
