@@ -788,7 +788,8 @@ export const adminAnalyzeMonitoring = createServerFn({ method: "POST" })
       throw new Error("ai_unavailable");
     }
     if (!summary) throw new Error("ai_empty");
-    await writeAuditLog({
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await writeAuditLog(supabaseAdmin, {
       userId: context.userId,
       action: "admin.monitoring.ai_analysis",
       detail: { eventCount: events.length, incidentId: data.incidentId },
