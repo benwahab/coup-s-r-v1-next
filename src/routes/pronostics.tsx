@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Sparkles, ArrowRight, Loader2, Brain, Goal } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 import { PageHeader } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { generateAdaptivePmu, generateAdaptiveLoto, generateAdaptiveFoot } from "@/lib/ai-adaptive.functions";
@@ -39,6 +40,7 @@ type FootPrediction = {
 
 function Pronos() {
   const { t } = useI18n();
+  const { authed } = useAuth();
   const runPmu = useServerFn(generateAdaptivePmu);
   const runLoto = useServerFn(generateAdaptiveLoto);
   const runFoot = useServerFn(generateAdaptiveFoot);
@@ -100,18 +102,19 @@ function Pronos() {
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-gold-gradient text-[var(--gold-foreground)]"><Brain className="h-5 w-5" /></div>
             <div>
               <h2 className="font-display text-xl font-extrabold">{t("aiPronos")}</h2>
-              <p className="text-xs text-muted-foreground">{t("pronos.description")}p>
+              <p className="text-xs text-muted-foreground">{t("pronos.description")}</p>
             </div>
           </div>
           {error && <p className="mt-3 rounded-xl bg-destructive/15 px-3 py-2 text-sm text-destructive">{error}</p>}
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <section className="rounded-2xl border border-border bg-background/40 p-4">
-              <div className="flex items-center justify-between gap-2"><h3 className="font-display text-lg font-bold">PMU</h3><button disabled={!raceId || !!busy} onClick={()=>void doPmu()} className="inline-flex items-center gap-2 rounded-full bg-gold-gradient px-3 py-1.5 text-xs font-bold disabled:opacity-50">{busy==="pmu"?<Loader2 className="h-3.5 w-3.5 animate-spin"/>:<Sparkles className="h-3.5 w-3.5"/>} Analyser</button></div>
+              {!authed && <p className="mb-3 rounded-xl bg-secondary px-3 py-2 text-xs text-muted-foreground">{t("shell.login")}</p>}
+              <div className="flex items-center justify-between gap-2"><h3 className="font-display text-lg font-bold">PMU</h3><button disabled={!authed || !raceId || !!busy} onClick={()=>void doPmu()} className="inline-flex items-center gap-2 rounded-full bg-gold-gradient px-3 py-1.5 text-xs font-bold disabled:opacity-50">{busy==="pmu"?<Loader2 className="h-3.5 w-3.5 animate-spin"/>:<Sparkles className="h-3.5 w-3.5"/>} Analyser</button></div>
               {!raceId && <p className="mt-2 text-sm text-muted-foreground">{t("pronos.noPmuRace")}</p>}
               {pmu && <div className="mt-3 space-y-3 text-sm"><p className="text-muted-foreground">{pmu.summary}</p><div><b>{t("pronos.tierce")}</b> {pmu.tierce.join(" · ")}</div><div><b>{t("pronos.quinte")}</b> {pmu.quinte.join(" · ")}</div><p className="text-xs text-muted-foreground">{t("pronos.confidence", { confidence: pmu.confidence, rationale: pmu.rationale })}</p></div>}
             </section>
             <section className="rounded-2xl border border-border bg-background/40 p-4">
-              <div className="flex items-center justify-between gap-2"><h3 className="font-display text-lg font-bold">Loto Balsa</h3><button disabled={!!busy || loading} onClick={()=>void doLoto()} className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground disabled:opacity-50">{busy==="loto"?<Loader2 className="h-3.5 w-3.5 animate-spin"/>:<Sparkles className="h-3.5 w-3.5"/>} Analyser</button></div>
+              <div className="flex items-center justify-between gap-2"><h3 className="font-display text-lg font-bold">Loto Balsa</h3><button disabled={!authed || !!busy || loading} onClick={()=>void doLoto()} className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground disabled:opacity-50">{busy==="loto"?<Loader2 className="h-3.5 w-3.5 animate-spin"/>:<Sparkles className="h-3.5 w-3.5"/>} Analyser</button></div>
               {loto && <div className="mt-3 space-y-3 text-sm"><p className="text-muted-foreground">{loto.summary}</p><div><b>{t("pronos.hot")}</b> {loto.hot.join(" · ")}</div><div><b>{t("pronos.cold")}</b> {loto.cold.join(" · ")}</div><div className="space-y-1"><b>{t("pronos.suggestions")}</b>{loto.suggestions.map((s:any,i:number)=><div key={i} className="rounded-lg bg-card px-2 py-1.5">{s.balls.join(" · ")} <span className="text-xs text-muted-foreground">— {s.rationale}</span></div>)}</div></div>}
             </section>
           </div>
