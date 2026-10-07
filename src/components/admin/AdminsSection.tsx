@@ -65,7 +65,7 @@ const PERMISSIONS: { id: AdminPermission; label: string; description: string }[]
 ];
 
 export function AdminsSection() {
-  const { t } = useI18n();
+  const { t: translate } = useI18n();
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean | null>(null);
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +86,7 @@ export function AdminsSection() {
       const { admins: rows } = await adminListAdmins();
       setAdmins(rows);
     } catch {
-      setMessage({ kind: "error", text: t("admin.admins.loadError") });
+      setMessage({ kind: "error", text: translate("admin.admins.loadError") });
     } finally {
       setLoading(false);
     }
@@ -99,21 +99,21 @@ export function AdminsSection() {
   const grant = async () => {
     setMessage(null);
     if (!/^\d{8}$/.test(phone)) {
-      setMessage({ kind: "error", text: t("admin.admins.invalidPhone") });
+      setMessage({ kind: "error", text: translate("admin.admins.invalidPhone") });
       return;
     }
     setBusy(true);
     try {
       const res = await adminGrantRole({ data: { phone } });
       if (!res.ok) {
-        setMessage({ kind: "error", text: t("admin.admins.noAccount") });
+        setMessage({ kind: "error", text: translate("admin.admins.noAccount") });
       } else {
-        setMessage({ kind: "success", text: t("admin.admins.granted") });
+        setMessage({ kind: "success", text: translate("admin.admins.granted") });
         setPhone("");
         await load();
       }
     } catch {
-      setMessage({ kind: "error", text: t("admin.admins.failed") });
+      setMessage({ kind: "error", text: translate("admin.admins.failed") });
     } finally {
       setBusy(false);
     }
@@ -167,13 +167,13 @@ export function AdminsSection() {
     try {
       const res = await adminRevokeRole({ data: { userId } });
       if (!res.ok) {
-        setMessage({ kind: "error", text: t("admin.admins.cannotSelfRevoke") });
+        setMessage({ kind: "error", text: translate("admin.admins.cannotSelfRevoke") });
       } else {
         setSelectedAdmin(null);
         await load();
       }
     } catch {
-      setMessage({ kind: "error", text: t("admin.admins.failed") });
+      setMessage({ kind: "error", text: translate("admin.admins.failed") });
     } finally {
       setBusy(false);
     }
@@ -194,10 +194,10 @@ export function AdminsSection() {
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-muted-foreground" />
           <h2 className="font-display text-lg font-bold text-muted-foreground">
-            {t("admin.admins.title")}
+            {translate("admin.admins.title")}
           </h2>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">{t("admin.admins.restricted")}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{translate("admin.admins.restricted")}</p>
       </section>
     );
   }
@@ -217,7 +217,7 @@ export function AdminsSection() {
         <input
           value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 8))}
-          placeholder={t("admin.admins.phonePlaceholder")}
+          placeholder={translate("admin.admins.phonePlaceholder")}
           className="rounded-full border border-border bg-background px-3 py-1.5 text-xs"
         />
         <button
@@ -231,7 +231,7 @@ export function AdminsSection() {
           ) : (
             <ShieldPlus className="h-3.5 w-3.5" />
           )}
-          {t("admin.admins.grantButton")}
+          {translate("admin.admins.grantButton")}
         </button>
       </div>
 
@@ -250,11 +250,11 @@ export function AdminsSection() {
       <div className="mt-4 divide-y divide-border rounded-2xl border border-border">
         {loading ? (
           <div className="p-4 text-center text-xs text-muted-foreground">
-            {t("admin.admins.loading")}
+            {translate("admin.admins.loading")}
           </div>
         ) : admins.length === 0 ? (
           <div className="p-4 text-center text-xs text-muted-foreground">
-            {t("admin.admins.none")}
+            {translate("admin.admins.none")}
           </div>
         ) : (
           admins.map((a) => (
@@ -266,7 +266,7 @@ export function AdminsSection() {
                 <div className="truncate text-sm font-semibold">
                   {a.firstName || a.lastName
                     ? `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim()
-                    : t("admin.admins.noName")}
+                    : translate("admin.admins.noName")}
                 </div>
                 <div className="text-[11px] text-muted-foreground">{a.phone ?? "—"}</div>
                 <div className="mt-1 text-[10px] text-muted-foreground">
@@ -306,7 +306,7 @@ export function AdminsSection() {
                   onClick={() => revoke(a.userId)}
                   className="inline-flex items-center gap-1.5 rounded-full border border-destructive/30 px-2.5 py-1 text-[11px] font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50"
                 >
-                  <ShieldMinus className="h-3.5 w-3.5" /> {t("admin.admins.revoke")}
+                  <ShieldMinus className="h-3.5 w-3.5" /> {translate("admin.admins.revoke")}
                 </button>
               </div>
             </div>
