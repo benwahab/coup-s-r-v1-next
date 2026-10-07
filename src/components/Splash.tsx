@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { getServerConfigStatus } from "@/lib/server-config.functions";
+import { supabase } from "@/integrations/supabase/client";
 import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=480&quality=92&url";
 
 const MIN_DISPLAY_MS = 5000;
+const SERVER_RETRY_MS = 2000;
 
 export function Splash() {
   const { t } = useI18n();
@@ -14,7 +16,6 @@ export function Splash() {
 
   useEffect(() => {
     let cancelled = false;
-    const startedAt = Date.now();
 
     const checkServer = async () => {
       try {
@@ -27,35 +28,55 @@ export function Splash() {
           return;
         }
 
-        const result = await getServerConfigStatus();
-        if (!cancelled) {
-          setServerReady(result.ready);
-          setServerError(!result.ready);
+        const config = await getServerConfigStatus();
+        if (!config.ready) {
+          if (!cancelled) {
+            setServerReady(false);
+            setServerError(true);
+          }
+          return;
         }
+
+        // Real client-side reachability check: the Supabase Auth endpoint must respond.
+        const { error } = await supabase.auth.getSession();
+        if (cancelled) return;
+
+        if (error) {
+          setServerReady(false);
+          setServerError(true);
+          return;
+        }
+
+        setServerError(false);
+        setServerReady(true);
       } catch {
-        if (!cancelled) setServerError(true);
+        if (!cancelled) {
+          setServerReady(false);
+          setServerError(true);
+        }
       }
     };
 
     void checkServer();
-
-    const finish = () => {
-      if (cancelled) return;
-      if (!serverReady) return;
-      setLeaving(true);
-      window.setTimeout(() => {
-        if (!cancelled) setShow(false);
-      }, 300);
-    };
-
-    const timer = window.setTimeout(() => {
-      if (serverReady) finish();
-    }, Math.max(0, MIN_DISPLAY_MS - (Date.now() - startedAt)));
+    const retry = window.setInterval(() => void checkServer(), SERVER_RETRY_MS);
 
     return () => {
       cancelled = true;
-      window.clearTimeout(timer);
+      window.clearInterval(retry);
     };
+  }, []);
+
+  useEffect(() => {
+    if (!serverReady) return;
+
+    const startedAt = Date.now();
+    const wait = Math.max(0, MIN_DISPLAY_MS - (Date.now() - startedAt));
+    const timer = window.setTimeout(() => {
+      setLeaving(true);
+      window.setTimeout(() => setShow(false), 300);
+    }, wait);
+
+    return () => window.clearTimeout(timer);
   }, [serverReady]);
 
   if (!show) return null;
@@ -118,9 +139,7 @@ export function Splash() {
             />
           ))}
         </div>
-        <p className="text-xs font-semibold tracking-wide text-white/70">
-          {statusText}
-        </p>
+        <p className="text-xs font-semibold tracking-wide text-white/70">{statusText}</p>
       </div>
       <style>{SPLASH_CSS}</style>
     </div>
