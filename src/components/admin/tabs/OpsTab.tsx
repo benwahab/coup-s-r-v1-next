@@ -22,6 +22,9 @@ export function OpsTab(p: Props) {
     draw_hour: number;
     draw_minute: number;
     enabled: boolean;
+    daily_stats_date: string;
+    today_winners_count: number | null;
+    today_paid_fcfa: number | null;
   };
   const [schedules, setSchedules] = useState<Partial<Record<"pmu" | "loto", Schedule>>>({});
   const [scheduleMsg, setScheduleMsg] = useState<string | null>(null);
@@ -121,6 +124,38 @@ export function OpsTab(p: Props) {
                 />
                 Jeu actif
               </label>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Gagnants du jour</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={s.today_winners_count ?? ""}
+                    onChange={(e) =>
+                      setSchedules((prev) => ({
+                        ...prev,
+                        [gameId]: { ...prev[gameId]!, today_winners_count: e.target.value === "" ? null : Number(e.target.value) },
+                      }))
+                    }
+                    className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Total gagné aujourd’hui (FCFA)</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={s.today_paid_fcfa ?? ""}
+                    onChange={(e) =>
+                      setSchedules((prev) => ({
+                        ...prev,
+                        [gameId]: { ...prev[gameId]!, today_paid_fcfa: e.target.value === "" ? null : Number(e.target.value) },
+                      }))
+                    }
+                    className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+                  />
+                </label>
+              </div>
               <button
                 type="button"
                 onClick={() => void saveSchedule(gameId)}
