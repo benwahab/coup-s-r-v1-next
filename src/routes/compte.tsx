@@ -24,16 +24,16 @@ const AccountSchema = z.object({
   firstName: z
     .string()
     .trim()
-    .min(2, "Prénom trop court (2 caractères min).")
-    .max(80, "Prénom trop long."),
+    .min(2, t("account.validation.firstNameShort"))
+    .max(80, t("account.validation.firstNameLong")),
   lastName: z
     .string()
     .trim()
-    .min(2, "Nom trop court (2 caractères min.).")
-    .max(80, "Nom trop long."),
-  region: z.string().min(1, "Sélectionnez une région."),
-  phone: z.string().regex(/^\d{8}$/, "Numéro à 8 chiffres requis."),
-  consented: z.literal(true, { errorMap: () => ({ message: "Vous devez accepter les CGU." }) }),
+    .min(2, t("account.validation.lastNameShort"))
+    .max(80, t("account.validation.lastNameLong")),
+  region: z.string().min(1, t("account.validation.region")),
+  phone: z.string().regex(/^\d{8}$/, t("account.validation.phone")),
+  consented: z.literal(true, { errorMap: () => ({ message: t("account.validation.consent") }) }),
 });
 type FieldErrors = Partial<
   Record<"firstName" | "lastName" | "region" | "phone" | "consented", string>
