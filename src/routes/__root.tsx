@@ -9,7 +9,6 @@ import {
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { useI18n } from "@/lib/i18n";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -26,15 +25,18 @@ import { AuthProvider } from "@/lib/auth";
 import { DraftsProvider } from "@/lib/drafts";
 import { AppShell } from "@/components/AppShell";
 
+function rootLangText(fr: string, en: string) {
+  return typeof window !== "undefined" && localStorage.getItem("lonani.lang") === "en" ? en : fr;
+}
+
 function NotFoundComponent() {
-  const { t } = useI18n();
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">{t("error.pageNotFound")}</h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">{rootLangText("Page introuvable", "Page not found")}</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          {t("error.pageNotFoundDesc")}
+          {rootLangText("La page que vous recherchez n’existe pas ou a été déplacée.", "The page you’re looking for doesn’t exist or has been moved.")}
         </p>
         <div className="mt-6">
           <Link
@@ -50,7 +52,6 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
-  const { t } = useI18n();
   console.error(error);
   const router = useRouter();
   useEffect(() => {
@@ -61,10 +62,10 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          {t("error.pageLoad")}
+          {rootLangText("Cette page n’a pas pu être chargée", "This page didn’t load")}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {t("error.pageLoadDesc")}
+          {rootLangText("Une erreur s’est produite. Vous pouvez actualiser la page ou revenir à l’accueil.", "Something went wrong on our end. You can try refreshing or head back home.")}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
