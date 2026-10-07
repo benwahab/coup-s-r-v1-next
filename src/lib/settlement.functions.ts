@@ -450,24 +450,6 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    const aiReference =
-      result.game_id === "loto"
-        ? result.draw_date
-        : result.game_id === "pmu"
-          ? (
-              await supabaseAdmin
-                .from("pmu_races")
-                .select("id")
-                .eq("race_date", result.draw_date)
-                .eq("status", "finished")
-                .order("start_at", { ascending: true })
-                .limit(1)
-                .maybeSingle()
-            ).data?.id
-          : result.id;
-    if (aiReference) {
-      await evaluatePublishedAiPredictions(result.game_id, aiReference, result.result);
-    }
 
     await writeAuditLog(supabaseAdmin, {
       userId: context.userId,
@@ -505,6 +487,25 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
       .maybeSingle();
     if (publishError) throw new Error(publishError.message);
     if (!published && !wasAlreadyPublished) throw new Error("result_publish_conflict");
+
+    const aiReference =
+      result.game_id === "loto"
+        ? result.draw_date
+        : result.game_id === "pmu"
+          ? (
+              await supabaseAdmin
+                .from("pmu_races")
+                .select("id")
+                .eq("race_date", result.draw_date)
+                .eq("status", "finished")
+                .order("start_at", { ascending: true })
+                .limit(1)
+                .maybeSingle()
+            ).data?.id
+          : result.id;
+    if (aiReference) {
+      if (!wasAlreadyPublished) await evaluatePublishedAiPredictions(result.game_id, aiReference, result.result);
+    }
 
     const { data: publishedResults, error: publishedResultsError } = await supabaseAdmin
       .from("draw_results")
