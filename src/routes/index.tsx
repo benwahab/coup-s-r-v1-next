@@ -247,9 +247,13 @@ function Index() {
   const lotoDrawName = drawNameForDate();
 
   const todayLabel = nigerDateLabel();
-  const pmuDailyStats = pmuSchedule?.daily_stats_date === new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Niamey" })
-    ? { winners: pmuSchedule.today_winners_count, paid: pmuSchedule.today_paid_fcfa }
-    : { winners: null, paid: null };
+  const todayDate = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Niamey" });
+  const lotoDailyStats =
+    lotoSchedule?.daily_stats_date === todayDate
+      ? { winners: lotoSchedule.today_winners_count, paid: lotoSchedule.today_paid_fcfa }
+      : { winners: null, paid: null };
+  const todayWinnersCount = lotoDailyStats.winners;
+  const todayPaid = lotoDailyStats.paid;
 
   return (
     <div>
