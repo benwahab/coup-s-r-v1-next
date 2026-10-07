@@ -226,7 +226,7 @@ function TicketPage() {
 
       {ticket.status === "winning" && (ticket.prize ?? 0) > 0 && (
         <div className="mt-5 rounded-2xl border border-success/30 bg-success/10 p-4 print:hidden">
-          <div className="text-sm font-bold text-success">Vos gains sont disponibles</div>
+          <div className="text-sm font-bold text-success">{t("ticket.winningsAvailable")}</div>
           <p className="mt-1 text-xs text-muted-foreground">
             Le bouton d'encaissement n'apparaît que pour un coupon entièrement gagnant.
           </p>
@@ -237,17 +237,17 @@ function TicketPage() {
               setCashoutBusy(true);
               try {
                 await requestCashout({ data: { code: ticket.id } });
-                toast.success("Encaissement enregistré.");
+                toast.success(t("ticket.cashoutSaved"));
                 window.location.reload();
               } catch (e) {
-                toast.error(e instanceof Error ? e.message : "Encaissement impossible.");
+                toast.error(e instanceof Error ? e.message : t("ticket.cashoutFailed"));
               } finally {
                 setCashoutBusy(false);
               }
             }}
             className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-success px-4 py-3 font-bold text-success-foreground shadow-soft disabled:opacity-50"
           >
-            {cashoutBusy ? "Encaissement…" : "Encaisser mes gains"}
+            {cashoutBusy ? t("ticket.cashoutProcessing") : t("ticket.cashoutAction")}
           </button>
         </div>
       )}
