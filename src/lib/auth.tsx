@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return {
         ok: false as const,
         reason: res.reason,
-        rate: { ok: false, reason: "phone", retryInMs: 15 * 60 * 1000 },
+        rate: { ok: false, reason: "phone" as const, retryInMs: 15 * 60 * 1000 },
       };
     }
     return { ok: true as const, demoCode: res.demoCode ?? null };
