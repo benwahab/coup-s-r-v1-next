@@ -20,7 +20,11 @@ export const ingestClientEvents = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { getRequestHost } = await import("@tanstack/react-start/server");
     let host: string | null = null;
-    try { host = getRequestHost(); } catch {}
+    try {
+      host = getRequestHost();
+    } catch {
+      host = null;
+    }
     const { currentEnvironment } = await import("@/lib/monitoring.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const environment = currentEnvironment(host);
