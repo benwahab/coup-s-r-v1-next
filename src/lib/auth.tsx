@@ -105,7 +105,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted) return;
         const u = data.user;
         if (u && u.phone) {
-          const startedAt = u.last_sign_in_at ? new Date(u.last_sign_in_at).getTime() : Date.now();
           setSession({
             phone: stripPrefix(u.phone),
             userId: u.id,
