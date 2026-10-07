@@ -779,6 +779,10 @@ const dict = {
     "admin.static.supervisionWindow": "Fenêtre glissante des 60 dernières minutes · actualisation automatique chaque minute",
     "admin.static.date": "Date",
     "admin.static.action": "Action",
+    "admin.static.manageAdmins": "Gestion des administrateurs",
+    "admin.static.transferOwnership": "Transfert de propriété Super Admin",
+    "admin.static.transferConfirm": "Pour confirmer, saisissez TRANSFERER.",
+    "admin.static.adminAccess": "Accès de l’administrateur",
   },
   en: {
     appName: "Coup Sûr",
@@ -1542,6 +1546,10 @@ const dict = {
     "admin.static.supervisionWindow": "Rolling 60-minute window · automatically refreshed every minute",
     "admin.static.date": "Date",
     "admin.static.action": "Action",
+    "admin.static.manageAdmins": "Administrator management",
+    "admin.static.transferOwnership": "Super Admin ownership transfer",
+    "admin.static.transferConfirm": "To confirm, enter TRANSFERER.",
+    "admin.static.adminAccess": "Administrator access",
   },
 } as const;
 
