@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { Activity, AlertTriangle, Database, RefreshCw, Server, Timer, XCircle } from "lucide-react";
-import { adminGetMonitoringSnapshot, type MonitoringSnapshot } from "@/lib/admin.functions";
+import { Activity, AlertTriangle, Database, RefreshCw, Server, Sparkles, Timer, XCircle } from "lucide-react";
+import { adminAnalyzeMonitoring, adminGetMonitoringSnapshot, type MonitoringAnalysis, type MonitoringSnapshot } from "@/lib/admin.functions";
+
+const AI_ERRORS: Record<string, string> = {
+  ai_credits_exhausted: "Crédits IA épuisés. Rechargez-les dans les réglages de l'espace de travail.",
+  ai_rate_limited: "Trop de demandes IA. Réessayez dans une minute.",
+  ai_access_denied: "Accès au modèle IA refusé.",
+  selection_not_found: "Sélection introuvable. Actualisez la page.",
+};
 
 function pct(v: number) { return `${v.toFixed(2)}%`; }
 
@@ -8,6 +15,19 @@ export function MonitoringTab() {
   const [data, setData] = useState<MonitoringSnapshot | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [incidentId, setIncidentId] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<MonitoringAnalysis | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const toggle = (id: string) => setSelected((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else if (n.size < 50) n.add(id); return n; });
+  const analyze = async () => {
+    setAnalyzing(true); setAiError(null); setAnalysis(null);
+    try { setAnalysis(await adminAnalyzeMonitoring({ data: { eventIds: [...selected], incidentId } })); }
+    catch (e) { const m = e instanceof Error ? e.message : ""; setAiError(AI_ERRORS[m] ?? "Analyse IA indisponible pour le moment. Réessayez."); }
+    finally { setAnalyzing(false); }
+  };
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -64,7 +84,7 @@ export function MonitoringTab() {
             </div>
             <div className="rounded-2xl border border-border bg-card p-4">
               <h3 className="font-bold">Incidents ouverts</h3>
-              <div className="mt-3 space-y-2">{data.incidents.length ? data.incidents.map(i => <div key={i.id} className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs"><div className="font-semibold">{i.title}</div><div className="mt-1 text-muted-foreground">{i.service} · {i.metric} · {i.severity} · {i.status}</div></div>) : <p className="text-xs text-muted-foreground">Aucun incident ouvert.</p>}</div>
+              <div className="mt-3 space-y-2">{data.incidents.length ? data.incidents.map(i => <label key={i.id} className="flex cursor-pointer gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs"><input type="radio" name="incident" checked={incidentId === i.id} onChange={() => setIncidentId(i.id)} aria-label={`Sélectionner l'incident ${i.title}`} /><div><div className="font-semibold">{i.title}</div><div className="mt-1 text-muted-foreground">{i.service} · {i.metric} · {i.severity} · {i.status}</div></div></label>) : <p className="text-xs text-muted-foreground">Aucun incident ouvert.</p>}</div>
             </div>
           </div>
           <div className="grid gap-4 xl:grid-cols-2">
@@ -78,8 +98,10 @@ export function MonitoringTab() {
             </div>
           </div>
           <div className="rounded-2xl border border-border bg-card p-4">
-            <h3 className="font-bold">Événements récents</h3>
-            <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b border-border text-muted-foreground"><th className="p-2">Heure</th><th className="p-2">Service</th><th className="p-2">Endpoint</th><th className="p-2">Statut</th><th className="p-2">Durée</th><th className="p-2">Trace</th></tr></thead><tbody>{data.recentEvents.slice(0,50).map(e => <tr key={e.id} className="border-b border-border/50"><td className="p-2 whitespace-nowrap">{new Date(e.createdAt).toLocaleString("fr-FR")}</td><td className="p-2">{e.service}</td><td className="p-2 max-w-[240px] truncate">{e.endpoint ?? "—"}</td><td className="p-2">{e.status ?? "—"} · {e.level}</td><td className="p-2">{e.durationMs ?? "—"} ms</td><td className="p-2 font-mono">{e.traceId}</td></tr>)}</tbody></table></div>
+            <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-bold">Événements récents</h3><div className="flex items-center gap-2 text-xs text-muted-foreground"><span>{selected.size} journal(aux){incidentId ? " + 1 incident" : ""}</span>{(selected.size > 0 || incidentId) && <button onClick={() => { setSelected(new Set()); setIncidentId(null); }} className="underline">Effacer</button>}<button onClick={() => void analyze()} disabled={analyzing || (selected.size === 0 && !incidentId)} className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-2 font-semibold text-primary-foreground disabled:opacity-50"><Sparkles className={analyzing ? "h-4 w-4 animate-pulse" : "h-4 w-4"} />{analyzing ? "Analyse…" : "Analyser avec l'IA"}</button></div></div>
+            {aiError && <p className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{aiError}</p>}
+            {analysis && <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm"><div className="mb-2 text-xs text-muted-foreground">Analyse IA · {analysis.eventCount} journal(aux){analysis.incidentTitle ? ` · ${analysis.incidentTitle}` : ""} · suggestion à vérifier</div><div className="whitespace-pre-wrap">{analysis.summary}</div></div>}
+            <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b border-border text-muted-foreground"><th className="p-2"></th><th className="p-2">Heure</th><th className="p-2">Service</th><th className="p-2">Endpoint</th><th className="p-2">Statut</th><th className="p-2">Durée</th><th className="p-2">Trace</th></tr></thead><tbody>{data.recentEvents.slice(0,50).map(e => <tr key={e.id} className="border-b border-border/50"><td className="p-2"><input type="checkbox" checked={selected.has(e.id)} onChange={() => toggle(e.id)} aria-label={`Sélectionner ${e.traceId}`} /></td><td className="p-2 whitespace-nowrap">{new Date(e.createdAt).toLocaleString("fr-FR")}</td><td className="p-2">{e.service}</td><td className="p-2 max-w-[240px] truncate">{e.endpoint ?? "—"}</td><td className="p-2">{e.status ?? "—"} · {e.level}</td><td className="p-2">{e.durationMs ?? "—"} ms</td><td className="p-2 font-mono">{e.traceId}</td></tr>)}</tbody></table></div>
           </div>
         </>
       )}
