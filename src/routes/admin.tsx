@@ -697,8 +697,7 @@ function AdminPage() {
               <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
                 <h2 className="font-display text-lg font-bold">{t("admin.static.claims")}</h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  La source réelle des réclamations n’est pas encore connectée. Aucune action
-                  fictive n’est proposée.
+                  {t("admin.static.claimsSourceDesc")}
                 </p>
               </section>
             )}
