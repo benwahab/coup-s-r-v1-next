@@ -74,7 +74,7 @@ export function MonitoringTab() {
               ["P95 latence", `${data.p95LatencyMs} ms`, Server],
             ].map(([label, value, Icon]) => {
               const I = Icon as typeof Activity;
-              return <div key={String(label)} className="rounded-2xl border border-border bg-card p-4"><I className="h-4 w-4 text-primary" /><div className="mt-2 text-xs text-muted-foreground">{label}</div><div className="text-xl font-bold">{value}</div></div>;
+              return <div key={String(label)} className="rounded-2xl border border-border bg-card p-4"><I className="h-4 w-4 text-primary" /><div className="mt-2 text-xs text-muted-foreground">{String(label)}</div><div className="text-xl font-bold">{String(value)}</div></div>;
             })}
           </div>
           <div className="grid gap-4 xl:grid-cols-2">
