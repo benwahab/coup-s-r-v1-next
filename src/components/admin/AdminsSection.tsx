@@ -66,6 +66,7 @@ const PERMISSIONS: { id: AdminPermission; label: string; description: string }[]
 
 export function AdminsSection() {
   const { t } = useI18n();
+  const { t } = useI18n();
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean | null>(null);
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [loading, setLoading] = useState(true);
