@@ -1,7 +1,4 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-// Rate limiting et journalisation de sécurité sont appliqués côté serveur
-// (otp.functions / audit_logs). Aucun journal client n'est présenté comme télémétrie.
-type RateCheck = { ok: boolean; reason?: "phone" | "ip"; retryInMs?: number };
 import { supabase } from "@/integrations/supabase/client";
 import { sendOtp, verifyOtp as verifyOtpFn } from "./otp.functions";
 import { useAccount } from "./account";
@@ -33,12 +30,10 @@ interface Ctx extends AuthState {
   authed: boolean;
   authChecked: boolean;
   session: Session | null;
-  logout: (reason?: "user" | "expired") => void;
-  requestOtp: (
-    phone: string,
-  ) => Promise<
+  logout: () => void;
+  requestOtp: (phone: string) => Promise<
     | { ok: true; demoCode: string | null }
-    | { ok: false; rate: RateCheck; reason?: "rate-limited" | "provider-unavailable" }
+    | { ok: false; reason?: "rate-limited" | "provider-unavailable" }
   >;
   verifyOtp: (
     phone: string,
@@ -157,14 +152,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const requestOtp = useCallback(async (phone: string) => {
-    // Le serveur génère le code, ne stocke que son empreinte et délègue sa
-    // livraison au fournisseur SMS configuré.
     const res = await sendOtp({ data: { phone } });
     if (!res.ok) {
       return {
         ok: false as const,
         reason: res.reason,
-        rate: { ok: false, reason: "phone" as const, retryInMs: 15 * 60 * 1000 } as RateCheck,
       };
     }
     return { ok: true as const, demoCode: res.demoCode ?? null };
