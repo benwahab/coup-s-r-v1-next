@@ -783,6 +783,7 @@ const dict = {
     "admin.static.transferOwnership": "Transfert de propriété Super Admin",
     "admin.static.transferConfirm": "Pour confirmer, saisissez TRANSFERER.",
     "admin.static.adminAccess": "Accès de l’administrateur",
+    "shell.loadingConnection": "Chargement de la connexion…",
   },
   en: {
     appName: "Coup Sûr",
@@ -1550,6 +1551,7 @@ const dict = {
     "admin.static.transferOwnership": "Super Admin ownership transfer",
     "admin.static.transferConfirm": "To confirm, enter TRANSFERER.",
     "admin.static.adminAccess": "Administrator access",
+    "shell.loadingConnection": "Loading connection…",
   },
 } as const;
 
