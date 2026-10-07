@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useI18n } from "@/lib/i18n";
 import { Activity, AlertTriangle, Database, RefreshCw, Server, Sparkles, Timer, XCircle } from "lucide-react";
 import { adminAnalyzeMonitoring, adminGetMonitoringSnapshot, type MonitoringAnalysis, type MonitoringSnapshot } from "@/lib/admin.functions";
 
@@ -12,6 +13,7 @@ const AI_ERRORS: Record<string, string> = {
 function pct(v: number) { return `${v.toFixed(2)}%`; }
 
 export function MonitoringTab() {
+  const { t } = useI18n();
   const [data, setData] = useState<MonitoringSnapshot | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +100,7 @@ export function MonitoringTab() {
             </div>
           </div>
           <div className="rounded-2xl border border-border bg-card p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-bold">Événements récents</h3><div className="flex items-center gap-2 text-xs text-muted-foreground"><span>{selected.size} journal(aux){incidentId ? " + 1 incident" : ""}</span>{(selected.size > 0 || incidentId) && <button onClick={() => { setSelected(new Set()); setIncidentId(null); }} className="underline">Effacer</button>}<button onClick={() => void analyze()} disabled={analyzing || (selected.size === 0 && !incidentId)} className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-2 font-semibold text-primary-foreground disabled:opacity-50"><Sparkles className={analyzing ? "h-4 w-4 animate-pulse" : "h-4 w-4"} />{analyzing ? "Analyse…" : "Analyser avec l'IA"}</button></div></div>
+            <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-bold">Événements récents</h3><div className="flex items-center gap-2 text-xs text-muted-foreground"><span>{selected.size} journal(aux){incidentId ? " + 1 incident" : ""}</span>{(selected.size > 0 || incidentId) && <button onClick={() => { setSelected(new Set()); setIncidentId(null); }} className="underline">{t("admin.static.clear")}</button>}<button onClick={() => void analyze()} disabled={analyzing || (selected.size === 0 && !incidentId)} className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-2 font-semibold text-primary-foreground disabled:opacity-50"><Sparkles className={analyzing ? "h-4 w-4 animate-pulse" : "h-4 w-4"} />{analyzing ? "Analyse…" : "Analyser avec l'IA"}</button></div></div>
             {aiError && <p className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{aiError}</p>}
             {analysis && <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm"><div className="mb-2 text-xs text-muted-foreground">Analyse IA · {analysis.eventCount} journal(aux){analysis.incidentTitle ? ` · ${analysis.incidentTitle}` : ""} · suggestion à vérifier</div><div className="whitespace-pre-wrap">{analysis.summary}</div></div>}
             <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b border-border text-muted-foreground"><th className="p-2"></th><th className="p-2">Heure</th><th className="p-2">Service</th><th className="p-2">Endpoint</th><th className="p-2">Statut</th><th className="p-2">Durée</th><th className="p-2">Trace</th></tr></thead><tbody>{data.recentEvents.slice(0,50).map(e => <tr key={e.id} className="border-b border-border/50"><td className="p-2"><input type="checkbox" checked={selected.has(e.id)} onChange={() => toggle(e.id)} aria-label={`Sélectionner ${e.traceId}`} /></td><td className="p-2 whitespace-nowrap">{new Date(e.createdAt).toLocaleString("fr-FR")}</td><td className="p-2">{e.service}</td><td className="p-2 max-w-[240px] truncate">{e.endpoint ?? "—"}</td><td className="p-2">{e.status ?? "—"} · {e.level}</td><td className="p-2">{e.durationMs ?? "—"} ms</td><td className="p-2 font-mono">{e.traceId}</td></tr>)}</tbody></table></div>
