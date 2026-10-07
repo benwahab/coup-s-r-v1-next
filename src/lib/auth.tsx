@@ -5,6 +5,7 @@ import { useAccount } from "./account";
 
 const KEY = "lonani.auth";
 const LOCK_MS = 60 * 60 * 1000; // 1h
+type RateCheck = { ok: boolean; reason?: "phone" | "ip"; retryInMs?: number };
 // Session Supabase — reste active jusqu'à une déconnexion explicite (refresh auto).
 
 function stripPrefix(e164OrLocal: string): string {
@@ -33,7 +34,11 @@ interface Ctx extends AuthState {
   logout: () => void;
   requestOtp: (phone: string) => Promise<
     | { ok: true; demoCode: string | null }
-    | { ok: false; reason?: "rate-limited" | "provider-unavailable" }
+    | {
+        ok: false;
+        reason?: "rate-limited" | "provider-unavailable";
+        rate: RateCheck;
+      }
   >;
   verifyOtp: (
     phone: string,
@@ -157,6 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return {
         ok: false as const,
         reason: res.reason,
+        rate: { ok: false, reason: "phone", retryInMs: 15 * 60 * 1000 },
       };
     }
     return { ok: true as const, demoCode: res.demoCode ?? null };
