@@ -506,11 +506,11 @@ function AdminPage() {
     { id: "regions", label: t("regions"), icon: MapPin },
     { id: "balls", label: t("ballsStats"), icon: Circle },
     { id: "ops", label: t("admin.nav.ops"), icon: Send },
-    { id: "results", label: "Résultats", icon: ListChecks },
-    { id: "claims", label: "Réclamations", icon: ShieldCheck },
+    { id: "results", label: t("admin.static.results"), icon: ListChecks },
+    { id: "claims", label: t("admin.static.claims"), icon: ShieldCheck },
     { id: "admins", label: t("admin.ops.title"), icon: Settings },
-    { id: "supervision", label: "Supervision", icon: Activity },
-    { id: "security_logs", label: "Journaux sécurité", icon: FileSearch },
+    { id: "supervision", label: t("admin.static.supervision"), icon: Activity },
+    { id: "security_logs", label: t("admin.static.securityLogs"), icon: FileSearch },
   ];
 
   const visibleNav =
@@ -689,13 +689,13 @@ function AdminPage() {
             {adminPermissions !== "all" && visibleNav.length === 0 && (
               <section className="rounded-3xl border border-border bg-card p-8 text-center shadow-soft">
                 <ShieldCheck className="mx-auto h-10 w-10 text-muted-foreground" />
-                <h2 className="mt-3 font-display text-lg font-bold">Administration</h2>
-                <p className="mt-2 text-sm text-muted-foreground">Votre compte administrateur est actif, mais aucune permission ne vous a encore été attribuée.</p>
+                <h2 className="mt-3 font-display text-lg font-bold">{t("admin")}</h2>
+                <p className="mt-2 text-sm text-muted-foreground">{t("admin.denied.message")}</p>
               </section>
             )}
             {can("complaints") && tab === "claims" && (
               <section className="rounded-3xl border border-border bg-card p-6 shadow-soft">
-                <h2 className="font-display text-lg font-bold">Réclamations</h2>
+                <h2 className="font-display text-lg font-bold">{t("admin.static.claims")}</h2>
                 <p className="mt-2 text-sm text-muted-foreground">
                   La source réelle des réclamations n’est pas encore connectée. Aucune action
                   fictive n’est proposée.
