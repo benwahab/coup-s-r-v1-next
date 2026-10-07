@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { getServerConfigStatus } from "@/lib/server-config.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ export function Splash() {
   const [leaving, setLeaving] = useState(false);
   const [serverReady, setServerReady] = useState(false);
   const [serverError, setServerError] = useState(false);
+  const startedAtRef = useRef(Date.now());
 
   useEffect(() => {
     let cancelled = false;
@@ -69,8 +70,7 @@ export function Splash() {
   useEffect(() => {
     if (!serverReady) return;
 
-    const startedAt = Date.now();
-    const wait = Math.max(0, MIN_DISPLAY_MS - (Date.now() - startedAt));
+    const wait = Math.max(0, MIN_DISPLAY_MS - (Date.now() - startedAtRef.current));
     const timer = window.setTimeout(() => {
       setLeaving(true);
       window.setTimeout(() => setShow(false), 300);
