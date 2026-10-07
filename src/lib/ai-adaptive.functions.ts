@@ -98,7 +98,7 @@ export const generateAdaptiveFoot = createServerFn({method:"POST"}).middleware([
     function teamStats(team:string){
       const games=rows.filter((x:any)=>x.home_team===team||x.away_team===team).slice(0,10);
       let w=0,d=0,l=0,gf=0,ga=0;
-      for(const x of games){const home=x.home_team===team;const a=home?x.home_score:x.away_score;const b=home?x.away_score:x.home_score;gf+=a;ga+=b;if(a>b)w++;else if(a===b)d++;else l++;}
+      for(const x of games){const home=x.home_team===team;const a=(home?x.home_score:x.away_score)??0;const b=(home?x.away_score:x.home_score)??0;gf+=a;ga+=b;if(a>b)w++;else if(a===b)d++;else l++;}
       return {games:games.length,w,d,l,gf,ga};
     }
     const hs=teamStats(f.home_team), as=teamStats(f.away_team);

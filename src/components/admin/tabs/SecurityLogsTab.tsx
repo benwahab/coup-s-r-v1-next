@@ -25,7 +25,7 @@ export function SecurityLogsTab() {
   useEffect(() => { void load(); }, [load]);
 
   const exportCsv = () => {
-    const rows = logs.map(l => [l.createdAt, l.action, l.phone ?? "", l.ip ?? "", JSON.stringify(l.detail ?? {})]);
+    const rows = logs.map(l => [l.createdAt, l.action, l.phone ?? "", l.ip ?? "", l.detail]);
     downloadCsv(["date,action,telephone,ip,detail", ...rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(","))].join("\n"), `coupsur-security-logs-page-${page}.csv`);
   };
 
@@ -43,7 +43,7 @@ export function SecurityLogsTab() {
       {error && <p className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
       <div className="rounded-2xl border border-border bg-card p-3">
         <div className="flex items-center gap-2"><FileSearch className="h-4 w-4 text-primary" /><span className="font-bold">{busy ? "Chargement…" : `${logs.length} événements affichés`}</span></div>
-        <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b border-border text-muted-foreground"><th className="p-2">Date</th><th className="p-2">Action</th><th className="p-2">Utilisateur</th><th className="p-2">IP</th><th className="p-2">Détail</th></tr></thead><tbody>{logs.map(l => <tr key={l.id} className="border-b border-border/50"><td className="p-2 whitespace-nowrap">{new Date(l.createdAt).toLocaleString("fr-FR")}</td><td className="p-2 font-medium">{l.action}</td><td className="p-2">{l.phone ?? (l.userId ? l.userId.slice(0,8) : "système")}</td><td className="p-2">{l.ip ?? "—"}</td><td className="p-2 max-w-[420px] truncate">{JSON.stringify(l.detail ?? {})}</td></tr>)}</tbody></table></div>
+        <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b border-border text-muted-foreground"><th className="p-2">Date</th><th className="p-2">Action</th><th className="p-2">Utilisateur</th><th className="p-2">IP</th><th className="p-2">Détail</th></tr></thead><tbody>{logs.map(l => <tr key={l.id} className="border-b border-border/50"><td className="p-2 whitespace-nowrap">{new Date(l.createdAt).toLocaleString("fr-FR")}</td><td className="p-2 font-medium">{l.action}</td><td className="p-2">{l.phone ?? (l.userId ? l.userId.slice(0,8) : "système")}</td><td className="p-2">{l.ip ?? "—"}</td><td className="p-2 max-w-[420px] truncate">{l.detail}</td></tr>)}</tbody></table></div>
         <div className="mt-3 flex justify-end gap-2"><button disabled={page<=1 || busy} onClick={() => setPage(p => p-1)} className="rounded-full border border-border px-3 py-1.5 text-xs">Précédent</button><span className="px-2 py-1.5 text-xs text-muted-foreground">Page {page}</span><button disabled={!hasMore || busy} onClick={() => setPage(p => p+1)} className="rounded-full border border-border px-3 py-1.5 text-xs">Suivant</button></div>
       </div>
     </section>

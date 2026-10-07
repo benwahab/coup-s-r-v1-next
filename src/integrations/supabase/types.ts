@@ -35,6 +35,90 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_model_metrics: {
+        Row: {
+          accuracy: number | null
+          brier_score: number | null
+          game_id: string
+          id: string
+          last_evaluated_at: string | null
+          metrics: Json
+          model_version: string
+          sample_size: number
+          updated_at: string
+        }
+        Insert: {
+          accuracy?: number | null
+          brier_score?: number | null
+          game_id: string
+          id?: string
+          last_evaluated_at?: string | null
+          metrics?: Json
+          model_version: string
+          sample_size?: number
+          updated_at?: string
+        }
+        Update: {
+          accuracy?: number | null
+          brier_score?: number | null
+          game_id?: string
+          id?: string
+          last_evaluated_at?: string | null
+          metrics?: Json
+          model_version?: string
+          sample_size?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_predictions: {
+        Row: {
+          actual_result: Json | null
+          correct: boolean | null
+          created_at: string
+          evaluated_at: string | null
+          features: Json
+          game_id: string
+          id: string
+          model_version: string
+          prediction: Json
+          prediction_date: string
+          reference_id: string
+          score: number | null
+          status: string
+        }
+        Insert: {
+          actual_result?: Json | null
+          correct?: boolean | null
+          created_at?: string
+          evaluated_at?: string | null
+          features?: Json
+          game_id: string
+          id?: string
+          model_version: string
+          prediction: Json
+          prediction_date: string
+          reference_id: string
+          score?: number | null
+          status?: string
+        }
+        Update: {
+          actual_result?: Json | null
+          correct?: boolean | null
+          created_at?: string
+          evaluated_at?: string | null
+          features?: Json
+          game_id?: string
+          id?: string
+          model_version?: string
+          prediction?: Json
+          prediction_date?: string
+          reference_id?: string
+          score?: number | null
+          status?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string

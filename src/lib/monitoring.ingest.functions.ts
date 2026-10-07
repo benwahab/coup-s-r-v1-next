@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { sanitize, currentEnvironment } from "@/lib/monitoring.shared";
+import { sanitize } from "@/lib/monitoring.shared";
 
 const ClientEvent = z.object({
   traceId: z.string().regex(/^trace_[0-9A-F]{8}$/),
@@ -22,6 +21,8 @@ export const ingestClientEvents = createServerFn({ method: "POST" })
     const { getRequestHost } = await import("@tanstack/react-start/server");
     let host: string | null = null;
     try { host = getRequestHost(); } catch {}
+    const { currentEnvironment } = await import("@/lib/monitoring.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const environment = currentEnvironment(host);
     const rows = data.events.map(e => ({
       trace_id: e.traceId,
