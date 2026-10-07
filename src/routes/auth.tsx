@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=160&quality=90&url";
 import { useAuth } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { checkPhoneAccount } from "@/lib/account.functions";
 import { loginWithPassword, setUserPassword } from "@/lib/password.functions";
@@ -27,12 +28,12 @@ import { getServerConfigStatus } from "@/lib/server-config.functions";
 
 const PENDING_KEY = "coupsur.auth.pending";
 
-const PhoneSchema = z.string().regex(/^\d{8}$/, "Saisissez un numéro nigérien à 8 chiffres.");
-const OtpSchema = z.string().regex(/^\d{6}$/, "Saisissez les 6 chiffres du code.");
+const PhoneSchema = z.string().regex(/^\d{8}$/);
+const OtpSchema = z.string().regex(/^\d{6}$/);
 const PasswordSchema = z
   .string()
-  .min(8, "Utilisez au moins 8 caractères.")
-  .max(128, "Le mot de passe ne doit pas dépasser 128 caractères.");
+  .min(8)
+  .max(128);
 
 type Mode = "login" | "signup" | "recovery";
 type Step = "form" | "otp" | "new-password";
@@ -75,6 +76,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
+  const { t } = useI18n();
   const navigate = useNavigate({ from: "/auth" });
   const { requestOtp, verifyOtp, remainingLockMs, isPermanent } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
@@ -122,13 +124,13 @@ function AuthPage() {
           ? { state: "ready" }
           : {
               state: "error",
-              message: `Le serveur n’est pas prêt (manque : ${res.missing.join(", ")}). Les formulaires ne peuvent pas être envoyés.`,
+              message: t("auth.serverNotReady", { missing: res.missing.join(", ") }),
             },
       );
     } catch {
       setConfig({
         state: "error",
-        message: "Serveur injoignable. Vérifiez votre connexion puis réessayez.",
+        message: t("auth.serverUnreachable"),
       });
     }
   };
@@ -155,7 +157,7 @@ function AuthPage() {
       setDemoCode(p.demoCode);
       setStep("otp");
       setResendIn(Math.max(0, 60 - Math.floor((Date.now() - p.sentAt) / 1000)));
-      setStatus(p.demoCode ? "Mode démo actif : aucun SMS n’a été envoyé." : null);
+      setStatus(p.demoCode ? t("auth.demoActive") : null);
     } catch {
       /* stockage indisponible */
     }
@@ -196,13 +198,13 @@ function AuthPage() {
   const validatePhone = () => {
     const parsed = PhoneSchema.safeParse(phone);
     if (parsed.success) return null;
-    return parsed.error.issues[0]?.message ?? "Numéro invalide.";
+    return t("auth.phoneInvalid");
   };
 
   const validatePassword = (value: string) => {
     const parsed = PasswordSchema.safeParse(value);
     if (parsed.success) return null;
-    return parsed.error.issues[0]?.message ?? "Mot de passe invalide.";
+    return parsed.error.issues[0]?.code === "too_big" ? t("auth.passwordMax") : t("auth.passwordMin");
   };
 
   const sendCode = async (intent: "signup" | "recovery", isResend = false) => {
@@ -219,11 +221,11 @@ function AuthPage() {
       if (!isResend) {
         const accountState = await checkPhoneAccount({ data: { phone } });
         if (intent === "signup" && accountState.exists) {
-          setErrors({ phone: "Ce numéro est déjà associé à un compte." });
+          setErrors({ phone: t("auth.phoneExists") });
           return;
         }
         if (intent === "recovery" && !accountState.exists) {
-          setErrors({ phone: "Aucun compte n’est associé à ce numéro." });
+          setErrors({ phone: t("auth.phoneMissing") });
           return;
         }
       }
@@ -231,12 +233,12 @@ function AuthPage() {
       const result = await requestOtp(phone);
       if (!result.ok) {
         if (result.reason === "provider-unavailable") {
-          setErrors({ otp: "L’envoi du code est temporairement indisponible." });
+          setErrors({ otp: t("auth.providerUnavailable") });
           return;
         }
         const minutes = Math.ceil((result.rate.retryInMs ?? 15 * 60_000) / 60_000);
         setErrors({
-          otp: `Trop de demandes. Réessayez dans ${minutes} minute${minutes > 1 ? "s" : ""}.`,
+          otp: t("auth.tooManyRequests", { minutes }),
         });
         return;
       }
@@ -259,7 +261,7 @@ function AuthPage() {
           : `Un code de vérification a été envoyé au ${formatPhone(phone)}.`,
       );
     } catch {
-      setErrors({ otp: "Réseau indisponible. Vérifiez votre connexion puis réessayez." });
+      setErrors({ otp: t("auth.network") });
     } finally {
       setBusy(false);
     }
@@ -282,8 +284,8 @@ function AuthPage() {
         setErrors({
           password:
             result.reason === "rate-limited"
-              ? "Trop de tentatives. Réessayez dans 15 minutes."
-              : "Numéro ou mot de passe incorrect.",
+              ? t("auth.loginRateLimited")
+              : t("auth.invalidCredentials"),
         });
         return;
       }
@@ -293,7 +295,7 @@ function AuthPage() {
       toast.success("Connexion réussie.");
       await navigate({ to: "/" });
     } catch {
-      setErrors({ password: "Connexion impossible. Vérifiez votre réseau puis réessayez." });
+      setErrors({ password: t("auth.loginFailed") });
     } finally {
       setBusy(false);
     }
@@ -306,12 +308,12 @@ function AuthPage() {
     if (phoneError) nextErrors.phone = phoneError;
     if (passwordError) nextErrors.password = passwordError;
     if (password !== confirmation)
-      nextErrors.confirmation = "Les mots de passe ne correspondent pas.";
-    if (firstName.trim().length < 2) nextErrors.firstName = "Saisissez votre prénom.";
-    if (lastName.trim().length < 2) nextErrors.lastName = "Saisissez votre nom.";
-    if (!region) nextErrors.region = "Choisissez votre région.";
+      nextErrors.confirmation = t("auth.passwordMismatch");
+    if (firstName.trim().length < 2) nextErrors.firstName = t("auth.firstNameRequired");
+    if (lastName.trim().length < 2) nextErrors.lastName = t("auth.lastNameRequired");
+    if (!region) nextErrors.region = t("auth.regionRequired");
     if (!termsAccepted)
-      nextErrors.terms = "Vous devez accepter les conditions et la politique de confidentialité.";
+      nextErrors.terms = t("auth.termsRequired");
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
     // Nom, prénom et région (non sensibles) sont transmis au serveur à la vérification du code.
@@ -331,7 +333,7 @@ function AuthPage() {
   const submitOtp = async () => {
     const parsed = OtpSchema.safeParse(otp);
     if (!parsed.success) {
-      setErrors({ otp: parsed.error.issues[0]?.message ?? "Code invalide." });
+      setErrors({ otp: t("auth.otpInvalid") });
       return;
     }
 
@@ -341,11 +343,11 @@ function AuthPage() {
       const result = await verifyOtp(phone, otp, null);
       if (!result.ok) {
         const messages = {
-          permanent: "Ce numéro est bloqué. Contactez l’assistance.",
-          locked: "Nombre maximal de tentatives atteint. Demandez un nouveau code plus tard.",
-          "rate-limited": "Trop de vérifications. Réessayez plus tard.",
-          "wrong-phone": "Le numéro ne correspond pas à cette demande.",
-          "wrong-code": `Code incorrect${typeof result.remaining === "number" ? ` — ${result.remaining} essai${result.remaining > 1 ? "s" : ""} restant${result.remaining > 1 ? "s" : ""}` : ""}.`,
+          permanent: t("auth.blockedPermanent"),
+          locked: t("auth.locked"),
+          "rate-limited": t("auth.rateLimitedVerify"),
+          "wrong-phone": t("auth.wrongPhone"),
+          "wrong-code": t("auth.wrongCode", { remaining: result.remaining ?? 0 }),
         };
         setErrors({ otp: messages[result.reason ?? "wrong-code"] });
         setOtp("");
@@ -356,13 +358,13 @@ function AuthPage() {
       clearPending();
       // Après un rechargement, le mot de passe (jamais stocké) doit être ressaisi.
       if (mode === "signup" && password) {
-        await finishPasswordSetup(password, "Votre compte est prêt.");
+        await finishPasswordSetup(password, t("auth.accountReady"));
         return;
       }
       setPassword("");
       setConfirmation("");
       setStep("new-password");
-      setStatus("Numéro vérifié. Choisissez maintenant un nouveau mot de passe.");
+      setStatus(t("auth.numberVerified"));
     } catch {
       setErrors({ otp: "Vérification impossible. Vérifiez votre réseau puis réessayez." });
     } finally {
@@ -382,7 +384,7 @@ function AuthPage() {
         setStatus(null);
         setErrors({
           password:
-            "Ce mot de passe a déjà fuité lors d’un piratage sur un autre site et n’est pas sûr. Choisissez-en un autre.",
+            t("auth.compromisedPassword"),
         });
         return;
       }
@@ -399,8 +401,8 @@ function AuthPage() {
     } catch {
       setErrors(
         step === "otp"
-          ? { otp: "Impossible de finaliser le compte. Réessayez." }
-          : { password: "Impossible d’enregistrer le mot de passe. Réessayez." },
+          ? { otp: t("auth.finishFailed") }
+          : { password: t("auth.savePasswordFailed") },
       );
     }
   };
@@ -410,12 +412,12 @@ function AuthPage() {
     const passwordError = validatePassword(password);
     if (passwordError) nextErrors.password = passwordError;
     if (password !== confirmation)
-      nextErrors.confirmation = "Les mots de passe ne correspondent pas.";
+      nextErrors.confirmation = t("auth.passwordMismatch");
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
     setBusy(true);
-    await finishPasswordSetup(password, "Mot de passe modifié. Vous êtes connecté.");
+    await finishPasswordSetup(password, t("auth.passwordChanged"));
     setBusy(false);
   };
 
@@ -450,26 +452,26 @@ function AuthPage() {
   const title =
     step === "otp"
       ? mode === "signup"
-        ? "Vérifiez votre numéro"
-        : "Vérification de sécurité"
+        ? t("auth.verifyNumber")
+        : t("auth.securityVerification")
       : step === "new-password"
-        ? "Nouveau mot de passe"
+        ? t("auth.newPassword")
         : mode === "signup"
-          ? "Créer votre compte"
+          ? t("auth.createTitle")
           : mode === "recovery"
-            ? "Mot de passe oublié ?"
-            : "Connexion";
+            ? t("auth.forgotPassword")
+            : t("auth.loginTitle");
 
   const subtitle =
     step === "otp"
-      ? `${mode === "signup" ? "Un code de vérification a été envoyé" : "Entrez le code envoyé"} au ${formatPhone(phone)}.`
+      ? mode === "signup" ? t("auth.otpSubtitleSignup", { phone: formatPhone(phone) }) : t("auth.otpSubtitleOther", { phone: formatPhone(phone) })
       : step === "new-password"
-        ? "Choisissez un nouveau mot de passe sécurisé."
+        ? t("auth.newPasswordSubtitle")
         : mode === "signup"
-          ? "Rejoignez Coup Sûr et jouez simplement depuis votre téléphone."
+          ? t("auth.signupSubtitle")
           : mode === "recovery"
-            ? "Entrez votre numéro de téléphone pour récupérer votre compte."
-            : "Connectez-vous à votre compte Coup Sûr.";
+            ? t("auth.recoverySubtitle")
+            : t("auth.loginSubtitle");
 
   return (
     <main className="relative min-h-[calc(100dvh-64px)] overflow-hidden px-4 py-6 sm:py-10">
@@ -478,7 +480,7 @@ function AuthPage() {
       <div className="pointer-events-none absolute inset-0 grid-bg opacity-15" aria-hidden />
       <section className="relative z-10 mx-auto w-full max-w-md" aria-labelledby="auth-title">
         <div className="mb-6 flex justify-center">
-          <Link to="/" aria-label="Retour à l’accueil Coup Sûr">
+          <Link to="/" aria-label={t("auth.backHome")}>
             <img src={logoCoupSur} alt="Coup Sûr" className="h-16 w-16 object-contain" />
           </Link>
         </div>
@@ -708,7 +710,7 @@ function AuthPage() {
                       inputMode="numeric"
                       autoComplete={index === 0 ? "one-time-code" : "off"}
                       maxLength={1}
-                      aria-label={`Chiffre ${index + 1} du code`}
+                      aria-label={t("auth.digit", { n: index + 1 })}
                       aria-invalid={Boolean(errors.otp)}
                       value={otp[index] ?? ""}
                       disabled={busy || otpLocked}
@@ -751,7 +753,7 @@ function AuthPage() {
                 onClick={() => void sendCode(mode === "signup" ? "signup" : "recovery", true)}
               >
                 <RefreshCw className={busy ? "animate-spin" : ""} />
-                {resendIn > 0 ? `Renvoyer le code dans ${resendIn} s` : "Renvoyer le code"}
+                {resendIn > 0 ? t("auth.resendIn", { seconds: resendIn }) : "Renvoyer le code"}
               </Button>
             </form>
           )}
@@ -767,7 +769,7 @@ function AuthPage() {
             >
               {status && <Notice variant="success">{status}</Notice>}
               <PasswordField
-                label="Nouveau mot de passe"
+                label=t("auth.newPassword")
                 value={password}
                 onChange={setPassword}
                 visible={showPassword}
@@ -925,7 +927,7 @@ function PasswordField({
           size="icon"
           onClick={onToggle}
           className="mr-1 h-10 w-10 text-muted-foreground"
-          aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+          aria-label={visible ? t("auth.hidePassword") : t("auth.showPassword")}
         >
           {visible ? <EyeOff /> : <Eye />}
         </Button>
@@ -939,7 +941,7 @@ function PasswordField({
           ) : (
             <ShieldCheck className="h-3.5 w-3.5" />
           )}
-          {validLength ? "Mot de passe valide" : "Au moins 8 caractères"}
+          {validLength ? t("auth.passwordValid") : t("auth.passwordMinHint")}
         </p>
       )}
       {valid && !error && (
