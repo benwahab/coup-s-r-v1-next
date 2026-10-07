@@ -2,9 +2,6 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 // Rate limiting et journalisation de sécurité sont appliqués côté serveur
 // (otp.functions / audit_logs). Aucun journal client n'est présenté comme télémétrie.
 type RateCheck = { ok: boolean; reason?: "phone" | "ip"; retryInMs?: number };
-const checkRate = (_phone: string): RateCheck => ({ ok: true });
-const pushAttempt = (_phone: string) => {};
-const logAuthEvent = (_kind: string, _phone: string, _note?: string) => {};
 import { supabase } from "@/integrations/supabase/client";
 import { sendOtp, verifyOtp as verifyOtpFn } from "./otp.functions";
 import { useAccount } from "./account";
@@ -28,8 +25,6 @@ interface AuthState {
 
 interface Session {
   phone: string;
-  startedAt: number;
-  lastActivity: number;
   userId: string;
   passwordSetupRequired: boolean;
 }
@@ -38,8 +33,6 @@ interface Ctx extends AuthState {
   authed: boolean;
   authChecked: boolean;
   session: Session | null;
-  sessionRemainingMs: () => number;
-  touchSession: () => void;
   logout: (reason?: "user" | "expired") => void;
   requestOtp: (
     phone: string,
@@ -115,8 +108,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const startedAt = u.last_sign_in_at ? new Date(u.last_sign_in_at).getTime() : Date.now();
           setSession({
             phone: stripPrefix(u.phone),
-            startedAt,
-            lastActivity: Date.now(),
             userId: u.id,
             passwordSetupRequired: u.app_metadata?.password_setup_required === true,
           });
@@ -137,8 +128,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const u = sess.user;
       setSession({
         phone: stripPrefix(u.phone ?? ""),
-        startedAt: Date.now(),
-        lastActivity: Date.now(),
         userId: u.id,
         passwordSetupRequired: u.app_metadata?.password_setup_required === true,
       });
@@ -160,21 +149,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return Math.max(0, state.lockedUntil - Date.now());
   }, [state.lockedUntil]);
 
-  // Session illimitée — conservé pour compat API, retourne toujours Infinity si connecté.
-  const sessionRemainingMs = useCallback(
-    () => (session && !session.passwordSetupRequired ? Number.POSITIVE_INFINITY : 0),
-    [session],
-  );
-
-  const touchSession = useCallback(() => {
-    if (!session) return;
-    const next = { ...session, lastActivity: Date.now() };
-    setSession(next);
-  }, [session]);
-
   const logout = useCallback(
     (reason: "user" | "expired" = "user") => {
-      if (session) logAuthEvent(reason === "expired" ? "session-expired" : "logout", session.phone);
       void supabase.auth.signOut({ scope: "local" });
       setSession(null);
     },
@@ -182,18 +158,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const requestOtp = useCallback(async (phone: string) => {
-    const rate = checkRate(phone);
-    if (!rate.ok) {
-      logAuthEvent("rate-limited", phone, `request blocked (${rate.reason})`);
-      return { ok: false as const, rate };
-    }
-    pushAttempt(phone);
-    logAuthEvent("otp-request", phone);
     // Le serveur génère le code, ne stocke que son empreinte et délègue sa
     // livraison au fournisseur SMS configuré.
     const res = await sendOtp({ data: { phone } });
     if (!res.ok) {
-      logAuthEvent("otp-unavailable", phone, `server blocked (${res.reason})`);
       return {
         ok: false as const,
         reason: res.reason,
@@ -205,26 +173,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyOtp: Ctx["verifyOtp"] = useCallback(
     async (phone, code, accountPhone) => {
-      const rate = checkRate(phone);
-      if (!rate.ok) {
-        logAuthEvent("rate-limited", phone, `verify blocked (${rate.reason})`);
-        return { ok: false, reason: "rate-limited", rate };
-      }
       // already permanently locked
       if (state.lockedUntil === -1) {
-        logAuthEvent("locked", phone, "permanent");
         return { ok: false, reason: "permanent" };
       }
       // timed lock active
       if (state.lockedUntil && Date.now() < state.lockedUntil) {
-        logAuthEvent("locked", phone, "1h");
         return { ok: false, reason: "locked", lockedUntil: state.lockedUntil };
       }
-      pushAttempt(phone);
       const phoneOk = !accountPhone || accountPhone === phone;
       if (!phoneOk) {
         const failed = state.failedAttempts + 1;
-        logAuthEvent("verify-fail", phone, "wrong-phone");
         const next: AuthState = { ...state, failedAttempts: failed, lastPhone: phone };
         setState(next);
         save(next);
@@ -242,7 +201,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         const { error } = await supabase.auth.setSession(res.session);
         if (error) {
-          logAuthEvent("verify-fail", phone, `set_session: ${error.message}`);
           return { ok: false, reason: "wrong-code" };
         }
         // Nouvel appareil : le compte local (localStorage) peut être vide alors
@@ -260,12 +218,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const fresh = { ...defaultState, lockCount: state.lockCount };
         setState(fresh);
         save(fresh);
-        logAuthEvent("verify-ok", phone);
         return { ok: true };
       }
       // Réponse serveur en échec : mise à jour du compteur local pour le lock UX.
       const failed = state.failedAttempts + 1;
-      logAuthEvent("verify-fail", phone, res.reason ?? "wrong-code");
       if (failed >= 3) {
         const newLockCount = state.lockCount + 1;
         const lockedUntil = newLockCount >= 2 ? -1 : Date.now() + LOCK_MS;
@@ -277,7 +233,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
         setState(next);
         save(next);
-        logAuthEvent("locked", phone, lockedUntil === -1 ? "permanent" : "1h");
         return { ok: false, reason: lockedUntil === -1 ? "permanent" : "locked", lockedUntil };
       }
       const next: AuthState = { ...state, failedAttempts: failed, lastPhone: phone };
@@ -311,8 +266,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authed: !!session && !session.passwordSetupRequired,
         authChecked,
         session,
-        sessionRemainingMs,
-        touchSession,
         logout,
         requestOtp,
         verifyOtp,
