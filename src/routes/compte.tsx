@@ -20,21 +20,15 @@ import { TERMS_VERSION, PRIVACY_VERSION, makeUserId } from "@/lib/legal";
 import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
-const AccountSchema = z.object({
-  firstName: z
-    .string()
-    .trim()
-    .min(2, t("account.validation.firstNameShort"))
-    .max(80, t("account.validation.firstNameLong")),
-  lastName: z
-    .string()
-    .trim()
-    .min(2, t("account.validation.lastNameShort"))
-    .max(80, t("account.validation.lastNameLong")),
-  region: z.string().min(1, t("account.validation.region")),
-  phone: z.string().regex(/^\d{8}$/, t("account.validation.phone")),
-  consented: z.literal(true, { errorMap: () => ({ message: t("account.validation.consent") }) }),
-});
+function createAccountSchema(t: (key: string) => string) {
+  return z.object({
+    firstName: z.string().trim().min(2, t("account.validation.firstNameShort")).max(80, t("account.validation.firstNameLong")),
+    lastName: z.string().trim().min(2, t("account.validation.lastNameShort")).max(80, t("account.validation.lastNameLong")),
+    region: z.string().min(1, t("account.validation.region")),
+    phone: z.string().regex(/^\d{8}$/, t("account.validation.phone")),
+    consented: z.literal(true, { errorMap: () => ({ message: t("account.validation.consent") }) }),
+  });
+}
 type FieldErrors = Partial<
   Record<"firstName" | "lastName" | "region" | "phone" | "consented", string>
 >;
@@ -48,6 +42,7 @@ export const Route = createFileRoute("/compte")({
 
 function ComptePage() {
   const { t } = useI18n();
+  const accountSchema = createAccountSchema(t);
   const {
     account,
     saveAccount,
@@ -103,7 +98,7 @@ function ComptePage() {
     e.preventDefault();
     setPhoneError(null);
     setFieldErrors({});
-    const parsed = AccountSchema.safeParse({ firstName, lastName, region, phone, consented });
+    const parsed = accountSchema.safeParse({ firstName, lastName, region, phone, consented });
     if (!parsed.success) {
       const errs: FieldErrors = {};
       for (const issue of parsed.error.issues) {
