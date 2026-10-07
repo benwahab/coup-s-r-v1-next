@@ -100,6 +100,9 @@ function Index() {
           draw_hour: number;
           draw_minute: number;
           enabled: boolean;
+          daily_stats_date: string;
+          today_winners_count: number | null;
+          today_paid_fcfa: number | null;
         }
       >
     >
@@ -107,7 +110,7 @@ function Index() {
   useEffect(() => {
     void supabase
       .from("game_schedules")
-      .select("game_id,open_hour,close_hour,draw_hour,draw_minute,enabled")
+      .select("game_id,open_hour,close_hour,draw_hour,draw_minute,enabled,daily_stats_date,today_winners_count,today_paid_fcfa")
       .in("game_id", ["pmu", "loto"])
       .then(({ data }) => {
         const next: typeof schedules = {};
@@ -243,9 +246,10 @@ function Index() {
   const lotoCd = useCountdown(lotoEvt?.target ?? new Date(0));
   const lotoDrawName = drawNameForDate();
 
-  const todayWinnersCount: number | null = null;
-  const todayPaid: number | null = null;
   const todayLabel = nigerDateLabel();
+  const pmuDailyStats = pmuSchedule?.daily_stats_date === new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Niamey" })
+    ? { winners: pmuSchedule.today_winners_count, paid: pmuSchedule.today_paid_fcfa }
+    : { winners: null, paid: null };
 
   return (
     <div>
@@ -305,6 +309,26 @@ function Index() {
               </div>
               <div className="mt-2 font-display text-4xl sm:text-5xl font-extrabold tabular-nums text-white">
                 — <span className="text-lg font-semibold text-white/70">{t("fcfa")}</span>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="rounded-xl border border-white/10 bg-white/[0.04] p-2.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/60">
+                    <Users className="h-3 w-3" /> {t("todayWinners")}
+                  </div>
+                  <div className="mt-0.5 font-display text-2xl font-extrabold tabular-nums text-teal-200">
+                    {pmuDailyStats.winners ?? "—"}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-white/[0.04] p-2.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-white/60">
+                    <Trophy className="h-3 w-3" /> {t("totalPaidToday")}
+                  </div>
+                  <div className="mt-0.5 font-display text-xl font-extrabold tabular-nums text-teal-200">
+                    {pmuDailyStats.paid === null ? "—" : formatFcfa(pmuDailyStats.paid)}{" "}
+                    <span className="text-[10px] font-semibold text-white/70">{t("fcfa")}</span>
+                  </div>
+                </div>
               </div>
 
               <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
