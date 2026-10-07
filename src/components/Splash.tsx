@@ -5,7 +5,6 @@ import { getServerConfigStatus } from "@/lib/server-config.functions";
 import { supabase } from "@/integrations/supabase/client";
 import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=480&quality=92&url";
 
-const MIN_DISPLAY_MS = 5000;
 const SERVER_RETRY_MS = 2000;
 
 export function Splash() {
@@ -14,7 +13,6 @@ export function Splash() {
   const [leaving, setLeaving] = useState(false);
   const [serverReady, setServerReady] = useState(false);
   const [serverError, setServerError] = useState(false);
-  const startedAtRef = useRef(Date.now());
 
   useEffect(() => {
     let cancelled = false;
@@ -70,11 +68,8 @@ export function Splash() {
   useEffect(() => {
     if (!serverReady) return;
 
-    const wait = Math.max(0, MIN_DISPLAY_MS - (Date.now() - startedAtRef.current));
-    const timer = window.setTimeout(() => {
-      setLeaving(true);
-      window.setTimeout(() => setShow(false), 300);
-    }, wait);
+    setLeaving(true);
+    const timer = window.setTimeout(() => setShow(false), 300);
 
     return () => window.clearTimeout(timer);
   }, [serverReady]);
@@ -83,9 +78,7 @@ export function Splash() {
 
   const statusText = serverError
     ? t("shell.splash.serverError")
-    : serverReady
-      ? t("shell.splash.serverReady")
-      : t("shell.splash.checkingServer");
+    : t("shell.splash.checkingServer");
 
   return (
     <div
