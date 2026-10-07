@@ -1,47 +1,86 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { getServerConfigStatus } from "@/lib/server-config.functions";
 import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=480&quality=92&url";
 
-const SEEN_KEY = "coupsur.splash.seen";
+const MIN_DISPLAY_MS = 5000;
 
 export function Splash() {
   const { t } = useI18n();
-  // Ne montre le splash qu'au 1er chargement de la session navigateur.
-  const [show, setShow] = useState(false);
+  const [show, setShow] = useState(true);
   const [leaving, setLeaving] = useState(false);
+  const [serverReady, setServerReady] = useState(false);
+  const [serverError, setServerError] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      if (sessionStorage.getItem(SEEN_KEY) === "1") return;
-      sessionStorage.setItem(SEEN_KEY, "1");
-    } catch {
-      /* ignore */
-    }
-    setShow(true);
-    // Reste affiché au moins 5s au tout premier chargement de la session.
-    const t1 = setTimeout(() => setLeaving(true), 4700);
-    const t2 = setTimeout(() => setShow(false), 5200);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
+    let cancelled = false;
+    const startedAt = Date.now();
+
+    const checkServer = async () => {
+      try {
+        const clientOk =
+          !!import.meta.env.VITE_SUPABASE_URL &&
+          !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+        if (!clientOk) {
+          if (!cancelled) setServerError(true);
+          return;
+        }
+
+        const result = await getServerConfigStatus();
+        if (!cancelled) {
+          setServerReady(result.ready);
+          setServerError(!result.ready);
+        }
+      } catch {
+        if (!cancelled) setServerError(true);
+      }
     };
-  }, []);
+
+    void checkServer();
+
+    const finish = () => {
+      if (cancelled) return;
+      if (!serverReady) return;
+      setLeaving(true);
+      window.setTimeout(() => {
+        if (!cancelled) setShow(false);
+      }, 300);
+    };
+
+    const timer = window.setTimeout(() => {
+      if (serverReady) finish();
+    }, Math.max(0, MIN_DISPLAY_MS - (Date.now() - startedAt)));
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [serverReady]);
 
   if (!show) return null;
+
+  const statusText = serverError
+    ? t("shell.splash.serverError")
+    : serverReady
+      ? t("shell.splash.serverReady")
+      : t("shell.splash.checkingServer");
 
   return (
     <div
       className={[
-        "fixed inset-0 z-[100] grid place-items-center bg-hero overflow-hidden cursor-pointer",
+        "fixed inset-0 z-[100] grid place-items-center bg-hero overflow-hidden",
         "transition-opacity duration-500",
         leaving ? "opacity-0" : "opacity-100",
+        serverReady ? "cursor-pointer" : "cursor-wait",
       ].join(" ")}
       onClick={() => {
+        if (!serverReady) return;
         setLeaving(true);
-        setTimeout(() => setShow(false), 300);
+        window.setTimeout(() => setShow(false), 300);
       }}
-      role="button"
+      role="status"
+      aria-live="polite"
       aria-label={t("shell.splash.skip")}
     >
       <div className="absolute inset-0 grid-bg opacity-30" />
@@ -70,7 +109,7 @@ export function Splash() {
             <span className="cs-splash-shine" aria-hidden />
           </div>
         </div>
-        <div className="mt-4 flex gap-1.5">
+        <div className="mt-4 flex gap-1.5" aria-hidden>
           {[0, 1, 2].map((i) => (
             <span
               key={i}
@@ -79,6 +118,9 @@ export function Splash() {
             />
           ))}
         </div>
+        <p className="text-xs font-semibold tracking-wide text-white/70">
+          {statusText}
+        </p>
       </div>
       <style>{SPLASH_CSS}</style>
     </div>
