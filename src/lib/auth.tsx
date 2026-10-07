@@ -148,13 +148,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return Math.max(0, state.lockedUntil - Date.now());
   }, [state.lockedUntil]);
 
-  const logout = useCallback(
-    (reason: "user" | "expired" = "user") => {
-      void supabase.auth.signOut({ scope: "local" });
-      setSession(null);
-    },
-    [session],
-  );
+  const logout = useCallback(() => {
+    void supabase.auth.signOut({ scope: "local" });
+    setSession(null);
+  }, []);
 
   const requestOtp = useCallback(async (phone: string) => {
     const res = await sendOtp({ data: { phone } });
