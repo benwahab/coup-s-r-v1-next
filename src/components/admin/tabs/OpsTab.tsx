@@ -45,7 +45,7 @@ export function OpsTab(p: Props) {
           return next;
         });
       })
-      .catch(() => setScheduleMsg("Impossible de charger les horaires configurés."));
+      .catch(() => setScheduleMsg(t("admin.static.scheduleLoadError")));
   }, []);
   const saveSchedule = async (gameId: "pmu" | "loto") => {
     const s = schedules[gameId];
@@ -60,7 +60,7 @@ export function OpsTab(p: Props) {
           todayPaidFcfa: s.today_paid_fcfa,
         },
       });
-      setScheduleMsg(`${gameId === "pmu" ? "PMU" : "Loto Balsa"} : horaires enregistrés.`);
+      setScheduleMsg(t("admin.static.scheduleSaved", { game: gameId === "pmu" ? "PMU" : "Loto Balsa" }));
     } catch (e) {
       setScheduleMsg((e as Error).message || "Échec de l'enregistrement.");
     }
@@ -71,7 +71,7 @@ export function OpsTab(p: Props) {
       <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
         <div className="flex items-center gap-2">
           <Clock3 className="h-4 w-4 text-primary" />
-          <h2 className="font-display text-lg font-bold">Horaires des jeux</h2>
+          <h2 className="font-display text-lg font-bold">{t("admin.static.gameSchedule")}</h2>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
           Les horaires PMU et Loto sont définis manuellement par l'administration. Fuseau :
@@ -85,7 +85,7 @@ export function OpsTab(p: Props) {
                 key={gameId}
                 className="mt-4 rounded-2xl border border-border p-4 text-sm text-muted-foreground"
               >
-                Aucun horaire configuré pour {gameId === "pmu" ? "PMU" : "Loto Balsa"}.
+                {t("admin.static.noSchedule", { game: gameId === "pmu" ? "PMU" : "Loto Balsa" })}
               </div>
             );
           const field = (
@@ -115,10 +115,10 @@ export function OpsTab(p: Props) {
             <div key={gameId} className="mt-4 rounded-2xl border border-border p-4">
               <div className="mb-3 font-bold">{gameId === "pmu" ? "PMU" : "Loto Balsa"}</div>
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                {field("open_hour", "Ouverture")}
-                {field("close_hour", "Clôture")}
-                {field("draw_hour", "Tirage")}
-                {field("draw_minute", "Minute du tirage")}
+                {field("open_hour", t("openAt"))}
+                {field("close_hour", t("closeAt"))}
+                {field("draw_hour", t("drawAt"))}
+                {field("draw_minute", t("admin.static.drawMinute"))}
               </div>
               <label className="mt-3 flex items-center gap-2 text-sm font-semibold">
                 <input
@@ -135,7 +135,7 @@ export function OpsTab(p: Props) {
               </label>
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <label className="block">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Gagnants du jour</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("todayWinners")}</span>
                   <input
                     type="number"
                     min={0}
@@ -150,7 +150,7 @@ export function OpsTab(p: Props) {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Total gagné aujourd’hui (FCFA)</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("totalPaidToday")} ({t("fcfa")})</span>
                   <input
                     type="number"
                     min={0}
@@ -184,7 +184,7 @@ export function OpsTab(p: Props) {
           <h2 className="font-display text-lg font-bold">{t("admin.ops.title")}</h2>
         </div>
         <div className="mt-3 rounded-2xl border border-border bg-muted/30 p-4">
-          <p className="text-sm font-semibold">SMS automatiques désactivés</p>
+          <p className="text-sm font-semibold">{t("admin.static.smsDisabled")}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Aucun SMS de gain n’est envoyé ou simulé tant qu’un fournisseur SMS réel n’est pas
             configuré.
