@@ -808,6 +808,7 @@ function PhoneField({
   error?: string;
   autoFocus?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-semibold text-foreground">{t("phone")}</span>
@@ -858,6 +859,7 @@ function PasswordField({
   valid?: boolean;
   autoFocus?: boolean;
 }) {
+  const { t } = useI18n();
   const validLength = PasswordSchema.safeParse(value).success;
   return (
     <label className="block">
