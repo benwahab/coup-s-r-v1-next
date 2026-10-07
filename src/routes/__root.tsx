@@ -24,6 +24,7 @@ import { AccountProvider } from "@/lib/account";
 import { AuthProvider } from "@/lib/auth";
 import { DraftsProvider } from "@/lib/drafts";
 import { AppShell } from "@/components/AppShell";
+import { Splash } from "@/components/Splash";
 
 function rootLangText(fr: string, en: string) {
   return typeof window !== "undefined" && localStorage.getItem("lonani.lang") === "en" ? en : fr;
@@ -149,6 +150,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
+        <Splash />
         <AccountProvider>
           <AuthProvider>
             <TicketsProvider>
