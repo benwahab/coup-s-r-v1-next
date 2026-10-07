@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { generateAdaptivePmu, generateAdaptiveLoto, generateAdaptiveFoot } from "@/lib/ai-adaptive.functions";
 import { cn } from "@/lib/utils";
+import { nigerParts } from "@/lib/schedule";
 import ogAsset from "@/assets/og-pronostics.jpg.asset.json";
 import { SITE_ORIGIN, absoluteOgUrl } from "@/lib/og";
 
@@ -30,6 +31,22 @@ export const Route = createFileRoute("/pronostics")({
   component: Pronos,
 });
 
+type PmuPrediction = {
+  summary: string;
+  tierce: number[];
+  quinte: number[];
+  confidence: string;
+  rationale: string;
+};
+
+type LotoPrediction = {
+  summary: string;
+  hot: number[];
+  cold: number[];
+  rotation: string;
+  suggestions: Array<{ balls: number[]; rationale: string }>;
+};
+
 type FootPrediction = {
   outcome: "1" | "X" | "2";
   probabilities: { home: number; draw: number; away: number };
@@ -46,10 +63,13 @@ function Pronos() {
   const runFoot = useServerFn(generateAdaptiveFoot);
 
   const [raceId, setRaceId] = useState<string | null>(null);
-  const [drawDate, setDrawDate] = useState(new Date().toISOString().slice(0, 10));
-  const [footMatches, setFootMatches] = useState<{id:string; league:string; home:string; away:string; kickoff:string}[]>([]);
-  const [pmu, setPmu] = useState<any>(null);
-  const [loto, setLoto] = useState<any>(null);
+  const [drawDate, setDrawDate] = useState(() => {
+    const p = nigerParts();
+    return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+  });
+  const [footMatches, setFootMatches] = useState<Array<{ id: string; league: string; home: string; away: string; kickoff: string }>>([]);
+  const [pmu, setPmu] = useState<PmuPrediction | null>(null);
+  const [loto, setLoto] = useState<LotoPrediction | null>(null);
   const [foot, setFoot] = useState<Record<string, FootPrediction | "loading" | "error">>({});
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -58,14 +78,15 @@ function Pronos() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const today = new Date().toISOString().slice(0, 10);
+      const todayParts = nigerParts();
+      const today = `${todayParts.year}-${String(todayParts.month).padStart(2, "0")}-${String(todayParts.day).padStart(2, "0")}`;
       setDrawDate(today);
       const [{ data: races }, { data: fixtures }] = await Promise.all([
         supabase.from("pmu_races").select("id").eq("race_date", today).in("status", ["scheduled", "open"]).order("start_at").limit(1),
         supabase.from("foot_fixtures").select("id,league_name,home_team,away_team,kickoff_at").eq("status", "scheduled").gte("kickoff_at", new Date().toISOString()).order("kickoff_at").limit(6),
       ]);
       setRaceId(races?.[0]?.id ?? null);
-      setFootMatches((fixtures ?? []).map((x:any) => ({id:x.id,league:x.league_name,home:x.home_team,away:x.away_team,kickoff:x.kickoff_at})));
+      setFootMatches((fixtures ?? []).map((x) => ({ id: x.id, league: x.league_name, home: x.home_team, away: x.away_team, kickoff: x.kickoff_at })));
       setLoading(false);
     };
     void load();
@@ -86,12 +107,17 @@ function Pronos() {
 
   const doFoot = async (id:string) => {
     if (foot[id] && foot[id] !== "error") return;
-    setFoot(s=>({...s,[id]:"loading"})); setError(null);
-    try { setFoot(s=>({...s,[id]:(null as any)})); const r=await runFoot({data:{fixtureId:id}}); setFoot(s=>({...s,[id]:r.prediction})); }
-    catch { setFoot(s=>({...s,[id]:"error"})); }
+    setFoot((s) => ({ ...s, [id]: "loading" }));
+    setError(null);
+    try {
+      const r = await runFoot({ data: { fixtureId: id } });
+      setFoot((s) => ({ ...s, [id]: r.prediction }));
+    } catch {
+      setFoot((s) => ({ ...s, [id]: "error" }));
+    }
   };
 
-  const pct = (n:number) => Math.round(n*100) + "%";
+  const pct = (n: number) => `${Math.round(n * 100)}%`;
 
   return (
     <>
