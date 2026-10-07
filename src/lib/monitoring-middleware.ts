@@ -8,17 +8,19 @@ import { recordClientCall } from "./monitoring-client";
  */
 export const monitoringMiddleware = createMiddleware({ type: "function" })
   .client(async ({ next, serverFnMeta, method }) => {
+    const fnName = readableFnName(serverFnMeta.id);
+    if (fnName === "ingestClientEvents") return next();
     const traceId = newTraceId();
     const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
     const ms = () => (typeof performance !== "undefined" ? performance.now() : Date.now()) - t0;
     try {
       const result = await next({ sendContext: { traceId } });
-      recordClientCall({ traceId, fnId: serverFnMeta.id, method, durationMs: ms(), ok: true });
+      recordClientCall({ traceId, fnId: fnName, method, durationMs: ms(), ok: true });
       return result;
     } catch (error) {
       recordClientCall({
         traceId,
-        fnId: serverFnMeta.id,
+        fnId: fnName,
         method,
         durationMs: ms(),
         ok: false,
@@ -69,3 +71,14 @@ export const monitoringMiddleware = createMiddleware({ type: "function" })
       throw error;
     }
   });
+
+/** Convertit l'identifiant technique (base64url JSON) en nom lisible de fonction. */
+function readableFnName(id: string): string {
+  try {
+    const json = JSON.parse(atob(id.replace(/-/g, "+").replace(/_/g, "/")));
+    const exp = typeof json?.export === "string" ? json.export : "";
+    return exp.replace(/_createServerFn_handler$/, "") || id.slice(0, 80);
+  } catch {
+    return id.slice(0, 80);
+  }
+}
