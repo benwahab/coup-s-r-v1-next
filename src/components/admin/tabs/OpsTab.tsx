@@ -50,7 +50,16 @@ export function OpsTab(p: Props) {
   const saveSchedule = async (gameId: "pmu" | "loto") => {
     const s = schedules[gameId];
     try {
-      await adminUpdateGameSchedule({ data: { gameId, ...s } });
+      const dailyStatsDate = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Niamey" });
+      await adminUpdateGameSchedule({
+        data: {
+          gameId,
+          ...s,
+          dailyStatsDate,
+          todayWinnersCount: s.today_winners_count,
+          todayPaidFcfa: s.today_paid_fcfa,
+        },
+      });
       setScheduleMsg(`${gameId === "pmu" ? "PMU" : "Loto Balsa"} : horaires enregistrés.`);
     } catch (e) {
       setScheduleMsg((e as Error).message || "Échec de l'enregistrement.");
