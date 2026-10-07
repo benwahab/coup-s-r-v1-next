@@ -20,7 +20,9 @@ import { TERMS_VERSION, PRIVACY_VERSION, makeUserId } from "@/lib/legal";
 import { PremiumPhoneCard } from "@/components/PremiumPhoneCard";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
-function createAccountSchema(t: (key: string) => string) {
+type Translator = ReturnType<typeof useI18n>["t"];
+
+function createAccountSchema(t: Translator) {
   return z.object({
     firstName: z.string().trim().min(2, t("account.validation.firstNameShort")).max(80, t("account.validation.firstNameLong")),
     lastName: z.string().trim().min(2, t("account.validation.lastNameShort")).max(80, t("account.validation.lastNameLong")),
