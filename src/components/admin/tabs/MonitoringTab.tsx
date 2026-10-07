@@ -51,8 +51,8 @@ export function MonitoringTab() {
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-xl font-bold">Supervision technique</h2>
-          <p className="text-xs text-muted-foreground">Fenêtre glissante des 60 dernières minutes · actualisation automatique chaque minute</p>
+          <h2 className="font-display text-xl font-bold">{t("admin.static.supervision")}</h2>
+          <p className="text-xs text-muted-foreground">{t("admin.static.supervisionWindow")}</p>
         </div>
         <button onClick={() => void load()} disabled={busy} className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-2 text-xs font-semibold">
           <RefreshCw className={busy ? "h-4 w-4 animate-spin" : "h-4 w-4"} /> Actualiser
@@ -81,12 +81,12 @@ export function MonitoringTab() {
           </div>
           <div className="grid gap-4 xl:grid-cols-2">
             <div className="rounded-2xl border border-border bg-card p-4">
-              <h3 className="font-bold">Services observés</h3>
-              <div className="mt-3 space-y-2">{data.services.length ? data.services.map(s => <div key={s.service} className="flex items-center justify-between rounded-xl bg-secondary/30 px-3 py-2 text-xs"><span>{s.service}</span><span>{s.events} év. · {s.errors} err. · {s.avgLatencyMs} ms</span></div>) : <p className="text-xs text-muted-foreground">Aucun événement.</p>}</div>
+              <h3 className="font-bold">{t("admin.static.services")}</h3>
+              <div className="mt-3 space-y-2">{data.services.length ? data.services.map(s => <div key={s.service} className="flex items-center justify-between rounded-xl bg-secondary/30 px-3 py-2 text-xs"><span>{s.service}</span><span>{s.events} év. · {s.errors} err. · {s.avgLatencyMs} ms</span></div>) : <p className="text-xs text-muted-foreground">{t("admin.static.none")}</p>}</div>
             </div>
             <div className="rounded-2xl border border-border bg-card p-4">
-              <h3 className="font-bold">Incidents ouverts</h3>
-              <div className="mt-3 space-y-2">{data.incidents.length ? data.incidents.map(i => <label key={i.id} className="flex cursor-pointer gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs"><input type="radio" name="incident" checked={incidentId === i.id} onChange={() => setIncidentId(i.id)} aria-label={`Sélectionner l'incident ${i.title}`} /><div><div className="font-semibold">{i.title}</div><div className="mt-1 text-muted-foreground">{i.service} · {i.metric} · {i.severity} · {i.status}</div></div></label>) : <p className="text-xs text-muted-foreground">Aucun incident ouvert.</p>}</div>
+              <h3 className="font-bold">{t("admin.static.openIncidents")}</h3>
+              <div className="mt-3 space-y-2">{data.incidents.length ? data.incidents.map(i => <label key={i.id} className="flex cursor-pointer gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs"><input type="radio" name="incident" checked={incidentId === i.id} onChange={() => setIncidentId(i.id)} aria-label={`Sélectionner l'incident ${i.title}`} /><div><div className="font-semibold">{i.title}</div><div className="mt-1 text-muted-foreground">{i.service} · {i.metric} · {i.severity} · {i.status}</div></div></label>) : <p className="text-xs text-muted-foreground">{t("admin.static.noIncident")}</p>}</div>
             </div>
           </div>
           <div className="grid gap-4 xl:grid-cols-2">
@@ -95,15 +95,15 @@ export function MonitoringTab() {
               <div className="mt-3 space-y-2">{data.alertRules.map(r => <div key={r.id} className="flex justify-between rounded-xl bg-secondary/30 px-3 py-2 text-xs"><span>{r.metric}</span><span>{r.enabled ? r.threshold : "désactivé"}</span></div>)}</div>
             </div>
             <div className="rounded-2xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2"><Database className="h-4 w-4 text-primary" /><h3 className="font-bold">Base de données</h3></div>
+              <div className="flex items-center gap-2"><Database className="h-4 w-4 text-primary" /><h3 className="font-bold">{t("admin.static.database")}</h3></div>
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs">{Object.entries(data.dbStats).map(([k,v]) => <div key={k} className="rounded-xl bg-secondary/30 p-2"><div className="text-muted-foreground">{k}</div><div className="font-semibold">{String(v)}</div></div>)}</div>
             </div>
           </div>
           <div className="rounded-2xl border border-border bg-card p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-bold">Événements récents</h3><div className="flex items-center gap-2 text-xs text-muted-foreground"><span>{selected.size} journal(aux){incidentId ? " + 1 incident" : ""}</span>{(selected.size > 0 || incidentId) && <button onClick={() => { setSelected(new Set()); setIncidentId(null); }} className="underline">{t("admin.static.clear")}</button>}<button onClick={() => void analyze()} disabled={analyzing || (selected.size === 0 && !incidentId)} className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-2 font-semibold text-primary-foreground disabled:opacity-50"><Sparkles className={analyzing ? "h-4 w-4 animate-pulse" : "h-4 w-4"} />{analyzing ? "Analyse…" : "Analyser avec l'IA"}</button></div></div>
+            <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-bold">{t("admin.static.recentEvents")}</h3><div className="flex items-center gap-2 text-xs text-muted-foreground"><span>{selected.size} journal(aux){incidentId ? " + 1 incident" : ""}</span>{(selected.size > 0 || incidentId) && <button onClick={() => { setSelected(new Set()); setIncidentId(null); }} className="underline">{t("admin.static.clear")}</button>}<button onClick={() => void analyze()} disabled={analyzing || (selected.size === 0 && !incidentId)} className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-2 font-semibold text-primary-foreground disabled:opacity-50"><Sparkles className={analyzing ? "h-4 w-4 animate-pulse" : "h-4 w-4"} />{analyzing ? "Analyse…" : "Analyser avec l'IA"}</button></div></div>
             {aiError && <p className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{aiError}</p>}
             {analysis && <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm"><div className="mb-2 text-xs text-muted-foreground">Analyse IA · {analysis.eventCount} journal(aux){analysis.incidentTitle ? ` · ${analysis.incidentTitle}` : ""} · suggestion à vérifier</div><div className="whitespace-pre-wrap">{analysis.summary}</div></div>}
-            <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b border-border text-muted-foreground"><th className="p-2"></th><th className="p-2">Heure</th><th className="p-2">Service</th><th className="p-2">Endpoint</th><th className="p-2">Statut</th><th className="p-2">Durée</th><th className="p-2">Trace</th></tr></thead><tbody>{data.recentEvents.slice(0,50).map(e => <tr key={e.id} className="border-b border-border/50"><td className="p-2"><input type="checkbox" checked={selected.has(e.id)} onChange={() => toggle(e.id)} aria-label={`Sélectionner ${e.traceId}`} /></td><td className="p-2 whitespace-nowrap">{new Date(e.createdAt).toLocaleString("fr-FR")}</td><td className="p-2">{e.service}</td><td className="p-2 max-w-[240px] truncate">{e.endpoint ?? "—"}</td><td className="p-2">{e.status ?? "—"} · {e.level}</td><td className="p-2">{e.durationMs ?? "—"} ms</td><td className="p-2 font-mono">{e.traceId}</td></tr>)}</tbody></table></div>
+            <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b border-border text-muted-foreground"><th className="p-2"></th><th className="p-2">{t("admin.static.hour")}</th><th className="p-2">{t("admin.static.service")}</th><th className="p-2">{t("admin.static.endpoint")}</th><th className="p-2">{t("admin.static.status")}</th><th className="p-2">{t("admin.static.duration")}</th><th className="p-2">{t("admin.static.trace")}</th></tr></thead><tbody>{data.recentEvents.slice(0,50).map(e => <tr key={e.id} className="border-b border-border/50"><td className="p-2"><input type="checkbox" checked={selected.has(e.id)} onChange={() => toggle(e.id)} aria-label={`Sélectionner ${e.traceId}`} /></td><td className="p-2 whitespace-nowrap">{new Date(e.createdAt).toLocaleString("fr-FR")}</td><td className="p-2">{e.service}</td><td className="p-2 max-w-[240px] truncate">{e.endpoint ?? "—"}</td><td className="p-2">{e.status ?? "—"} · {e.level}</td><td className="p-2">{e.durationMs ?? "—"} ms</td><td className="p-2 font-mono">{e.traceId}</td></tr>)}</tbody></table></div>
           </div>
         </>
       )}
