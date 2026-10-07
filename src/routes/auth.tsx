@@ -24,7 +24,6 @@ import { useI18n } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { checkPhoneAccount } from "@/lib/account.functions";
 import { loginWithPassword, setUserPassword } from "@/lib/password.functions";
-import { getServerConfigStatus } from "@/lib/server-config.functions";
 
 const PENDING_KEY = "coupsur.auth.pending";
 
@@ -110,43 +109,9 @@ function AuthPage() {
 
   const lockMs = remainingLockMs();
   const otpLocked = step === "otp" && (isPermanent() || lockMs > 0);
-  const [config, setConfig] = useState<
-    { state: "checking" } | { state: "ready" } | { state: "error"; message: string }
-  >({ state: "checking" });
-
-  const checkConfig = async () => {
-    setConfig({ state: "checking" });
-    const clientOk =
-      !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    if (!clientOk) {
-      setConfig({
-        state: "error",
-        message: t("auth.serverMissing"),
-      });
-      return;
-    }
-    try {
-      const res = await getServerConfigStatus();
-      setConfig(
-        res.ready
-          ? { state: "ready" }
-          : {
-              state: "error",
-              message: t("auth.serverNotReady", { missing: res.missing.join(", ") }),
-            },
-      );
-    } catch {
-      setConfig({
-        state: "error",
-        message: t("auth.serverUnreachable"),
-      });
-    }
-  };
-
   // Restaure l'étape du code après un rechargement de la page (mauvaise
   // connexion, mise à jour de l'aperçu). Ni mot de passe ni code n'est stocké.
   useEffect(() => {
-    void checkConfig();
     try {
       const raw = sessionStorage.getItem(PENDING_KEY);
       if (!raw) return;
@@ -516,23 +481,7 @@ function AuthPage() {
             <p className="mt-2 text-sm leading-6 text-muted-foreground">{subtitle}</p>
           </header>
 
-          {config.state === "checking" && (
-            <div role="status" className="mb-4 flex items-center gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> {t("auth.checkingServer")}
-            </div>
-          )}
-          {config.state === "error" && (
-            <div role="alert" className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{config.message}</span>
-              </div>
-              <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => void checkConfig()}>
-                <RefreshCw /> {t("auth.retry")}
-              </Button>
-            </div>
-          )}
-          <fieldset disabled={config.state !== "ready"} className="contents">
+          <fieldset className="contents">
 
 
           {step === "form" && mode === "login" && (
