@@ -496,10 +496,10 @@ export interface MonitoringSnapshot {
     severity: string;
     status: string;
     title: string;
-    detail: unknown;
+    detail: string;
   }[];
   alertRules: { id: string; metric: string; threshold: number; enabled: boolean }[];
-  dbStats: Record<string, unknown>;
+  dbStats: Record<string, string | number | boolean | null>;
 }
 
 export const adminGetMonitoringSnapshot = createServerFn({ method: "POST" })
@@ -565,10 +565,10 @@ export const adminGetMonitoringSnapshot = createServerFn({ method: "POST" })
       })),
       incidents: (incidents ?? []).map((i) => ({
         id: i.id, createdAt: i.created_at, startedAt: i.started_at, service: i.service,
-        metric: i.metric, severity: i.severity, status: i.status, title: i.title, detail: i.detail,
+        metric: i.metric, severity: i.severity, status: i.status, title: i.title, detail: JSON.stringify(i.detail ?? null),
       })),
       alertRules: (rules ?? []).map((r) => ({ id: r.id, metric: r.metric, threshold: r.threshold, enabled: r.enabled })),
-      dbStats: (dbStats && typeof dbStats === "object" && !Array.isArray(dbStats)) ? dbStats as Record<string, unknown> : {},
+      dbStats: (dbStats && typeof dbStats === "object" && !Array.isArray(dbStats)) ? Object.fromEntries(Object.entries(dbStats as Record<string, unknown>).map(([k, v]) => [k, v == null || typeof v === "number" || typeof v === "boolean" ? (v as number | boolean | null) : String(v)])) : {},
     } satisfies MonitoringSnapshot;
   });
 
