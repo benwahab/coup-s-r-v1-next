@@ -11,6 +11,9 @@ const scheduleSchema = z.object({
   drawHour: z.number().int().min(0).max(23),
   drawMinute: z.number().int().min(0).max(59),
   enabled: z.boolean(),
+  dailyStatsDate: z.string().date(),
+  todayWinnersCount: z.number().int().min(0).nullable(),
+  todayPaidFcfa: z.number().int().min(0).nullable(),
 });
 
 async function assertOperationsPermission(userId: string) {
@@ -50,6 +53,9 @@ export const adminUpdateGameSchedule = createServerFn({ method: "POST" })
           draw_minute: data.drawMinute,
           timezone: "Africa/Niamey",
           enabled: data.enabled,
+          daily_stats_date: data.dailyStatsDate,
+          today_winners_count: data.todayWinnersCount,
+          today_paid_fcfa: data.todayPaidFcfa,
           updated_at: new Date().toISOString(),
           updated_by: context.userId,
         },
@@ -69,6 +75,9 @@ export const adminUpdateGameSchedule = createServerFn({ method: "POST" })
         closeHour: data.closeHour,
         drawHour: data.drawHour,
         drawMinute: data.drawMinute,
+        dailyStatsDate: data.dailyStatsDate,
+        todayWinnersCount: data.todayWinnersCount,
+        todayPaidFcfa: data.todayPaidFcfa,
       },
     });
 
