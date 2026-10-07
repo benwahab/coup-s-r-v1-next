@@ -186,10 +186,6 @@ export function SiteFooter() {
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-x-1 gap-y-1.5 text-[11px]">
           {[
-            { to: "/" as const, label: t("home") },
-            { to: "/resultats" as const, label: t("results") },
-            { to: "/mes-tickets" as const, label: t("myTickets") },
-            { to: "/auth" as const, label: t("shell.login") },
             { to: "/conditions" as const, label: t("shell.footer.terms") },
             { to: "/confidentialite" as const, label: t("shell.footer.privacyPolicy") },
           ].map((l) => (
