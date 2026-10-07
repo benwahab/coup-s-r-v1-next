@@ -1,1 +1,7 @@
 project_id = "gisjxogimycghgkxedif"
+
+[functions.foot-sync]
+verify_jwt = false
+
+[functions.pmu-sync]
+verify_jwt = false
