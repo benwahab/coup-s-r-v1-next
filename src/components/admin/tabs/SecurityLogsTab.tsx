@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n";
 import { downloadCsv } from "@/components/admin/shared";
 
 export function SecurityLogsTab() {
+  const { t } = useI18n();
   const [logs, setLogs] = useState<SecurityLogRow[]>([]);
   const [days, setDays] = useState(7);
   const [search, setSearch] = useState("");
