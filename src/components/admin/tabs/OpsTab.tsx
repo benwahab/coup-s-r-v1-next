@@ -41,6 +41,9 @@ export function OpsTab(p: Props) {
                 draw_hour: row.draw_hour,
                 draw_minute: row.draw_minute,
                 enabled: row.enabled,
+                daily_stats_date: row.daily_stats_date,
+                today_winners_count: row.today_winners_count,
+                today_paid_fcfa: row.today_paid_fcfa,
               };
           return next;
         });
@@ -49,6 +52,10 @@ export function OpsTab(p: Props) {
   }, []);
   const saveSchedule = async (gameId: "pmu" | "loto") => {
     const s = schedules[gameId];
+    if (!s) {
+      setScheduleMsg(t("admin.static.noSchedule", { game: gameId === "pmu" ? "PMU" : "Loto Balsa" }));
+      return;
+    }
     try {
       const dailyStatsDate = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Niamey" });
       await adminUpdateGameSchedule({
