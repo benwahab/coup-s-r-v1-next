@@ -43,7 +43,6 @@ type LotoPrediction = {
   summary: string;
   hot: number[];
   cold: number[];
-  rotation: string;
   suggestions: Array<{ balls: number[]; rationale: string }>;
 };
 
