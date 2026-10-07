@@ -30,7 +30,7 @@ export const getGameSchedules = createServerFn({ method: "POST" })
   .handler(async () => {
     const { data, error } = await supabaseAdmin
       .from("game_schedules")
-      .select("game_id,open_hour,close_hour,draw_hour,draw_minute,timezone,enabled,updated_at")
+      .select("game_id,open_hour,close_hour,draw_hour,draw_minute,timezone,enabled,daily_stats_date,today_winners_count,today_paid_fcfa,updated_at")
       .order("game_id");
     if (error) throw new Error("schedule_lookup_failed: " + error.message);
     return data ?? [];
