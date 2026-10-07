@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n";
 type DrawResultPayload = { numbers: number[] } | { horses: number[] };
 
 export function ResultsTab() {
+  const { t } = useI18n();
   const [gameId, setGameId] = useState<"loto" | "pmu">("loto");
   const [drawDate, setDrawDate] = useState(new Date().toISOString().slice(0, 10));
   const [values, setValues] = useState("");
