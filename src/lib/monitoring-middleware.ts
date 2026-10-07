@@ -9,7 +9,7 @@ import { recordClientCall } from "./monitoring-client";
 export const monitoringMiddleware = createMiddleware({ type: "function" })
   .client(async ({ next, serverFnMeta, method }) => {
     const fnName = readableFnName(serverFnMeta.id);
-    if (fnName === "ingestClientEvents") return next();
+    if (fnName === "ingestClientEvents") return next({ sendContext: { traceId: newTraceId() } });
     const traceId = newTraceId();
     const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
     const ms = () => (typeof performance !== "undefined" ? performance.now() : Date.now()) - t0;
