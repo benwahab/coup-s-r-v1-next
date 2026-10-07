@@ -91,7 +91,7 @@ export function MonitoringTab() {
           </div>
           <div className="grid gap-4 xl:grid-cols-2">
             <div className="rounded-2xl border border-border bg-card p-4">
-              <h3 className="font-bold">Seuils d'alerte</h3>
+              <h3 className="font-bold" >{t("admin.static.thresholds")}</h3>
               <div className="mt-3 space-y-2">{data.alertRules.map(r => <div key={r.id} className="flex justify-between rounded-xl bg-secondary/30 px-3 py-2 text-xs"><span>{r.metric}</span><span>{r.enabled ? r.threshold : "désactivé"}</span></div>)}</div>
             </div>
             <div className="rounded-2xl border border-border bg-card p-4">
