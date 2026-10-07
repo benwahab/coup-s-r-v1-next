@@ -714,3 +714,84 @@ export const superAdminGetProductionReadiness = createServerFn({ method: "POST" 
     const ready = checks.every((c) => c.status === "ok");
     return { ready, checks, checkedAt: new Date().toISOString() };
   });
+
+export interface MonitoringAnalysis {
+  summary: string;
+  model: string;
+  eventCount: number;
+  incidentTitle: string | null;
+}
+
+/** Analyse IA (AI Gateway) des journaux et d'un incident sélectionnés par un administrateur autorisé. */
+export const adminAnalyzeMonitoring = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .inputValidator((input: unknown) =>
+    z.object({
+      eventIds: z.array(z.string().uuid()).max(50),
+      incidentId: z.string().uuid().nullable(),
+    }).refine((v) => v.eventIds.length > 0 || v.incidentId, "selection_required").parse(input),
+  )
+  .handler(async ({ data, context }): Promise<MonitoringAnalysis> => {
+    await assertAdminPermission(context.supabase as SB, context.userId, "supervision");
+    const { sanitize } = await import("./monitoring.shared");
+    const events = data.eventIds.length
+      ? (await context.supabase
+          .from("monitoring_events")
+          .select("created_at,source,level,service,endpoint,method,status,duration_ms,trace_id,environment,message,page,device")
+          .in("id", data.eventIds)
+          .order("created_at", { ascending: true })).data ?? []
+      : [];
+    const incident = data.incidentId
+      ? (await context.supabase
+          .from("monitoring_incidents")
+          .select("title,service,metric,severity,status,started_at,detail")
+          .eq("id", data.incidentId)
+          .maybeSingle()).data
+      : null;
+    if (!events.length && !incident) throw new Error("selection_not_found");
+
+    const lines = events.map((e) =>
+      [e.created_at, e.source, e.level, e.service, e.endpoint, e.method, `status=${e.status ?? "?"}`, `${e.duration_ms ?? "?"}ms`, e.trace_id, e.environment, e.page ?? "", e.device ?? "", sanitize(e.message, 300) ?? ""].join(" | "),
+    );
+    const incidentText = incident
+      ? `Incident : ${incident.title} | service=${incident.service} | métrique=${incident.metric} | gravité=${incident.severity} | statut=${incident.status} | début=${incident.started_at} | détail=${sanitize(JSON.stringify(incident.detail), 800)}`
+      : "Aucun incident sélectionné.";
+
+    const apiKey = process.env["LOVABLE_API_KEY"];
+    if (!apiKey) throw new Error("ai_not_configured");
+    const { createOpenAI } = await import("@ai-sdk/openai");
+    const { streamText } = await import("ai");
+    const openai = createOpenAI({
+      baseURL: "https://ai.gateway.lovable.dev/v1",
+      apiKey,
+      headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
+    });
+    const model = "openai/gpt-6-astra";
+    const result = streamText({
+      model: openai.responses(model),
+      maxRetries: 0,
+      system:
+        "Tu es ingénieur SRE pour Coup Sûr (plateforme de jeux au Niger, TanStack Start sur Cloudflare Workers, Supabase, paiement Airtel Money). Réponds en français simple, 250 mots maximum, en Markdown avec exactement trois sections : « Cause probable », « Étapes de diagnostic » (liste numérotée, 3 à 6 étapes concrètes), « Niveau de confiance » (faible/moyen/élevé avec une phrase). Base-toi uniquement sur les données fournies ; si elles sont insuffisantes, dis-le.",
+      prompt: `${incidentText}\n\nJournaux (${lines.length}) :\nheure | source | niveau | service | endpoint | méthode | statut | durée | trace | env | page | appareil | message\n${lines.join("\n") || "(aucun)"}`,
+      providerOptions: {
+        openai: { forceReasoning: true, reasoningEffort: "low", store: false },
+      },
+    });
+    let summary: string;
+    try {
+      summary = (await result.text).trim();
+    } catch (error) {
+      const status = (error as { statusCode?: number }).statusCode;
+      if (status === 402) throw new Error("ai_credits_exhausted");
+      if (status === 429) throw new Error("ai_rate_limited");
+      if (status === 403) throw new Error("ai_access_denied");
+      throw new Error("ai_unavailable");
+    }
+    if (!summary) throw new Error("ai_empty");
+    await writeAuditLog({
+      userId: context.userId,
+      action: "admin.monitoring.ai_analysis",
+      detail: { eventCount: events.length, incidentId: data.incidentId },
+    }).catch(() => {});
+    return { summary, model, eventCount: events.length, incidentTitle: incident?.title ?? null };
+  });
