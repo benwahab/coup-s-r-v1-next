@@ -32,10 +32,7 @@ function validDate(value: string) {
 
 Deno.serve(async (req) => {
   const expected = Deno.env.get("PMU_SYNC_SECRET");
-  if (!expected) {
-    return Response.json({ error: "pmu_sync_not_configured" }, { status: 503 });
-  }
-  if (req.headers.get("x-pmu-sync-secret") !== expected) {
+  if (!expected || req.headers.get("x-pmu-sync-secret") !== expected) {
     return new Response("unauthorized", { status: 401 });
   }
 
