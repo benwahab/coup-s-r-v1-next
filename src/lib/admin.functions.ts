@@ -579,7 +579,7 @@ export interface SecurityLogRow {
   userId: string | null;
   phone: string | null;
   ip: string | null;
-  detail: import("@/integrations/supabase/types").Json;
+  detail: string;
 }
 
 export const adminListSecurityLogs = createServerFn({ method: "POST" })
@@ -620,7 +620,7 @@ export const adminListSecurityLogs = createServerFn({ method: "POST" })
     };
     const mapped = (rows ?? []).map((r) => ({
       id: r.id, createdAt: r.created_at, action: r.action, userId: r.user_id,
-      phone: r.user_id ? phoneById.get(r.user_id) ?? null : null, ip: r.ip, detail: sanitized(r.detail),
+      phone: r.user_id ? phoneById.get(r.user_id) ?? null : null, ip: r.ip, detail: JSON.stringify(sanitized(r.detail) ?? null),
     }));
     const filtered = data.search && /^\d{8}$/.test(data.search)
       ? mapped.filter((r) => r.phone === data.search || r.userId === data.search)
