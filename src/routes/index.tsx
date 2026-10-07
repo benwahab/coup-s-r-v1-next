@@ -248,6 +248,10 @@ function Index() {
 
   const todayLabel = nigerDateLabel();
   const todayDate = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Niamey" });
+  const pmuDailyStats =
+    pmuSchedule?.daily_stats_date === todayDate
+      ? { winners: pmuSchedule.today_winners_count, paid: pmuSchedule.today_paid_fcfa }
+      : { winners: null, paid: null };
   const lotoDailyStats =
     lotoSchedule?.daily_stats_date === todayDate
       ? { winners: lotoSchedule.today_winners_count, paid: lotoSchedule.today_paid_fcfa }
