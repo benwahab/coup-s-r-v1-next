@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { adminCreateDrawResult, adminPublishDrawResult } from "@/lib/settlement.functions";
+import { useI18n } from "@/lib/i18n";
 
 type DrawResultPayload = { numbers: number[] } | { horses: number[] };
 
@@ -26,7 +27,7 @@ export function ResultsTab() {
           numbers.some((n) => !Number.isInteger(n) || n < 1 || n > 90) ||
           new Set(numbers).size !== numbers.length
         ) {
-          throw new Error("Numéros Loto invalides.");
+          throw new Error(t("admin.static.invalidLoto"));
         }
         result = { numbers };
       } else if (gameId === "pmu") {
@@ -35,7 +36,7 @@ export function ResultsTab() {
           .filter(Boolean)
           .map(Number);
         if (!horses.length || horses.some((n) => !Number.isInteger(n) || n <= 0)) {
-          throw new Error("Classement PMU invalide.");
+          throw new Error(t("admin.static.invalidPmu"));
         }
         result = { horses };
       }
@@ -58,11 +59,11 @@ export function ResultsTab() {
       }
 
       setMessage(
-        `Publié : ${resultIds.length} résultat(s), ${settled} coupon(s) traité(s), ${winners} gagnant(s), ${losers} perdant(s), ${skipped} en attente.`,
+        t("admin.static.published", { results: resultIds.length, settled, winners, losers, skipped }),
       );
       setValues("");
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Erreur.");
+      setMessage(e instanceof Error ? e.message : t("shell.errorTitle"));
     } finally {
       setBusy(false);
     }
@@ -70,7 +71,7 @@ export function ResultsTab() {
 
   return (
     <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
-      <h2 className="text-xl font-extrabold">Résultats & règlement automatique</h2>
+      <h2 className="text-xl font-extrabold">{t("admin.static.resultPublishTitle")}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Les résultats PMU et Loto sont publiés manuellement par un administrateur. Le règlement des
         coupons est déclenché après publication. Une future intégration API pourra automatiser cette
