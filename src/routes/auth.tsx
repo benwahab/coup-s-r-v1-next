@@ -54,24 +54,33 @@ const NIGER_REGIONS = [
   "Zinder",
 ];
 
+function getStoredAuthLang(): "fr" | "en" {
+  if (typeof window === "undefined") return "fr";
+  return localStorage.getItem("lonani.lang") === "en" ? "en" : "fr";
+}
+
 export const Route = createFileRoute("/auth")({
-  head: () => ({
-    meta: [
-      { title: "Connexion et création de compte — Coup Sûr" },
-      {
-        name: "description",
-        content: "Connectez-vous ou créez votre compte Coup Sûr avec votre numéro nigérien.",
-      },
-      { property: "og:title", content: "Connexion et création de compte — Coup Sûr" },
-      {
-        property: "og:description",
-        content: "Accédez en toute sécurité à votre compte Coup Sûr.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "robots", content: "noindex, follow" },
-    ],
-  }),
+  head: () => {
+    const en = getStoredAuthLang() === "en";
+    const title = en ? "Sign in or create an account — Coup Sûr" : "Connexion et création de compte — Coup Sûr";
+    const description = en
+      ? "Sign in or create your Coup Sûr account with your Nigerien phone number."
+      : "Connectez-vous ou créez votre compte Coup Sûr avec votre numéro nigérien.";
+    const ogDescription = en
+      ? "Securely access your Coup Sûr account."
+      : "Accédez en toute sécurité à votre compte Coup Sûr.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: ogDescription },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary" },
+        { name: "robots", content: "noindex, follow" },
+      ],
+    };
+  },
   component: AuthPage,
 });
 
@@ -112,8 +121,7 @@ function AuthPage() {
     if (!clientOk) {
       setConfig({
         state: "error",
-        message:
-          "L’application n’a pas l’adresse du serveur Coup Sûr. Les formulaires ne peuvent pas être envoyés.",
+        message: t("auth.serverMissing"),
       });
       return;
     }
@@ -257,8 +265,8 @@ function AuthPage() {
       setResendIn(60);
       setStatus(
         result.demoCode
-          ? "Mode démo actif : aucun SMS n’a été envoyé."
-          : `Un code de vérification a été envoyé au ${formatPhone(phone)}.`,
+          ? t("auth.demoActive")
+          : t("auth.codeSent", { phone: formatPhone(phone) }),
       );
     } catch {
       setErrors({ otp: t("auth.network") });
@@ -292,7 +300,7 @@ function AuthPage() {
       const { supabase } = await import("@/integrations/supabase/client");
       const { error } = await supabase.auth.setSession(result.session);
       if (error) throw error;
-      toast.success("Connexion réussie.");
+      toast.success(t("auth.loginSuccess"));
       await navigate({ to: "/" });
     } catch {
       setErrors({ password: t("auth.loginFailed") });
@@ -366,7 +374,7 @@ function AuthPage() {
       setStep("new-password");
       setStatus(t("auth.numberVerified"));
     } catch {
-      setErrors({ otp: "Vérification impossible. Vérifiez votre réseau puis réessayez." });
+      setErrors({ otp: t("auth.verifyFailed") });
     } finally {
       setBusy(false);
     }
@@ -494,7 +502,7 @@ function AuthPage() {
               onClick={goBack}
               className="mb-4 -ml-2 text-muted-foreground hover:text-foreground"
             >
-              <ArrowLeft /> Retour
+              <ArrowLeft /> {t("auth.back")}
             </Button>
           )}
 
@@ -510,7 +518,7 @@ function AuthPage() {
 
           {config.state === "checking" && (
             <div role="status" className="mb-4 flex items-center gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Vérification du serveur…
+              <Loader2 className="h-4 w-4 animate-spin" /> {t("auth.checkingServer")}
             </div>
           )}
           {config.state === "error" && (
@@ -520,7 +528,7 @@ function AuthPage() {
                 <span>{config.message}</span>
               </div>
               <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => void checkConfig()}>
-                <RefreshCw /> Réessayer
+                <RefreshCw /> {t("auth.retry")}
               </Button>
             </div>
           )}
@@ -538,7 +546,7 @@ function AuthPage() {
             >
               <PhoneField phone={phone} onChange={setPhone} error={errors.phone} autoFocus />
               <PasswordField
-                label="Mot de passe"
+                label={t("auth.password")}
                 value={password}
                 onChange={setPassword}
                 visible={showPassword}
@@ -553,19 +561,19 @@ function AuthPage() {
                   className="h-auto p-0 text-accent"
                   onClick={() => switchMode("recovery")}
                 >
-                  Mot de passe oublié ?
+                  {t("auth.forgotLink")}
                 </Button>
               </div>
-              <PrimaryButton busy={busy} idleLabel="Se connecter" busyLabel="Connexion…" />
+              <PrimaryButton busy={busy} idleLabel={t("auth.signIn")} busyLabel={t("auth.loggingIn")} />
               <p className="text-center text-sm text-muted-foreground">
-                Vous n’avez pas encore de compte ?{" "}
+                {t("auth.noAccount")}{" "}
                 <Button
                   type="button"
                   variant="link"
                   className="h-auto p-0 text-accent"
                   onClick={() => switchMode("signup")}
                 >
-                  Créer un compte
+                  {t("auth.createAccountLink")}
                 </Button>
               </p>
             </form>
@@ -581,8 +589,8 @@ function AuthPage() {
               noValidate
             >
               <div className="grid grid-cols-2 gap-3">
-                <TextField label="Prénom" value={firstName} onChange={setFirstName} error={errors.firstName} autoComplete="given-name" autoFocus />
-                <TextField label="Nom" value={lastName} onChange={setLastName} error={errors.lastName} autoComplete="family-name" />
+                <TextField label={t("auth.firstName")} value={firstName} onChange={setFirstName} error={errors.firstName} autoComplete="given-name" autoFocus />
+                <TextField label={t("auth.lastName")} value={lastName} onChange={setLastName} error={errors.lastName} autoComplete="family-name" />
               </div>
               <label className="block">
                 <span className="mb-1.5 block text-sm font-semibold text-foreground">{t("region")}</span>
@@ -601,7 +609,7 @@ function AuthPage() {
               </label>
               <PhoneField phone={phone} onChange={setPhone} error={errors.phone} />
               <PasswordField
-                label="Mot de passe"
+                label={t("auth.password")}
                 value={password}
                 onChange={setPassword}
                 visible={showPassword}
@@ -611,7 +619,7 @@ function AuthPage() {
                 showIndicator
               />
               <PasswordField
-                label="Confirmation du mot de passe"
+                label={t("auth.passwordConfirmation")}
                 value={confirmation}
                 onChange={setConfirmation}
                 visible={showConfirmation}
@@ -628,34 +636,34 @@ function AuthPage() {
                   className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-[var(--color-primary)] transition-transform duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
                 />
                 <span>
-                  J’accepte les{" "}
+                  {t("auth.acceptPrefix")}{" "}
                   <Link
                     to="/conditions"
                     className="font-semibold text-accent underline-offset-4 hover:underline"
                   >
-                    conditions d’utilisation
+                    {t("auth.terms")}
                   </Link>{" "}
-                  et la{" "}
+                  {t("auth.acceptAnd")}{" "}
                   <Link
                     to="/confidentialite"
                     className="font-semibold text-accent underline-offset-4 hover:underline"
                   >
-                    politique de confidentialité
+                    {t("auth.privacy")}
                   </Link>
                   .
                 </span>
               </label>
               {errors.terms && <FieldError>{errors.terms}</FieldError>}
-              <PrimaryButton busy={busy} idleLabel="Créer mon compte" busyLabel="Création…" />
+              <PrimaryButton busy={busy} idleLabel={t("auth.createAccount")} busyLabel={t("auth.creating")} />
               <p className="text-center text-sm text-muted-foreground">
-                Vous avez déjà un compte ?{" "}
+                {t("auth.hasAccount")}{" "}
                 <Button
                   type="button"
                   variant="link"
                   className="h-auto p-0 text-accent"
                   onClick={() => switchMode("login")}
                 >
-                  Se connecter
+                  {t("auth.signIn")}
                 </Button>
               </p>
             </form>
@@ -672,7 +680,7 @@ function AuthPage() {
             >
               <PhoneField phone={phone} onChange={setPhone} error={errors.phone} autoFocus />
               {errors.otp && <Notice variant="error">{errors.otp}</Notice>}
-              <PrimaryButton busy={busy} idleLabel="Continuer" busyLabel="Vérification…" />
+              <PrimaryButton busy={busy} idleLabel={t("auth.continue")} busyLabel={t("auth.verifying")} />
             </form>
           )}
 
@@ -689,7 +697,7 @@ function AuthPage() {
                 <Notice variant="demo">
                   <strong>{t("auth.demoActive")}</strong>
                   <span className="mt-1 block">
-                    Votre code est{" "}
+                    {t("auth.yourCode")}{" "}
                     <span className="font-display text-lg font-bold tracking-[0.18em]">
                       {demoCode}
                     </span>
@@ -736,13 +744,13 @@ function AuthPage() {
               </div>
               {otpLocked && (
                 <Notice variant="error">
-                  Nombre maximal de tentatives atteint. Réessayez plus tard.
+                  {t("auth.locked")}
                 </Notice>
               )}
               <PrimaryButton
                 busy={busy}
-                idleLabel="Vérifier"
-                busyLabel="Vérification…"
+                idleLabel={t("auth.verify")}
+                busyLabel={t("auth.verifying")}
                 disabled={otpLocked || otp.length !== 6}
               />
               <Button
@@ -753,7 +761,7 @@ function AuthPage() {
                 onClick={() => void sendCode(mode === "signup" ? "signup" : "recovery", true)}
               >
                 <RefreshCw className={busy ? "animate-spin" : ""} />
-                {resendIn > 0 ? t("auth.resendIn", { seconds: resendIn }) : "Renvoyer le code"}
+                {resendIn > 0 ? t("auth.resendIn", { seconds: resendIn }) : t("auth.resend")}
               </Button>
             </form>
           )}
@@ -769,7 +777,7 @@ function AuthPage() {
             >
               {status && <Notice variant="success">{status}</Notice>}
               <PasswordField
-                label=t("auth.newPassword")
+                label={t("auth.newPassword")}
                 value={password}
                 onChange={setPassword}
                 visible={showPassword}
@@ -780,7 +788,7 @@ function AuthPage() {
                 autoFocus
               />
               <PasswordField
-                label="Confirmer le mot de passe"
+                label={t("auth.confirmPassword")}
                 value={confirmation}
                 onChange={setConfirmation}
                 visible={showConfirmation}
@@ -791,8 +799,8 @@ function AuthPage() {
               />
               <PrimaryButton
                 busy={busy}
-                idleLabel="Enregistrer le mot de passe"
-                busyLabel="Enregistrement…"
+                idleLabel={t("auth.savePassword")}
+                busyLabel={t("auth.savingPassword")}
               />
             </form>
           )}
@@ -800,7 +808,7 @@ function AuthPage() {
         </div>
 
         <p className="mt-5 text-center text-xs text-muted-foreground">
-          Vos identifiants sont protégés par Supabase Auth.
+          {t("auth.protectedBySupabase")}
         </p>
       </section>
     </main>
@@ -917,7 +925,7 @@ function PasswordField({
           autoFocus={autoFocus}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="8 caractères minimum"
+          placeholder={t("auth.passwordMinHint")}
           aria-invalid={Boolean(error)}
           className="min-w-0 flex-1 bg-transparent px-3 text-base text-foreground outline-none placeholder:text-muted-foreground/60"
         />
@@ -946,7 +954,7 @@ function PasswordField({
       )}
       {valid && !error && (
         <p className="mt-2 flex items-center gap-1.5 text-xs text-success">
-          <Check className="h-3.5 w-3.5" /> Les mots de passe correspondent
+          <Check className="h-3.5 w-3.5" /> {t("auth.passwordsMatch")}
         </p>
       )}
       {error && <FieldError>{error}</FieldError>}
