@@ -585,14 +585,14 @@ function AuthPage() {
                 <TextField label="Nom" value={lastName} onChange={setLastName} error={errors.lastName} autoComplete="family-name" />
               </div>
               <label className="block">
-                <span className="mb-1.5 block text-sm font-semibold text-foreground">Région</span>
+                <span className="mb-1.5 block text-sm font-semibold text-foreground">{t("region")}</span>
                 <select
                   value={region}
                   onChange={(event) => setRegion(event.target.value)}
                   aria-invalid={Boolean(errors.region)}
                   className="h-12 w-full rounded-md border border-input/80 bg-background/35 px-3 text-base text-foreground outline-none transition-all duration-200 hover:border-accent/45 hover:bg-background/45 focus:border-accent focus:bg-background/50"
                 >
-                  <option value="">Choisissez votre région</option>
+                  <option value="">{t("auth.regionRequired")}</option>
                   {NIGER_REGIONS.map((r) => (
                     <option key={r} value={r}>{r}</option>
                   ))}
@@ -687,7 +687,7 @@ function AuthPage() {
             >
               {demoCode && (
                 <Notice variant="demo">
-                  <strong>MODE DÉMO — aucun SMS envoyé.</strong>
+                  <strong>{t("auth.demoActive")}</strong>
                   <span className="mt-1 block">
                     Votre code est{" "}
                     <span className="font-display text-lg font-bold tracking-[0.18em]">
@@ -853,7 +853,7 @@ function PhoneField({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-semibold text-foreground">Numéro de téléphone</span>
+      <span className="mb-2 block text-sm font-semibold text-foreground">{t("phone")}</span>
       <span
         className={`flex h-12 items-center rounded-md border bg-background/35 transition-all duration-200 hover:border-accent/45 hover:bg-background/45 focus-within:bg-background/50 focus-within:ring-2 focus-within:ring-accent/20 ${error ? "border-destructive" : "border-input/80 focus-within:border-accent"}`}
       >
