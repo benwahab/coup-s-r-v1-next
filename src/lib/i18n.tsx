@@ -776,6 +776,7 @@ const dict = {
     "admin.static.user": "Utilisateur",
     "admin.static.detail": "Détail",
     "admin.static.page": "Page {page}",
+    "admin.static.supervisionWindow": "Fenêtre glissante des 60 dernières minutes · actualisation automatique chaque minute",
   },
   en: {
     appName: "Coup Sûr",
@@ -1536,6 +1537,7 @@ const dict = {
     "admin.static.user": "User",
     "admin.static.detail": "Detail",
     "admin.static.page": "Page {page}",
+    "admin.static.supervisionWindow": "Rolling 60-minute window · automatically refreshed every minute",
   },
 } as const;
 
