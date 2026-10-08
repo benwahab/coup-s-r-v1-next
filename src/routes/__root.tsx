@@ -193,6 +193,23 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => {
+    const handleWindowError = (event: ErrorEvent) => {
+      reportLovableError(event.error ?? new Error(event.message || "window_error"), {
+        boundary: "window_error",
+        route: window.location.pathname,
+        filename: event.filename,
+        line: event.lineno,
+        column: event.colno,
+      });
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      reportLovableError(event.reason ?? new Error("unhandled_rejection"), {
+        boundary: "unhandled_rejection",
+        route: window.location.pathname,
+      });
+    };
+
     const handlePreloadError = (event: Event) => {
       const detail = (event as CustomEvent<{ payload?: unknown }>).detail;
       reportLovableError(detail?.payload ?? new Error("vite_preload_error"), {
@@ -212,8 +229,15 @@ function RootComponent() {
       }
     };
 
+    window.addEventListener("error", handleWindowError);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
     window.addEventListener("vite:preloadError", handlePreloadError);
-    return () => window.removeEventListener("vite:preloadError", handlePreloadError);
+
+    return () => {
+      window.removeEventListener("error", handleWindowError);
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+      window.removeEventListener("vite:preloadError", handlePreloadError);
+    };
   }, []);
 
   return (
