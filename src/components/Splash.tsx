@@ -193,23 +193,6 @@ export function Splash() {
 }
 
 const SPLASH_CSS = `
-@keyframes cs-splash-reveal {
-  0% { opacity: 0; transform: scale(0.82) translateY(18px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
-}
-@keyframes cs-splash-breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.018); }
-}
-@keyframes cs-splash-glow-pulse {
-  0%, 100% { opacity: 0.55; transform: scale(0.98); }
-  50% { opacity: 0.9; transform: scale(1.05); }
-}
-@keyframes cs-splash-shine-sweep {
-  0% { transform: translateX(-150%) skewX(-20deg); opacity: 0; }
-  15% { opacity: 0.75; }
-  45%, 100% { transform: translateX(150%) skewX(-20deg); opacity: 0; }
-}
 @keyframes cs-splash-spin {
   to { transform: rotate(360deg); }
 }
