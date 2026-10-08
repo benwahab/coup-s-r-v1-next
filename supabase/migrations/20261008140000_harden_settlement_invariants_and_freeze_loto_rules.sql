@@ -40,7 +40,7 @@ GRANT EXECUTE ON FUNCTION public.create_ticket_with_payment(UUID,UUID,JSONB,JSON
 CREATE OR REPLACE FUNCTION public.settle_ticket_atomic(p_ticket_id UUID,p_status public.ticket_status,p_prize INTEGER,p_leg_updates JSONB DEFAULT '[]'::jsonb,p_mark_all_foot_losing BOOLEAN DEFAULT false)
 RETURNS TABLE(id UUID,status public.ticket_status,prize INTEGER) LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
 AS $$
-DECLARE v_ticket public.tickets%ROWTYPE; v_expected_count INTEGER:=0; v_updated_count INTEGER:=0; v_total_odds NUMERIC(30,10):=1; v_expected_prize NUMERIC(30,10); v_pick JSONB; v_odd NUMERIC;
+DECLARE v_ticket public.tickets%ROWTYPE; v_expected_count INTEGER:=0; v_updated_count INTEGER:=0; v_actual_count INTEGER:=0; v_distinct_count INTEGER:=0; v_total_odds NUMERIC(30,10):=1; v_expected_prize NUMERIC(30,10); v_pick JSONB; v_odd NUMERIC;
 BEGIN
  IF p_ticket_id IS NULL OR p_status NOT IN ('winning','losing') OR p_prize<0 OR (p_status='losing' AND p_prize<>0) OR (p_status='winning' AND p_prize<=0) THEN RAISE EXCEPTION 'invalid_settlement_input'; END IF;
  IF jsonb_typeof(p_leg_updates)<>'array' THEN RAISE EXCEPTION 'invalid_leg_updates_payload'; END IF;
@@ -65,7 +65,27 @@ BEGIN
   IF p_mark_all_foot_losing THEN UPDATE public.foot_picks SET status='losing',settled_at=COALESCE(settled_at,now()) WHERE ticket_id=p_ticket_id;
   ELSE
    SELECT count(*)::integer INTO v_expected_count FROM jsonb_to_recordset(p_leg_updates) AS x(id UUID,status public.ticket_status,settled_at TIMESTAMPTZ);
+   SELECT count(*)::integer, count(distinct id)::integer INTO v_actual_count, v_distinct_count FROM public.foot_picks WHERE ticket_id=p_ticket_id;
+   IF p_status='winning' THEN
+    IF v_expected_count=0 OR v_expected_count<>v_actual_count OR v_expected_count<>v_distinct_count THEN
+      RAISE EXCEPTION 'foot_leg_update_incomplete';
+    END IF;
+    IF EXISTS (
+      SELECT 1 FROM jsonb_to_recordset(p_leg_updates) AS x(id UUID,status public.ticket_status,settled_at TIMESTAMPTZ)
+      WHERE x.status<>'winning'
+    ) THEN
+      RAISE EXCEPTION 'foot_winning_leg_mismatch';
+    END IF;
+   ELSIF v_expected_count>0 AND v_expected_count<>v_actual_count THEN
+    RAISE EXCEPTION 'foot_leg_update_incomplete';
+   END IF;
    IF v_expected_count>0 THEN
+    SELECT count(*)::integer INTO v_distinct_count
+      FROM (
+        SELECT DISTINCT x.id
+          FROM jsonb_to_recordset(p_leg_updates) AS x(id UUID,status public.ticket_status,settled_at TIMESTAMPTZ)
+      ) ids;
+    IF v_distinct_count<>v_expected_count THEN RAISE EXCEPTION 'foot_leg_duplicate'; END IF;
     UPDATE public.foot_picks fp SET status=x.status,settled_at=x.settled_at FROM jsonb_to_recordset(p_leg_updates) AS x(id UUID,status public.ticket_status,settled_at TIMESTAMPTZ) WHERE fp.id=x.id AND fp.ticket_id=p_ticket_id AND x.status IN ('winning','losing');
     GET DIAGNOSTICS v_updated_count=ROW_COUNT;
     IF v_updated_count<>v_expected_count THEN RAISE EXCEPTION 'foot_leg_update_conflict'; END IF;
