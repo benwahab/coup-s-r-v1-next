@@ -11,7 +11,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=96&quality=90&url";
+import logoCoupSur from "@/assets/logo-coup-sur.png";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import "@fontsource/manrope/400.css";
 import "@fontsource/manrope/600.css";
@@ -152,7 +152,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "icon",
         href: logoCoupSur,
-        type: "image/webp",
+        type: "image/png",
       },
       ...(import.meta.env.VITE_SUPABASE_URL
         ? [
