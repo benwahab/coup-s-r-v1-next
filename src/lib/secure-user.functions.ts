@@ -1,6 +1,5 @@
 import { createMiddleware } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 /**
  * Authoritative server-side gate for normal authenticated business actions.
@@ -10,6 +9,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 export const requireConfiguredUser = createMiddleware({ type: "function" })
   .middleware([requireSupabaseAuth])
   .server(async ({ next, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: profile, error } = await supabaseAdmin
       .from("profiles")
       .select("password_setup_required")
