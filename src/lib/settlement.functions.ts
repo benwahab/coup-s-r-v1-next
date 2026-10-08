@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { writeAuditLog } from "./audit.server";
 import { nigerParts, nigerInstant } from "@/lib/schedule";
 import { evaluatePublishedAiPredictions } from "./ai-adaptive.functions";
@@ -113,6 +112,7 @@ async function evaluatePmu(
   drawDate: string,
   pmuRaceId: string | null,
 ) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const nums = picks.filter((p): p is number => typeof p === "number");
   if (nums.length < 1 || nums.length > 8 || new Set(nums).size !== nums.length) return null;
   const winningNumbers = result.horses;
@@ -210,6 +210,7 @@ function evaluateFootSelection(
 }
 
 async function settleFootTicket(ticket: TicketRow, results: Map<string, FootMatchResult>) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: picks, error } = await supabaseAdmin
     .from("foot_picks")
     .select("id,fixture_id,picks,status")
@@ -307,6 +308,7 @@ type PublishedResultValue =
 type PublishedResult = { result?: PublishedResultValue };
 
 async function settleTicket(ticket: TicketRow, publishedResults: PublishedResult[]) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   if (ticket.status !== "pending") return { changed: false, reason: "already_settled" };
 
   if (ticket.game_id === "foot") {
@@ -371,6 +373,7 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => drawResultSchema.parse(data))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertPublishResultsPermission(context.supabase, context.userId);
 
     if (data.gameId === "loto") {
