@@ -3,9 +3,13 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
-import { writeAuditLog } from "./audit.server";
 import { nigerParts, nigerInstant } from "@/lib/schedule";
 import { evaluatePublishedAiPredictions } from "./ai-adaptive.functions";
+
+async function writeAuditLog(...args: Parameters<(typeof import("./audit.server"))["writeAuditLog"]>) {
+  const { writeAuditLog } = await import("./audit.server");
+  return writeAuditLog(...args);
+}
 
 const drawResultSchema = z.discriminatedUnion("gameId", [
   z.object({
