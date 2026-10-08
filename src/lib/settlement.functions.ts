@@ -517,7 +517,7 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
 
     const { data: tickets, error: ticketsError } = await supabaseAdmin
       .from("tickets")
-      .select("id,code,user_id,game_id,draw_date,picks,stake,status,prize,loto_multiplier")
+      .select("id,code,user_id,game_id,draw_date,picks,stake,status,prize,loto_multiplier,pmu_race_id")
       .eq("game_id", result.game_id)
       .eq("draw_date", result.draw_date)
       .eq("status", "pending");
