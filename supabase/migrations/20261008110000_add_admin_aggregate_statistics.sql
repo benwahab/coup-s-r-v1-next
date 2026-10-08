@@ -5,27 +5,34 @@ stable
 security definer
 set search_path = ''
 as $$
+  with grouped as (
+    select
+      t.user_id,
+      max(t.phone) as phone,
+      (array_agg(coalesce(nullif(trim(t.region), ''), 'Non renseignée') order by t.created_at desc))[1] as region,
+      count(*)::integer as tickets,
+      coalesce(sum(t.stake), 0) as staked,
+      coalesce(sum(case when t.status = 'paid' then coalesce(t.prize, 0) else 0 end), 0) as won
+    from public.tickets t
+    group by t.user_id
+  )
   select coalesce(
     jsonb_agg(
       jsonb_build_object(
         'player', case
-          when max(t.phone) is null then 'Joueur ' || left(t.user_id::text, 8)
-          else '****' || right(regexp_replace(max(t.phone), '[^0-9]', '', 'g'), 4)
+          when phone is null then 'Joueur ' || left(user_id::text, 8)
+          else '****' || right(regexp_replace(phone, '[^0-9]', '', 'g'), 4)
         end,
-        'region', coalesce(
-          (array_agg(coalesce(nullif(trim(t.region), ''), 'Non renseignée') order by t.created_at desc))[1],
-          'Non renseignée'
-        ),
-        'tickets', count(*)::integer,
-        'staked', coalesce(sum(t.stake), 0),
-        'won', coalesce(sum(case when t.status = 'paid' then coalesce(t.prize, 0) else 0 end), 0)
+        'region', region,
+        'tickets', tickets,
+        'staked', staked,
+        'won', won
       )
-      order by coalesce(sum(t.stake), 0) desc
+      order by staked desc
     ),
     '[]'::jsonb
   )
-  from public.tickets t
-  group by t.user_id;
+  from grouped;
 $$;
 
 create or replace function public.get_admin_region_statistics()
