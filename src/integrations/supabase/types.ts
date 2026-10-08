@@ -867,6 +867,7 @@ export type Database = {
           game_name: string
           id: string
           legs: Json | null
+          loto_multiplier: number | null
           payment_method: string
           phone: string | null
           picks: Json
@@ -887,6 +888,7 @@ export type Database = {
           game_name: string
           id?: string
           legs?: Json | null
+          loto_multiplier?: number | null
           payment_method: string
           phone?: string | null
           picks: Json
