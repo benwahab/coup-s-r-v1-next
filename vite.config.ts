@@ -7,6 +7,10 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { imagetools } from "vite-imagetools";
 
+const supabaseUrl = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
+const supabasePublishableKey =
+  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
+
 export default defineConfig({
   tanstackStart: {
     // Keep route components out of the initial bundle so a failure in an unrelated
@@ -18,5 +22,12 @@ export default defineConfig({
   },
   vite: {
     plugins: [imagetools()],
+    // The Supabase URL and publishable key are intentionally client-safe values.
+    // Lovable normally exposes them as VITE_* variables. The fallback keeps Preview
+    // working when the hosting build injects the same public values without the VITE_ prefix.
+    define: {
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(supabaseUrl),
+      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(supabasePublishableKey),
+    },
   },
 });
