@@ -3,7 +3,6 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Json } from "@/integrations/supabase/types";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 
@@ -41,6 +40,7 @@ async function storePrediction(
   features: Json,
   prediction: Json,
 ) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("ai_predictions")
     .upsert(
@@ -66,6 +66,7 @@ export const generateAdaptivePmu = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ raceId: z.string().uuid() }).parse(data))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: race, error: raceError } = await supabaseAdmin
       .from("pmu_races")
       .select("id,race_date,name,start_at,status")
@@ -182,6 +183,7 @@ export const generateAdaptiveLoto = createServerFn({ method: "POST" })
     z.object({ drawDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).parse(data),
   )
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("draw_results")
       .select("draw_date,result")
@@ -246,6 +248,7 @@ export const generateAdaptiveFoot = createServerFn({ method: "POST" })
     z.object({ fixtureId: z.string().uuid() }).parse(data),
   )
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: fixture, error: fixtureError } = await supabaseAdmin
       .from("foot_fixtures")
       .select(
@@ -369,6 +372,7 @@ export async function evaluatePublishedAiPredictions(
   referenceId: string,
   actual: Json,
 ) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: rows, error } = await supabaseAdmin
     .from("ai_predictions")
     .select("id,prediction,model_version")
