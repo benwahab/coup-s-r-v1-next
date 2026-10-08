@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 
 const PmuOut = z.object({
   summary: z.string().describe("Synthèse globale (1-2 phrases)"),
@@ -45,6 +44,7 @@ export const analyzePmu = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data }) => {
+    const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("Missing LOVABLE_API_KEY");
     const gateway = createLovableAiGatewayProvider(key);
