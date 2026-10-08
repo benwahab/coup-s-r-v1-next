@@ -64,6 +64,7 @@ export const analyzeLoto = createServerFn({ method: "POST" })
     z.object({ history: z.array(z.array(z.number().int().min(1).max(90)).max(5)).max(100), hotSeed: z.array(z.number().int().min(1).max(90)).max(20) }).parse(data),
   )
   .handler(async ({ data }) => {
+    const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("Missing LOVABLE_API_KEY");
     const gateway = createLovableAiGatewayProvider(key);
