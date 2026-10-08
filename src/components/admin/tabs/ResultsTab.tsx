@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { adminCreateDrawResult, adminPublishDrawResult } from "@/lib/settlement.functions";
 import { useI18n } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
 
 type DrawResultPayload = { numbers: number[] } | { horses: number[] };
 
@@ -9,8 +10,48 @@ export function ResultsTab() {
   const [gameId, setGameId] = useState<"loto" | "pmu">("loto");
   const [drawDate, setDrawDate] = useState(new Date().toISOString().slice(0, 10));
   const [values, setValues] = useState("");
+  const [raceId, setRaceId] = useState("");
+  const [races, setRaces] = useState<{ id: string; raceNumber: number; venue: string; startAt: string }[]>([]);
+  const [racesLoading, setRacesLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (gameId !== "pmu") {
+      setRaces([]);
+      setRaceId("");
+      return;
+    }
+    let cancelled = false;
+    setRacesLoading(true);
+    void supabase
+      .from("pmu_races")
+      .select("id,race_number,venue,start_at,status")
+      .eq("race_date", drawDate)
+      .eq("status", "finished")
+      .order("start_at", { ascending: true })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          setRaces([]);
+          setRaceId("");
+        } else {
+          const next = (data ?? []).map((r) => ({
+            id: r.id,
+            raceNumber: r.race_number,
+            venue: r.venue,
+            startAt: r.start_at,
+          }));
+          setRaces(next);
+          setRaceId((current) => (next.some((r) => r.id === current) ? current : next[0]?.id ?? ""));
+        }
+        setRacesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [gameId, drawDate]);
+
 
   const publish = async () => {
     setBusy(true);
@@ -41,8 +82,9 @@ export function ResultsTab() {
         }
         result = { horses };
       }
+      if (gameId === "pmu" && !raceId) throw new Error("Aucune course PMU terminée sélectionnée.");
       const created = await adminCreateDrawResult({
-        data: { gameId, drawDate, result },
+        data: gameId === "pmu" ? { gameId, drawDate, raceId, result } : { gameId, drawDate, result },
       });
 
       const resultIds: string[] = [created.result.id];
@@ -88,6 +130,21 @@ export function ResultsTab() {
           <option value="loto">Loto Balsa</option>
           <option value="pmu">PMU</option>
         </select>
+        <select
+          value={raceId}
+          onChange={(e) => setRaceId(e.target.value)}
+          disabled={racesLoading || races.length === 0}
+          className="rounded-xl border bg-background px-3 py-2 disabled:opacity-50"
+        >
+          <option value="">
+            {racesLoading ? "Chargement des courses…" : races.length ? "Choisir une course" : "Aucune course terminée"}
+          </option>
+          {races.map((race) => (
+            <option key={race.id} value={race.id}>
+              R{race.raceNumber} · {race.venue} · {new Date(race.startAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </option>
+          ))}
+        </select>
         <input
           type="date"
           value={drawDate}
@@ -113,7 +170,7 @@ export function ResultsTab() {
       {message && <div className="mt-4 rounded-xl border p-3 text-sm">{message}</div>}
 
       <button
-        disabled={busy}
+        disabled={busy || (gameId === "pmu" && !raceId)}
         onClick={publish}
         className="mt-4 rounded-xl bg-primary px-5 py-2.5 font-bold text-primary-foreground disabled:opacity-50"
       >
