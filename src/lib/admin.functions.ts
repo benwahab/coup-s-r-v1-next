@@ -3,10 +3,14 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
-import { writeAuditLog } from "./audit.server";
 import { requireConfiguredUser } from "./secure-user.functions";
 
 type SB = SupabaseClient<Database>;
+
+async function writeAuditLog(...args: Parameters<(typeof import("./audit.server"))["writeAuditLog"]>) {
+  const { writeAuditLog } = await import("./audit.server");
+  return writeAuditLog(...args);
+}
 
 const AdminPermission = z.enum([
   "complaints",
