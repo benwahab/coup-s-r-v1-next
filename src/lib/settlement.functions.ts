@@ -493,16 +493,7 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
       result.game_id === "loto"
         ? result.draw_date
         : result.game_id === "pmu"
-          ? (
-              await supabaseAdmin
-                .from("pmu_races")
-                .select("id")
-                .eq("race_date", result.draw_date)
-                .eq("status", "finished")
-                .order("start_at", { ascending: true })
-                .limit(1)
-                .maybeSingle()
-            ).data?.id
+          ? result.pmu_race_id
           : result.id;
     if (aiReference) {
       if (!wasAlreadyPublished) await evaluatePublishedAiPredictions(result.game_id, aiReference, result.result);
