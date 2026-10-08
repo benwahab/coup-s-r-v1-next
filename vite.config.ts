@@ -9,6 +9,9 @@ import { imagetools } from "vite-imagetools";
 
 export default defineConfig({
   tanstackStart: {
+    // Keep route components out of the initial bundle so a failure in an unrelated
+    // feature route cannot invalidate the entire Preview shell.
+    router: { autoCodeSplitting: true },
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
