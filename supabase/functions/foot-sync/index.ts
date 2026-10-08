@@ -149,7 +149,10 @@ Deno.serve(async (req) => {
           (p) =>
             p?.marketId !== "1x2" ||
             typeof p?.selection !== "string" ||
-            typeof p?.odds !== "number",
+            typeof p?.odds !== "number" ||
+            !Number.isFinite(p.odds) ||
+            p.odds < 1 ||
+            p.odds > 1000,
         )
       ) {
         pendingState = true;
@@ -163,8 +166,21 @@ Deno.serve(async (req) => {
             : "X";
       let rowLosing = false;
       for (const p of validatedPicks) {
-        if (typeof p.odds !== "number" || typeof p.selection !== "string") continue;
+        if (
+          typeof p.odds !== "number" ||
+          !Number.isFinite(p.odds) ||
+          p.odds < 1 ||
+          p.odds > 1000 ||
+          typeof p.selection !== "string"
+        ) {
+          pendingState = true;
+          break;
+        }
         totalOdds *= p.odds;
+        if (!Number.isSafeInteger(totalOdds) && totalOdds > Number.MAX_SAFE_INTEGER) {
+          pendingState = true;
+          break;
+        }
         if (p.selection !== result) rowLosing = true;
       }
       losing ||= rowLosing;
