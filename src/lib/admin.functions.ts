@@ -604,7 +604,7 @@ export const adminListSecurityLogs = createServerFn({ method: "POST" })
     if (data.action) query = query.ilike("action", "%" + data.action.replace(/[%_]/g, "") + "%");
 
     let phoneUserIds: string[] = [];
-    if (data.search && /^\\d{8}$/.test(data.search)) {
+    if (data.search && /^\d{8}$/.test(data.search)) {
       const { toE164Phone } = await import("./otp.server");
       const phone = toE164Phone(data.search);
       const { data: profilesByPhone, error: phoneError } = await context.supabase
