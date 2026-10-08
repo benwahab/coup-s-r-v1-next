@@ -345,6 +345,7 @@ async function settleTicket(ticket: TicketRow, publishedResults: PublishedResult
       result?.result as { horses: number[] },
       ticket.stake,
       ticket.draw_date ?? "",
+      ticket.pmu_race_id,
     );
   if (!evaluation) return { changed: false, reason: "unsupported_rule" };
 
