@@ -190,6 +190,43 @@ export const adminListTickets = createServerFn({ method: "POST" })
     };
   });
 
+export interface AdminPlayerStat {
+  player: string;
+  region: string;
+  tickets: number;
+  staked: number;
+  won: number;
+}
+
+export interface AdminRegionStat {
+  region: string;
+  players: number;
+  tickets: number;
+  staked: number;
+  paid: number;
+  delta7d: number;
+}
+
+export const adminGetPlayerStatistics = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .handler(async ({ context }) => {
+    await assertAdminPermission(context.supabase as SB, context.userId, "player_stats");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin.rpc("get_admin_player_statistics");
+    if (error) throw new Error("player_statistics_failed");
+    return { players: Array.isArray(data) ? (data as unknown as AdminPlayerStat[]) : [] };
+  });
+
+export const adminGetRegionStatistics = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .handler(async ({ context }) => {
+    await assertAdminPermission(context.supabase as SB, context.userId, "region_stats");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin.rpc("get_admin_region_statistics");
+    if (error) throw new Error("region_statistics_failed");
+    return { regions: Array.isArray(data) ? (data as unknown as AdminRegionStat[]) : [] };
+  });
+
 export const adminGetRegisteredPlayerCount = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
