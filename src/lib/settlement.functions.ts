@@ -20,6 +20,7 @@ const drawResultSchema = z.discriminatedUnion("gameId", [
   z.object({
     gameId: z.literal("pmu"),
     drawDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    raceId: z.string().uuid(),
     drawName: z.string().max(200).optional(),
     result: z.object({ horses: z.array(z.number().int().positive()).min(1).max(20) }),
   }),
@@ -402,11 +403,9 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
       }
       const { data: race, error: raceError } = await supabaseAdmin
         .from("pmu_races")
-        .select("id,status,start_at")
+        .select("id,status,start_at,race_date")
+        .eq("id", data.raceId)
         .eq("race_date", data.drawDate)
-        .eq("status", "finished")
-        .order("start_at", { ascending: true })
-        .limit(1)
         .maybeSingle();
       if (raceError) throw new Error("pmu_race_lookup_failed: " + raceError.message);
       if (!race) throw new Error("pmu_finished_race_not_found");
@@ -446,6 +445,7 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
         draw_name: data.drawName ?? null,
         result: data.result,
         status: "draft",
+        pmu_race_id: data.gameId === "pmu" ? data.raceId : null,
       })
       .select("id,game_id,draw_date,status")
       .single();
