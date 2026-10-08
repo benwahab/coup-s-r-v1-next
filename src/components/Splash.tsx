@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { getServerConfigStatus } from "@/lib/server-config.functions";
 import { supabase } from "@/integrations/supabase/client";
 import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=480&quality=92&url";
 
@@ -28,13 +27,21 @@ export function Splash() {
           return;
         }
 
-        const config = await getServerConfigStatus();
-        if (!config.ready) {
-          if (!cancelled) {
-            setServerReady(false);
-            setServerError(true);
-          }
-          return;
+        // The startup gate must depend only on public, request-level health checks.
+        // Do not route it through a Server Function: global function middleware/auth/CSRF
+        // must never be able to deadlock the shell that is supposed to diagnose them.
+        const healthResponse = await fetch("/health", {
+          method: "GET",
+          cache: "no-store",
+          headers: { Accept: "application/json" },
+        });
+        if (!healthResponse.ok) {
+          throw new Error(`Health check failed: ${healthResponse.status}`);
+        }
+
+        const health = (await healthResponse.json()) as { status?: string };
+        if (health.status !== "healthy") {
+          throw new Error("Health check returned an invalid status");
         }
 
         const { error } = await supabase.auth.getSession();
