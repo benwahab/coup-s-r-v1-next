@@ -1,5 +1,6 @@
 import { StartClient } from "@tanstack/react-start/client";
-import { Component, hydrateRoot, type ErrorInfo, type ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
+import { hydrateRoot } from "react-dom/client";
 import { reportLovableError } from "./lib/lovable-error-reporting";
 
 const PREVIEW_RELOAD_KEY = "coupsur.preview.vite-preload-reload-once";
