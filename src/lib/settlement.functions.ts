@@ -506,6 +506,7 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
       .eq("draw_date", result.draw_date)
       .eq("status", "published");
     if (result.game_id === "pmu") {
+      if (!result.pmu_race_id) throw new Error("pmu_result_race_id_missing");
       publishedResultsQuery = publishedResultsQuery.eq("pmu_race_id", result.pmu_race_id);
     }
     const { data: publishedResults, error: publishedResultsError } = await publishedResultsQuery;
