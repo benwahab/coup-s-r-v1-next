@@ -600,14 +600,35 @@ export const adminListSecurityLogs = createServerFn({ method: "POST" })
       .select("id,created_at,action,user_id,ip,detail")
       .gte("created_at", since)
       .order("created_at", { ascending: false });
-    if (data.action) query = query.ilike("action", "%" + data.action + "%");
-    if (data.search) {
+
+    if (data.action) query = query.ilike("action", "%" + data.action.replace(/[%_]/g, "") + "%");
+
+    let phoneUserIds: string[] = [];
+    if (data.search && /^\\d{8}$/.test(data.search)) {
+      const { toE164Phone } = await import("./otp.server");
+      const phone = toE164Phone(data.search);
+      const { data: profilesByPhone, error: phoneError } = await context.supabase
+        .from("profiles")
+        .select("id")
+        .eq("phone", phone);
+      if (phoneError) throw new Error("security_logs_failed");
+      phoneUserIds = (profilesByPhone ?? []).map((p) => p.id);
+      if (phoneUserIds.length === 0) return { logs: [], page: data.page, hasMore: false };
+    }
+
+    if (data.search && phoneUserIds.length > 0) {
+      query = query.in("user_id", phoneUserIds);
+    } else if (data.search) {
       const safe = data.search.replace(/[%_]/g, "");
       query = query.or("action.ilike.%" + safe + "%,ip.ilike.%" + safe + "%");
     }
-    const { data: rows, error } = await query.range((data.page - 1) * 50, data.page * 50 - 1);
+
+    const { data: rows, error } = await query.range((data.page - 1) * 50, data.page * 50);
     if (error) throw new Error("security_logs_failed");
-    const userIds = Array.from(new Set((rows ?? []).map((r) => r.user_id).filter((id): id is string => !!id)));
+
+    const pageRows = (rows ?? []).slice(0, 50);
+    const hasMore = (rows ?? []).length > 50;
+    const userIds = Array.from(new Set(pageRows.map((r) => r.user_id).filter((id): id is string => !!id)));
     const profiles = userIds.length
       ? (await context.supabase.from("profiles").select("id,phone").in("id", userIds)).data ?? []
       : [];
@@ -618,14 +639,14 @@ export const adminListSecurityLogs = createServerFn({ method: "POST" })
       if (value && typeof value === "object") return Object.fromEntries(Object.entries(value as Record<string, unknown>).slice(0, 30).map(([k,v]) => [k, sanitized(v)]));
       return value;
     };
-    const mapped = (rows ?? []).map((r) => ({
+    const mapped = pageRows.map((r) => ({
       id: r.id, createdAt: r.created_at, action: r.action, userId: r.user_id,
       phone: r.user_id ? phoneById.get(r.user_id) ?? null : null, ip: r.ip, detail: JSON.stringify(sanitized(r.detail) ?? null),
     }));
     const filtered = data.search && /^\d{8}$/.test(data.search)
       ? mapped.filter((r) => r.phone === data.search || r.userId === data.search)
       : mapped;
-    return { logs: filtered, page: data.page, hasMore: (rows ?? []).length === 50 };
+    return { logs: filtered, page: data.page, hasMore };
   });
 
 export type ReadinessStatus = "ok" | "warning" | "error";
