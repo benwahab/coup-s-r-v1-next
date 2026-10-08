@@ -27,7 +27,8 @@ async function assertOperationsPermission(userId: string) {
 
 export const getGameSchedules = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
-  .handler(async () => {
+  .handler(async ({ context }) => {
+    await assertOperationsPermission(context.userId);
     const { data, error } = await supabaseAdmin
       .from("game_schedules")
       .select("game_id,open_hour,close_hour,draw_hour,draw_minute,timezone,enabled,daily_stats_date,today_winners_count,today_paid_fcfa,updated_at")
