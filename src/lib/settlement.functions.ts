@@ -70,6 +70,7 @@ type TicketRow = {
   stake: number;
   status: "pending" | "losing" | "winning" | "paid";
   prize: number | null;
+  loto_multiplier: number | null;
 };
 
 type StoredFootPick = {
@@ -88,22 +89,19 @@ async function assertPublishResultsPermission(supabase: typeof supabaseAdmin, us
   if (data !== true) throw new Error("Forbidden: publish_results permission required");
 }
 
-async function evaluateLoto(picks: unknown[], result: { numbers: number[] }, stake: number) {
+async function evaluateLoto(picks: unknown[], result: { numbers: number[] }, stake: number, frozenMultiplier: number | null) {
   const nums = picks.filter((p): p is number => typeof p === "number");
   if (nums.length < 1 || nums.length > 5 || new Set(nums).size !== nums.length) return null;
-  const { data: rule, error } = await supabaseAdmin
-    .from("game_rules")
-    .select("multiplier")
-    .eq("game_id", "loto")
-    .eq("pick_count", nums.length)
-    .eq("active", true)
-    .maybeSingle();
-  if (error) throw new Error("loto_rule_lookup_failed: " + error.message);
-  if (!rule || !Number.isFinite(Number(rule.multiplier)) || Number(rule.multiplier) < 1) {
-    throw new Error("loto_rule_not_configured");
+  if (
+    frozenMultiplier == null ||
+    !Number.isFinite(frozenMultiplier) ||
+    frozenMultiplier < 1 ||
+    frozenMultiplier > 100000
+  ) {
+    throw new Error("loto_frozen_rule_missing");
   }
   const winning = nums.every((n) => result.numbers.includes(n));
-  return { winning, prize: winning ? Math.floor(stake * Number(rule.multiplier)) : 0 };
+  return { winning, prize: winning ? Math.floor(stake * frozenMultiplier) : 0 };
 }
 
 async function evaluatePmu(
@@ -338,6 +336,7 @@ async function settleTicket(ticket: TicketRow, publishedResults: PublishedResult
       Array.isArray(ticket.picks) ? ticket.picks : [],
       result?.result as { numbers: number[] },
       ticket.stake,
+      ticket.loto_multiplier,
     );
   if (ticket.game_id === "pmu")
     evaluation = await evaluatePmu(
