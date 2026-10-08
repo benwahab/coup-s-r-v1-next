@@ -330,6 +330,14 @@ function AdminPage() {
   }, [gate, permissionsReady, adminPermissions]);
 
   const maxRegion = Math.max(1, ...regionStats.map((r) => r.staked));
+  type BallStat = {
+    ball: number;
+    total: number;
+    solo: number | null;
+    combo: number | null;
+    topPairs: { ball: number; count: number }[];
+  };
+
 
   const ballStats: BallStat[] = useMemo(
     () =>
