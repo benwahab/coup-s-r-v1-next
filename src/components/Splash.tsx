@@ -144,15 +144,14 @@ export function Splash() {
       </div>
 
       <div className="relative flex min-h-screen w-full max-w-md flex-col items-center px-6 pb-10 pt-16 text-center sm:max-w-lg">
-        <div className="cs-splash-logo-wrap relative mt-4">
-          <div className="cs-splash-glow absolute inset-[-15%] rounded-full bg-emerald-400/20 blur-3xl" />
-          <div className="cs-splash-logo relative">
+        <div className="relative mt-4">
+          <div className="absolute inset-[-15%] rounded-full bg-emerald-400/20 blur-3xl" />
+          <div className="relative">
             <img
               src={logoCoupSur}
               alt="Coup Sûr"
               className="relative h-56 w-56 object-contain drop-shadow-[0_18px_42px_rgba(0,0,0,0.55)] sm:h-64 sm:w-64"
             />
-            <span className="cs-splash-shine" aria-hidden />
           </div>
         </div>
 
@@ -228,13 +227,13 @@ const SPLASH_CSS = `
     linear-gradient(180deg, rgba(0,25,17,0.1), rgba(0,25,17,0.42));
 }
 .cs-splash-logo-wrap {
-  animation: cs-splash-reveal 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: none;
 }
 .cs-splash-logo {
-  animation: cs-splash-breathe 3.2s ease-in-out 650ms infinite;
+  animation: none;
 }
 .cs-splash-glow {
-  animation: cs-splash-glow-pulse 2.4s ease-in-out infinite;
+  animation: none;
 }
 .cs-splash-shine {
   position: absolute;
@@ -251,7 +250,7 @@ const SPLASH_CSS = `
   width: 34%;
   height: 140%;
   background: linear-gradient(100deg, transparent, rgba(255,255,255,0.7) 45%, transparent 90%);
-  animation: cs-splash-shine-sweep 2.4s ease-out 1.1s 1;
+  animation: none;
 }
 .cs-splash-ball {
   display: grid;
