@@ -141,7 +141,6 @@ function AdminPage() {
   const [csvTo, setCsvTo] = useState(todayIso);
   const [csvScope, setCsvScope] = useState<"all" | "winners" | "cashout">("all");
 
-  const [allIntents, setAllIntents] = useState<PaymentIntent[]>([]);
   useEffect(() => {
     if (gate !== "ok" || !permissionsReady) return;
     if (adminPermissions !== "all" && !adminPermissions.includes("ball_stats")) return;
