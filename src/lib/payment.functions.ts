@@ -139,6 +139,7 @@ export const checkPaymentDuplicate = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => duplicateInput.parse(data))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const cutoff = new Date(Date.now() - 30_000).toISOString();
     const { data: row, error } = await supabaseAdmin
       .from("payments")
