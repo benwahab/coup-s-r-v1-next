@@ -31,6 +31,13 @@ function validDate(value: string) {
 }
 
 Deno.serve(async (req) => {
+  if (req.method !== "POST") {
+    return new Response("method_not_allowed", {
+      status: 405,
+      headers: { Allow: "POST" },
+    });
+  }
+
   const expected = Deno.env.get("PMU_SYNC_SECRET");
   if (!expected || req.headers.get("x-pmu-sync-secret") !== expected) {
     return new Response("unauthorized", { status: 401 });
@@ -55,8 +62,14 @@ Deno.serve(async (req) => {
       { status: 502 },
     );
 
-  const payload = (await response.json()) as { races?: ProviderRace[] };
-  const races = Array.isArray(payload.races) ? payload.races : [];
+  let payload: { races?: ProviderRace[] };
+  try {
+    payload = (await response.json()) as { races?: ProviderRace[] };
+  } catch {
+    return Response.json({ error: "pmu_provider_invalid_json" }, { status: 502 });
+  }
+
+  const races = Array.isArray(payload.races) ? payload.races.slice(0, 200) : [];
   if (!races.length) return Response.json({ ok: true, races: 0, horses: 0 });
 
   let raceCount = 0;
@@ -94,15 +107,21 @@ Deno.serve(async (req) => {
     raceCount++;
 
     const rows = race.horses
+      .slice(0, 100)
       .filter(
         (horse) =>
-          Number.isInteger(horse.number) && horse.number > 0 && horse.externalId && horse.name,
+          Number.isInteger(horse.number) &&
+          horse.number > 0 &&
+          horse.externalId.length <= 128 &&
+          horse.name.length <= 200 &&
+          horse.externalId.trim().length > 0 &&
+          horse.name.trim().length > 0,
       )
       .map((horse) => ({
         race_id: raceRow.id,
-        external_id: horse.externalId,
+        external_id: horse.externalId.trim(),
         number: horse.number,
-        name: horse.name,
+        name: horse.name.trim(),
         intl_name: horse.intlName ?? null,
         jockey: horse.jockey ?? null,
         trainer: horse.trainer ?? null,
