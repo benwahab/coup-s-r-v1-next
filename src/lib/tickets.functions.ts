@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
 
 const TicketStatus = z.literal("pending");
@@ -77,6 +76,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => createTicketSchema.parse(data))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: payment, error: paymentError } = await supabaseAdmin
       .from("payments")
       .select("id, user_id, status, ticket_id, amount, game_id, reference, method")
