@@ -67,12 +67,15 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: ErrorComponentProps) {
+function ErrorComponent({ error, info }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
 
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    reportLovableError(error, {
+      boundary: "tanstack_root_error_component",
+      componentStack: info?.componentStack,
+    });
 
     if (!isTransientChunkError(error) || typeof window === "undefined") return;
 
@@ -166,6 +169,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
+  headers: () => ({
+    // HTML must not stay cached across deployments because Vite can invalidate hashed chunks.
+    "Cache-Control": "no-cache",
+  }),
 });
 
 function RootShell({ children }: { children: ReactNode }) {
