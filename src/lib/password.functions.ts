@@ -72,6 +72,7 @@ export const loginWithPassword = createServerFn({ method: "POST" })
     z.object({ phone: PhoneSchema, password: PasswordSchema }).parse(data),
   )
   .handler(async ({ data }) => {
+    const { toE164Phone } = await import("./otp.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const phoneE164 = toE164Phone(data.phone);
     if (await passwordLoginRateBlocked(phoneE164)) {
