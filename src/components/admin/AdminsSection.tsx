@@ -25,7 +25,7 @@ const PERMISSIONS: { id: AdminPermission; label: string; description: string }[]
   {
     id: "player_activity",
     label: "Activités joueurs",
-    description: "Voir uniquement les activités de paiement, sans tickets",
+    description: "Voir les transactions et activités de jeu nécessaires au suivi opérationnel",
   },
   {
     id: "ball_stats",
