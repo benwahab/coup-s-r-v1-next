@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
-import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 
 const MODEL_VERSION = "adaptive-v1";
 
@@ -145,6 +144,7 @@ export const generateAdaptivePmu = createServerFn({ method: "POST" })
     const key = process.env.LOVABLE_API_KEY;
     if (key) {
       try {
+        const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
         const gateway = createLovableAiGatewayProvider(key);
         const { experimental_output } = await generateText({
           model: gateway("google/gemini-3-5-flash"),
