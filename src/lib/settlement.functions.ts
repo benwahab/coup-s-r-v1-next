@@ -508,12 +508,16 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
       if (!wasAlreadyPublished) await evaluatePublishedAiPredictions(result.game_id, aiReference, result.result);
     }
 
-    const { data: publishedResults, error: publishedResultsError } = await supabaseAdmin
+    let publishedResultsQuery = supabaseAdmin
       .from("draw_results")
-      .select("id,game_id,draw_date,result,status")
+      .select("id,game_id,draw_date,result,status,pmu_race_id")
       .eq("game_id", result.game_id)
       .eq("draw_date", result.draw_date)
       .eq("status", "published");
+    if (result.game_id === "pmu") {
+      publishedResultsQuery = publishedResultsQuery.eq("pmu_race_id", result.pmu_race_id);
+    }
+    const { data: publishedResults, error: publishedResultsError } = await publishedResultsQuery;
     if (publishedResultsError) throw new Error(publishedResultsError.message);
 
     const { data: tickets, error: ticketsError } = await supabaseAdmin
