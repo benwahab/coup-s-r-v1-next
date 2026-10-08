@@ -69,6 +69,7 @@ export const loginWithPassword = createServerFn({ method: "POST" })
     z.object({ phone: PhoneSchema, password: PasswordSchema }).parse(data),
   )
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const phoneE164 = toE164Phone(data.phone);
     if (await passwordLoginRateBlocked(phoneE164)) {
       await writeAuditLog(supabaseAdmin, {
@@ -125,6 +126,7 @@ export const changeUserPassword = createServerFn({ method: "POST" })
     z.object({ currentPassword: PasswordSchema, newPassword: PasswordSchema }).parse(data),
   )
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     if (data.currentPassword === data.newPassword) throw new Error("password_must_change");
 
     const { error } = await context.supabase.auth.updateUser({
