@@ -18,10 +18,8 @@ import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/AppShell";
 import { cn, formatFcfa } from "@/lib/utils";
 
-import type { PaymentIntent } from "@/lib/payments";
 import {
   adminGetLotoBallStatistics,
-  adminListPlayerActivities,
   adminListTickets,
   adminGetRegisteredPlayerCount,
   getMyAdminPermissions,
@@ -32,7 +30,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useThemeChartColors } from "@/hooks/use-theme-chart-colors";
-import { downloadCsv, gameLabel, type TxRow } from "@/components/admin/shared";
+import { downloadCsv, escapeCsvCell, gameLabel, type TxRow } from "@/components/admin/shared";
 import { DashboardTab } from "@/components/admin/tabs/DashboardTab";
 import { TransactionsTab } from "@/components/admin/tabs/TransactionsTab";
 import { PlayersTab } from "@/components/admin/tabs/PlayersTab";
@@ -164,28 +162,7 @@ function AdminPage() {
       .catch(() => setRegisteredPlayers(0));
   }, [gate, permissionsReady, adminPermissions]);
 
-  useEffect(() => {
-    if (gate !== "ok" || !permissionsReady) return;
-    if (adminPermissions !== "all" && !adminPermissions.includes("player_activity")) return;
-    (async () => {
-      try {
-        const { payments } = await adminListPlayerActivities();
-        setAllIntents(
-          payments.map((r) => ({
-            key: "",
-            txRef: r.reference,
-            gameId: r.gameId ?? "",
-            phone: r.playerId,
-            amount: r.amount,
-            createdAt: new Date(r.occurredAt).getTime(),
-            status: r.status,
-          })),
-        );
-      } catch {
-        setAllIntents([]);
-      }
-    })();
-  }, [gate, permissionsReady, adminPermissions]);
+
 
   // KPIs
   const totalStaked = adminTicketRows.reduce((s, t) => s + t.stake, 0);
@@ -484,7 +461,7 @@ function AdminPage() {
             r.status,
             r.payment,
             r.prize,
-          ].join(","),
+          ].map(escapeCsvCell).join(","),
         ),
       ].join("\n"),
       `coupsur-${scope}-${from}_${to}.csv`,
@@ -494,7 +471,9 @@ function AdminPage() {
   const exportTransactionsCsv = () => {
     const header = ["id", "date", "jeu", "telephone", "region", "mise", "statut", "gain", "source"];
     const body = filteredRows.map((r) =>
-      [r.id, r.date, r.game, r.phone, r.region, r.stake, r.status, r.prize, r.kind].join(","),
+      [r.id, r.date, r.game, r.phone, r.region, r.stake, r.status, r.prize, r.kind]
+        .map(escapeCsvCell)
+        .join(","),
     );
     downloadCsv([header.join(","), ...body].join("\n"), `coupsur-transactions-${todayIso}.csv`);
   };
