@@ -22,6 +22,10 @@ import {
   adminGetLotoBallStatistics,
   adminListTickets,
   adminGetRegisteredPlayerCount,
+  adminGetPlayerStatistics,
+  adminGetRegionStatistics,
+  type AdminPlayerStat,
+  type AdminRegionStat,
   getMyAdminPermissions,
   type AdminPermission,
   type LotoBallWagerStat,
@@ -103,9 +107,9 @@ function AdminPage() {
 
   // SECURITY: the admin surface deliberately avoids exposing client selections or
   // sensitive ticket internals. Only authorized aggregates and sanitized activity are available here.
-  const [adminTicketRows, setAdminTicketRows] = useState<
-    Awaited<ReturnType<typeof adminListTickets>>["tickets"]
-  >([]);
+  const [adminTicketRows, setAdminTicketRows] = useState<Awaited<ReturnType<typeof adminListTickets>>["tickets"]>([]);
+  const [regionStats, setRegionStats] = useState<AdminRegionStat[]>([]);
+  const [playerStats, setPlayerStats] = useState<AdminPlayerStat[]>([]);
   useEffect(() => {
     if (gate !== "ok" || !permissionsReady || !can("player_activity")) return;
     adminListTickets()
@@ -309,72 +313,23 @@ function AdminPage() {
   const pageRows = filteredRows.slice((txPage - 1) * PAGE, txPage * PAGE);
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE));
 
-  type RegionStat = {
-    region: string;
-    players: number;
-    tickets: number;
-    staked: number;
-    paid: number;
-    delta7d: number;
-  };
-  type PlayerStat = {
-    player: string;
-    region: string;
-    tickets: number;
-    staked: number;
-    won: number;
-  };
-  type BallStat = {
-    ball: number;
-    total: number;
-    solo: number | null;
-    combo: number | null;
-    topPairs: { ball: number; count: number }[];
-  };
+  useEffect(() => {
+    if (gate !== "ok" || !permissionsReady) return;
+    if (adminPermissions !== "all" && !adminPermissions.includes("region_stats")) return;
+    adminGetRegionStatistics()
+      .then((r) => setRegionStats(r.regions))
+      .catch(() => setRegionStats([]));
+  }, [gate, permissionsReady, adminPermissions]);
 
-  const regionStats: RegionStat[] = useMemo(() => {
-    const map = new Map<
-      string,
-      { players: Set<string>; tickets: number; staked: number; paid: number }
-    >();
-    adminTicketRows.forEach((t) => {
-      const region = t.region || "Non renseignée";
-      const row = map.get(region) ?? { players: new Set<string>(), tickets: 0, staked: 0, paid: 0 };
-      row.players.add(t.userId);
-      row.tickets += 1;
-      row.staked += t.stake;
-      if (t.status === "paid") row.paid += t.prize ?? 0;
-      map.set(region, row);
-    });
-    return Array.from(map, ([region, v]) => ({
-      region,
-      players: v.players.size,
-      tickets: v.tickets,
-      staked: v.staked,
-      paid: v.paid,
-      delta7d: 0,
-    })).sort((a, b) => b.staked - a.staked);
-  }, [adminTicketRows]);
+  useEffect(() => {
+    if (gate !== "ok" || !permissionsReady) return;
+    if (adminPermissions !== "all" && !adminPermissions.includes("player_stats")) return;
+    adminGetPlayerStatistics()
+      .then((r) => setPlayerStats(r.players))
+      .catch(() => setPlayerStats([]));
+  }, [gate, permissionsReady, adminPermissions]);
+
   const maxRegion = Math.max(1, ...regionStats.map((r) => r.staked));
-
-  const playerStats: PlayerStat[] = useMemo(() => {
-    const map = new Map<string, PlayerStat>();
-    adminTicketRows.forEach((t) => {
-      const key = t.userId;
-      const row = map.get(key) ?? {
-        player: t.phone || t.userId.slice(0, 8),
-        region: t.region || "Non renseignée",
-        tickets: 0,
-        staked: 0,
-        won: 0,
-      };
-      row.tickets += 1;
-      row.staked += t.stake;
-      if (t.status === "paid") row.won += t.prize ?? 0;
-      map.set(key, row);
-    });
-    return Array.from(map.values()).sort((a, b) => b.staked - a.staked);
-  }, [adminTicketRows]);
 
   const ballStats: BallStat[] = useMemo(
     () =>
