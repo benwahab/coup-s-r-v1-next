@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { writeAuditLog } from "./audit.server";
 import { toE164Phone } from "./otp.server";
 
@@ -28,6 +27,7 @@ async function sha256Hex(value: string): Promise<string> {
 }
 
 async function findUserIdByPhone(phoneE164: string): Promise<string | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("profiles")
     .select("id")
@@ -38,6 +38,7 @@ async function findUserIdByPhone(phoneE164: string): Promise<string | null> {
 }
 
 async function passwordLoginRateBlocked(phoneE164: string): Promise<boolean> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const phoneHash = await sha256Hex(phoneE164);
   const since = new Date(Date.now() - LOGIN_WINDOW_MS).toISOString();
   const { count, error } = await supabaseAdmin
@@ -55,6 +56,7 @@ async function recordPasswordLoginAttempt(
   success: boolean,
   userId?: string,
 ): Promise<void> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const phoneHash = await sha256Hex(phoneE164);
   const { error } = await supabaseAdmin
     .from("auth_login_attempts")
@@ -171,6 +173,7 @@ export const setUserPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ password: PasswordSchema }).parse(data))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const userId = context.userId;
     const { data: userData, error: getUserError } =
       await supabaseAdmin.auth.admin.getUserById(userId);
@@ -231,6 +234,7 @@ export async function createOrResetPasswordForOtp(phoneE164: string): Promise<{
   password: string;
   userId: string;
 }> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const email = syntheticEmail(phoneE164);
   const password = randomTemporaryPassword();
   const existingUserId = await findUserIdByPhone(phoneE164);
