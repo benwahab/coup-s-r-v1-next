@@ -1,8 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { writeAuditLog } from "./audit.server";
-import { toE164Phone } from "./otp.server";
+
+async function writeAuditLog(...args: Parameters<(typeof import("./audit.server"))["writeAuditLog"]>) {
+  const { writeAuditLog } = await import("./audit.server");
+  return writeAuditLog(...args);
+}
 
 const PhoneSchema = z.string().regex(/^\d{8}$/);
 const PasswordSchema = z.string().min(8).max(128);
