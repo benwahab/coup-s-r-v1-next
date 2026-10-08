@@ -718,35 +718,16 @@ export const superAdminGetProductionReadiness = createServerFn({ method: "POST" 
       detail: serverOk ? "Adresse et clés du serveur présentes." : "Adresse ou clés du serveur manquantes.",
     });
 
-    // Protection contre les mots de passe compromis (test réel).
-    let hibp: ReadinessCheck;
-    try {
-      const { createClient } = await import("@supabase/supabase-js");
-      const anon = createClient(process.env["SUPABASE_URL"]!, process.env["SUPABASE_PUBLISHABLE_KEY"]!, {
-        auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-      });
-      const email = `hibp-probe-${crypto.randomUUID()}@coup-sur.local`;
-      // Mot de passe documenté comme compromis dans HIBP ; on vérifie en priorité
-      // les signaux explicites de détection "pwned"/"leaked" retournés par Auth.
-      const probePassword = "P@ssw0rd123";
-      const { data, error } = await anon.auth.signUp({ email, password: probePassword });
-      const reasons = (error as { reasons?: string[] } | null)?.reasons ?? [];
-      if (error && (reasons.includes("pwned") || /pwned|leaked|compromis/i.test(error.message))) {
-        hibp = { id: "hibp", label: "Mots de passe compromis", status: "ok", detail: "Protection active : un mot de passe compromis de sonde a été refusé." };
-      } else if (error && error.code === "weak_password") {
-        hibp = { id: "hibp", label: "Mots de passe compromis", status: "warning", detail: "Supabase a refusé la sonde comme mot de passe faible, sans preuve suffisante de détection HIBP." };
-      } else if (!error && data.user) {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        await supabaseAdmin.from("user_roles").delete().eq("user_id", data.user.id);
-        await supabaseAdmin.from("profiles").delete().eq("id", data.user.id);
-        await supabaseAdmin.auth.admin.deleteUser(data.user.id);
-        hibp = { id: "hibp", label: "Mots de passe compromis", status: "error", detail: "Protection non confirmée : la sonde a été acceptée. Activez « Prevent use of leaked passwords » dans Supabase (Authentication → Attack Protection)." };
-      } else {
-        hibp = { id: "hibp", label: "Mots de passe compromis", status: "warning", detail: "Vérification impossible pour le moment. Réessayez plus tard." };
-      }
-    } catch {
-      hibp = { id: "hibp", label: "Mots de passe compromis", status: "warning", detail: "Vérification impossible pour le moment. Réessayez plus tard." };
-    }
+    // Supabase ne fournit pas ici de lecture fiable de ce réglage Auth.
+    // Ne jamais créer/supprimer un compte réel depuis un health-check de production :
+    // un échec de nettoyage pourrait laisser un compte-sonde avec un mot de passe connu.
+    const hibp: ReadinessCheck = {
+      id: "hibp",
+      label: "Mots de passe compromis",
+      status: "warning",
+      detail:
+        "Vérification automatique non destructive indisponible. Contrôlez « Prevent use of leaked passwords » dans Supabase → Authentication → Attack Protection avant la mise en production.",
+    };
     checks.push(hibp);
 
     const smsOk = !!process.env["SMS_PROVIDER_URL"] && !!process.env["SMS_PROVIDER_KEY"];
