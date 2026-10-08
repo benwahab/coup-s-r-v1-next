@@ -114,13 +114,13 @@ export const checkIsSuperAdmin = createServerFn({ method: "POST" })
   });
 
 /**
- * Admin activity feed only.
+ * Admin player activity and transaction access.
  *
  * SECURITY BOUNDARY:
- * - No ticket id/code, picks, legs, prize or ticket state is returned.
- * - No payment_key is returned.
+ * - Access is restricted to the dedicated player_activity permission.
+ * - Ticket rows expose only operational fields needed by the Transactions tab.
+ * - Picks, legs and payment_key are never returned by this function.
  * - The player's Mobile Money secret/password is never persisted or exposed.
- * - This is operational activity, not access to the player's ticket.
  */
 /** Aggregate Loto wager exposure for the dedicated ball_stats admin capability.
  * No ticket IDs, player IDs, phones, selections-by-player or individual tickets are returned.
