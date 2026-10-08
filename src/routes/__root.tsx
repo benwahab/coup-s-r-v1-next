@@ -27,7 +27,21 @@ import { AppShell } from "@/components/AppShell";
 import { Splash } from "@/components/Splash";
 
 function rootLangText(fr: string, en: string) {
-  return typeof window !== "undefined" && localStorage.getItem("lonani.lang") === "en" ? en : fr;
+  if (typeof window === "undefined") return fr;
+  try {
+    return localStorage.getItem("lonani.lang") === "en" ? en : fr;
+  } catch {
+    return fr;
+  }
+}
+
+const PREVIEW_RELOAD_KEY = "coupsur.preview.reload-once";
+
+function isTransientChunkError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /ChunkLoadError|Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed|Failed to load module script/i.test(
+    message,
+  );
 }
 
 function NotFoundComponent() {
@@ -55,8 +69,22 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
+
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+
+    if (!isTransientChunkError(error) || typeof window === "undefined") return;
+
+    try {
+      if (sessionStorage.getItem(PREVIEW_RELOAD_KEY) === "1") {
+        sessionStorage.removeItem(PREVIEW_RELOAD_KEY);
+        return;
+      }
+      sessionStorage.setItem(PREVIEW_RELOAD_KEY, "1");
+      window.location.reload();
+    } catch {
+      // If storage is unavailable, leave the normal error screen available.
+    }
   }, [error]);
 
   return (
@@ -71,8 +99,12 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
-              router.invalidate();
-              reset();
+              try {
+                sessionStorage.removeItem(PREVIEW_RELOAD_KEY);
+              } catch {
+                // Ignore unavailable storage.
+              }
+              window.location.reload();
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
