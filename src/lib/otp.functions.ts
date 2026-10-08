@@ -1,6 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { writeAuditLog } from "./audit.server";
+
+async function writeAuditLog(...args: Parameters<(typeof import("./audit.server"))["writeAuditLog"]>) {
+  const { writeAuditLog } = await import("./audit.server");
+  return writeAuditLog(...args);
+}
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const MAX_ATTEMPTS = 3;
