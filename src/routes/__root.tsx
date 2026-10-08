@@ -192,6 +192,30 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    const handlePreloadError = (event: Event) => {
+      const detail = (event as CustomEvent<{ payload?: unknown }>).detail;
+      reportLovableError(detail?.payload ?? new Error("vite_preload_error"), {
+        boundary: "vite_preload_error",
+        route: window.location.pathname,
+      });
+
+      try {
+        if (sessionStorage.getItem(PREVIEW_RELOAD_KEY) === "1") {
+          sessionStorage.removeItem(PREVIEW_RELOAD_KEY);
+          return;
+        }
+        sessionStorage.setItem(PREVIEW_RELOAD_KEY, "1");
+        window.location.reload();
+      } catch {
+        // Keep the current document if storage is unavailable.
+      }
+    };
+
+    window.addEventListener("vite:preloadError", handlePreloadError);
+    return () => window.removeEventListener("vite:preloadError", handlePreloadError);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
