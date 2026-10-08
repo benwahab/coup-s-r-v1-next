@@ -1,5 +1,5 @@
 type LovableErrorOptions = {
-  mechanism?: "manual" | "onerror" | "unhandledrejection" | "react_error_boundary";
+  mechanism?: "manual" | "onerror" | "unhandledrejection" | "vite_preload" | "react_error_boundary";
   handled?: boolean;
   severity?: "error" | "warning" | "info";
 };
@@ -34,7 +34,9 @@ export function reportLovableError(
       ? "unhandledrejection"
       : context.boundary === "window_error"
         ? "onerror"
-        : "react_error_boundary";
+        : context.boundary === "vite_preload_error"
+          ? "vite_preload"
+          : "react_error_boundary";
 
   window.__lovableEvents?.captureException?.(
     normalized,
