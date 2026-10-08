@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
 import { writeAuditLog } from "./audit.server";
 import { nigerParts, nigerInstant } from "@/lib/schedule";
@@ -81,7 +83,7 @@ type StoredFootPick = {
   status: "pending" | "losing" | "winning" | "paid";
 };
 
-async function assertPublishResultsPermission(supabase: typeof supabaseAdmin, userId: string) {
+async function assertPublishResultsPermission(supabase: SupabaseClient<Database>, userId: string) {
   const { data, error } = await supabase.rpc("has_admin_permission", {
     _user_id: userId,
     _permission: "publish_results",
