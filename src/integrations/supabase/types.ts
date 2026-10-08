@@ -177,6 +177,7 @@ export type Database = {
           draw_name: string | null
           game_id: string
           id: string
+          pmu_race_id: string | null
           published_at: string | null
           published_by: string | null
           result: Json
@@ -189,6 +190,7 @@ export type Database = {
           draw_name?: string | null
           game_id: string
           id?: string
+          pmu_race_id?: string | null
           published_at?: string | null
           published_by?: string | null
           result: Json
@@ -201,13 +203,22 @@ export type Database = {
           draw_name?: string | null
           game_id?: string
           id?: string
+          pmu_race_id?: string | null
           published_at?: string | null
           published_by?: string | null
           result?: Json
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "draw_results_pmu_race_id_fkey"
+            columns: ["pmu_race_id"]
+            isOneToOne: false
+            referencedRelation: "pmu_races"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       financial_ledger: {
         Row: {
@@ -448,9 +459,9 @@ export type Database = {
           enabled: boolean
           game_id: string
           open_hour: number
+          timezone: string
           today_paid_fcfa: number | null
           today_winners_count: number | null
-          timezone: string
           updated_at: string
           updated_by: string | null
         }
@@ -462,9 +473,9 @@ export type Database = {
           enabled?: boolean
           game_id: string
           open_hour: number
+          timezone?: string
           today_paid_fcfa?: number | null
           today_winners_count?: number | null
-          timezone?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -476,9 +487,9 @@ export type Database = {
           enabled?: boolean
           game_id?: string
           open_hour?: number
+          timezone?: string
           today_paid_fcfa?: number | null
           today_winners_count?: number | null
-          timezone?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -872,6 +883,7 @@ export type Database = {
           phone: string | null
           picks: Json
           picks_label: string
+          pmu_race_id: string | null
           prize: number | null
           region: string | null
           stake: number
@@ -893,6 +905,7 @@ export type Database = {
           phone?: string | null
           picks: Json
           picks_label: string
+          pmu_race_id?: string | null
           prize?: number | null
           region?: string | null
           stake: number
@@ -909,10 +922,12 @@ export type Database = {
           game_name?: string
           id?: string
           legs?: Json | null
+          loto_multiplier?: number | null
           payment_method?: string
           phone?: string | null
           picks?: Json
           picks_label?: string
+          pmu_race_id?: string | null
           prize?: number | null
           region?: string | null
           stake?: number
@@ -920,7 +935,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tickets_pmu_race_id_fkey"
+            columns: ["pmu_race_id"]
+            isOneToOne: false
+            referencedRelation: "pmu_races"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -957,9 +980,9 @@ export type Database = {
         }
         Returns: string
       }
-      get_loto_ball_statistics: { Args: never; Returns: Json }
       get_admin_player_statistics: { Args: never; Returns: Json }
       get_admin_region_statistics: { Args: never; Returns: Json }
+      get_loto_ball_statistics: { Args: never; Returns: Json }
       has_admin_permission: {
         Args: { _permission: string; _user_id: string }
         Returns: boolean
