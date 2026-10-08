@@ -467,6 +467,7 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => z.object({ resultId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertPublishResultsPermission(context.supabase, context.userId);
 
     const { data: result, error: resultError } = await supabaseAdmin
@@ -565,6 +566,7 @@ export const requestCashout = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => z.object({ code: z.string().min(1).max(100) }).parse(data))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: ticket, error } = await supabaseAdmin
       .from("tickets")
       .select("id,code,user_id,status,prize")
