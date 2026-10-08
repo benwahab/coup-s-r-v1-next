@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { writeAuditLog } from "./audit.server";
 
 const scheduleSchema = z.object({
@@ -16,8 +17,8 @@ const scheduleSchema = z.object({
   todayPaidFcfa: z.number().int().min(0).nullable(),
 });
 
-async function assertOperationsPermission(userId: string) {
-  const { data, error } = await supabaseAdmin.rpc("has_admin_permission", {
+async function assertOperationsPermission(supabase: SupabaseClient<Database>, userId: string) {
+  const { data, error } = await supabase.rpc("has_admin_permission", {
     _user_id: userId,
     _permission: "operations",
   });
@@ -28,7 +29,8 @@ async function assertOperationsPermission(userId: string) {
 export const getGameSchedules = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
-    await assertOperationsPermission(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await assertOperationsPermission(supabaseAdmin, context.userId);
     const { data, error } = await supabaseAdmin
       .from("game_schedules")
       .select("game_id,open_hour,close_hour,draw_hour,draw_minute,timezone,enabled,daily_stats_date,today_winners_count,today_paid_fcfa,updated_at")
@@ -41,7 +43,8 @@ export const adminUpdateGameSchedule = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => scheduleSchema.parse(data))
   .handler(async ({ data, context }) => {
-    await assertOperationsPermission(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await assertOperationsPermission(supabaseAdmin, context.userId);
 
     const { data: row, error } = await supabaseAdmin
       .from("game_schedules")
