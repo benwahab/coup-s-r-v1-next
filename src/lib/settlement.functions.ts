@@ -71,6 +71,7 @@ type TicketRow = {
   status: "pending" | "losing" | "winning" | "paid";
   prize: number | null;
   loto_multiplier: number | null;
+  pmu_race_id: string | null;
 };
 
 type StoredFootPick = {
@@ -109,19 +110,20 @@ async function evaluatePmu(
   result: { horses: number[] },
   stake: number,
   drawDate: string,
+  pmuRaceId: string | null,
 ) {
   const nums = picks.filter((p): p is number => typeof p === "number");
   if (nums.length < 1 || nums.length > 8 || new Set(nums).size !== nums.length) return null;
   const winningNumbers = result.horses;
   if (new Set(winningNumbers).size !== winningNumbers.length) return null;
+  if (!pmuRaceId) return null;
 
   const { data: race, error: raceError } = await supabaseAdmin
     .from("pmu_races")
     .select("id,status,start_at")
+    .eq("id", pmuRaceId)
     .eq("race_date", drawDate)
     .in("status", ["finished"])
-    .order("start_at", { ascending: true })
-    .limit(1)
     .maybeSingle();
   if (raceError) throw new Error("pmu_race_lookup_failed: " + raceError.message);
   if (!race) return null;
@@ -144,7 +146,6 @@ async function evaluatePmu(
   if (winning) throw new Error("pmu_payout_rule_not_configured");
   return { winning: false, prize: 0 };
 }
-
 function finalOutcome(homeGoals: number, awayGoals: number): "1" | "X" | "2" {
   if (homeGoals > awayGoals) return "1";
   if (homeGoals < awayGoals) return "2";
