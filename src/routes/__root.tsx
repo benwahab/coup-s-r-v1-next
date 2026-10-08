@@ -89,7 +89,7 @@ function ErrorComponent({ error, info }: ErrorComponentProps) {
     } catch {
       // If storage is unavailable, leave the normal error screen available.
     }
-  }, [error]);
+  }, [error, info?.componentStack]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
