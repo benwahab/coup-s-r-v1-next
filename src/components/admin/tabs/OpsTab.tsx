@@ -1,20 +1,10 @@
-import { Download, Settings, Clock3 } from "lucide-react";
+import { Clock3 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { adminUpdateGameSchedule, getGameSchedules } from "@/lib/game-schedule.functions";
 
 import { useI18n } from "@/lib/i18n";
 
-interface Props {
-  csvFrom: string;
-  setCsvFrom: (v: string) => void;
-  csvTo: string;
-  setCsvTo: (v: string) => void;
-  csvScope: "all" | "winners" | "cashout";
-  setCsvScope: (v: "all" | "winners" | "cashout") => void;
-  exportCsv: (scope?: "all" | "winners" | "cashout") => void;
-}
-
-export function OpsTab(p: Props) {
+export function OpsTab() {
   const { t } = useI18n();
   type Schedule = {
     open_hour: number;
@@ -183,49 +173,6 @@ export function OpsTab(p: Props) {
           );
         })}
         {scheduleMsg && <p className="mt-3 text-xs font-semibold text-primary">{scheduleMsg}</p>}
-      </section>
-
-      <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
-        <div className="flex items-center gap-2">
-          <Settings className="h-4 w-4 text-primary" />
-          <h2 className="font-display text-lg font-bold">{t("admin.ops.title")}</h2>
-        </div>
-        <div className="mt-3 rounded-2xl border border-border bg-muted/30 p-4">
-          <p className="text-sm font-semibold">{t("admin.static.smsDisabled")}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Aucun SMS de gain n’est envoyé ou simulé tant qu’un fournisseur SMS réel n’est pas
-            configuré.
-          </p>
-        </div>
-        <div className="mt-4 flex flex-wrap items-center gap-1.5">
-          <input
-            type="date"
-            value={p.csvFrom}
-            onChange={(e) => p.setCsvFrom(e.target.value)}
-            className="rounded-full border border-border bg-background px-2 py-1 text-[11px]"
-          />
-          <input
-            type="date"
-            value={p.csvTo}
-            onChange={(e) => p.setCsvTo(e.target.value)}
-            className="rounded-full border border-border bg-background px-2 py-1 text-[11px]"
-          />
-          <select
-            value={p.csvScope}
-            onChange={(e) => p.setCsvScope(e.target.value as "all" | "winners" | "cashout")}
-            className="rounded-full border border-border bg-background px-2 py-1 text-[11px]"
-          >
-            <option value="all">{t("admin.ops.scopeAll")}</option>
-            <option value="winners">{t("admin.ops.scopeWinners")}</option>
-            <option value="cashout">{t("admin.ops.scopeCashedOut")}</option>
-          </select>
-          <button
-            onClick={() => p.exportCsv()}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-primary hover:border-primary/40"
-          >
-            <Download className="h-3.5 w-3.5" /> {t("exportCsv")}
-          </button>
-        </div>
       </section>
     </div>
   );
