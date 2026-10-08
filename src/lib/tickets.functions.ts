@@ -343,6 +343,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
       legs: legs ?? [],
       phone: profilePhone,
       region: profile?.region ?? null,
+      pmu_race_id: pmuRaceId,
     };
 
     const { data: ticketId, error: atomicError } = await supabaseAdmin.rpc(
