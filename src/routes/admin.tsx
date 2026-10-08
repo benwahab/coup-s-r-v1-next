@@ -613,17 +613,7 @@ function AdminPage() {
               />
             )}
             {can("publish_results") && tab === "results" && <ResultsTab />}
-            {can("operations") && tab === "ops" && (
-              <OpsTab
-                csvFrom={csvFrom}
-                setCsvFrom={setCsvFrom}
-                csvTo={csvTo}
-                setCsvTo={setCsvTo}
-                csvScope={csvScope}
-                setCsvScope={setCsvScope}
-                exportCsv={exportCsv}
-              />
-            )}
+            {can("operations") && tab === "ops" && <OpsTab />}
             {adminPermissions === "all" && tab === "admins" && <AdminsSection />}
             {can("supervision") && tab === "supervision" && <MonitoringTab />}
             {can("security_logs") && tab === "security_logs" && <SecurityLogsTab />}
