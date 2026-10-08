@@ -14,6 +14,12 @@ export const gameLabel: Record<string, string> = {
   foot: "Pari Foot",
 };
 
+export function escapeCsvCell(value: unknown): string {
+  const raw = String(value ?? "");
+  const safe = /^[=+@-]/.test(raw) ? "'" + raw : raw;
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+
 export function downloadCsv(csv: string, filename: string) {
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
