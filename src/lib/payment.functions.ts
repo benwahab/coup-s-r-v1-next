@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const paymentInput = z.object({
   key: z.string().min(3).max(200),
@@ -32,6 +31,7 @@ export const beginPayment = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => paymentInput.parse(data))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     if (data.gameId === "pmu" || data.gameId === "loto") {
       const { data: schedule, error: scheduleError } = await supabaseAdmin
         .from("game_schedules")
