@@ -3,7 +3,11 @@ import { z } from "zod";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { writeAuditLog } from "./audit.server";
+
+async function writeAuditLog(...args: Parameters<(typeof import("./audit.server"))["writeAuditLog"]>) {
+  const { writeAuditLog } = await import("./audit.server");
+  return writeAuditLog(...args);
+}
 
 const scheduleSchema = z.object({
   gameId: z.enum(["pmu", "loto"]),
