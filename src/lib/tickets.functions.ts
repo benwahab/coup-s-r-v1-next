@@ -143,6 +143,8 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     // Integrity checks for the game catalog. The browser may submit any
     // JSON it wants, so PMU/Loto selections are revalidated against the same
     // canonical definitions used by the UI before a ticket is persisted.
+    let pmuRaceId: string | null = null;
+
     const validatePicks = async (gameId: string, picks: Array<string | number>) => {
       const nums = picks.filter((p): p is number => typeof p === "number");
       if (gameId === "loto") {
@@ -180,6 +182,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
           .order("start_at", { ascending: true })
           .limit(1);
         if (raceError || !races?.[0]) throw new Error("pmu_race_not_found");
+        pmuRaceId = races[0].id;
         if (new Date(races[0].start_at).getTime() <= Date.now()) throw new Error("pmu_race_closed");
         const { data: starters, error: startersError } = await pmuDb
           .from("pmu_horses")
@@ -233,6 +236,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
       legs: (legs ?? []) as unknown as Database["public"]["Tables"]["tickets"]["Insert"]["legs"],
       phone: profilePhone,
       region: profile?.region ?? null,
+      pmu_race_id: pmuRaceId,
     };
 
     // Les paris foot sont enregistrés côté serveur. Le client ne peut donc
