@@ -91,7 +91,7 @@ function Index() {
 }
 
 function HomeContent() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [schedules, setSchedules] = useState<
     Partial<
       Record<
@@ -317,13 +317,13 @@ function HomeContent() {
           </div>
 
           <h1 className="mt-4 font-display text-4xl sm:text-6xl font-extrabold leading-[1.05]">
-            Jouez. Gagnez.{" "}
+            {t("home.heroLead")}{" "}
             <span className="bg-gradient-to-r from-[oklch(0.82_0.20_150)] to-[oklch(0.86_0.16_88)] bg-clip-text text-transparent">
-              Encaissez.
+              {t("home.heroAccent")}
             </span>
           </h1>
           <p className="mt-4 max-w-xl text-base sm:text-lg text-white/75">
-            Votre aventure commence ici : choisissez votre jeu, faites vos choix et tentez votre chance. Chaque partie peut vous rapprocher de votre prochain grand gain.
+            {t("home.heroDescription")}
           </p>
 
           {/* Jackpot principal — PMU */}
@@ -435,7 +435,7 @@ function HomeContent() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-teal-300">
                   <Trophy className="h-3.5 w-3.5" />
-                  Loto Balsa
+                  {t("loto")}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-teal-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-200">
                   <Clock className="h-3 w-3" /> {t("today")} {todayLabel}
@@ -520,7 +520,7 @@ function HomeContent() {
                 <div className="mt-1.5 h-[44px] animate-pulse rounded-lg bg-white/5" />
               )}
               <div className="mt-2 text-[11px] text-white/60">
-                Les statistiques et tendances seront affichées après réception de résultats réels.
+                {t("home.statsDescription")}
               </div>
               <Link
                 to="/loto-balsa"
@@ -539,13 +539,13 @@ function HomeContent() {
                 <Goal className="h-3.5 w-3.5" /> Pari Foot
               </span>
               <span className="rounded-full bg-teal-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-200">
-                À venir
+                {t("home.footComing")}
               </span>
             </div>
 
             <div className="mt-3">
               <div className="text-[10px] font-bold uppercase tracking-widest text-white/55">
-                Grandes affiches
+                {t("home.footFeatured")}
               </div>
               {footHighlights.length > 0 ? (
                 <div className="mt-2 space-y-2">
@@ -556,12 +556,12 @@ function HomeContent() {
                         <div className="flex items-center justify-between gap-2 text-[9px] text-white/55">
                           <span className="truncate">{m.league}</span>
                           <span className="shrink-0">
-                            {new Date(m.kickoffAt).toLocaleDateString("fr-FR", {
+                            {new Date(m.kickoffAt).toLocaleDateString(lang === "en" ? "en-GB" : "fr-FR", {
                               day: "2-digit",
                               month: "2-digit",
                             })}{" "}
                             ·{" "}
-                            {new Date(m.kickoffAt).toLocaleTimeString("fr-FR", {
+                            {new Date(m.kickoffAt).toLocaleTimeString(lang === "en" ? "en-GB" : "fr-FR", {
                               hour: "2-digit",
                               minute: "2-digit",
                               hour12: false,
@@ -574,7 +574,7 @@ function HomeContent() {
                           <span className="min-w-0 truncate text-right">{m.away}</span>
                         </div>
                         <div className="mt-1 flex items-center justify-between text-[9px]">
-                          <span className="text-white/50">Meilleure cote</span>
+                          <span className="text-white/50">{t("home.bestOdds")}</span>
                           <span className="font-bold tabular-nums text-teal-200">×{maxOdd.toFixed(2)}</span>
                         </div>
                       </div>
@@ -583,7 +583,7 @@ function HomeContent() {
                 </div>
               ) : (
                 <div className="mt-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-4 text-center text-[10px] text-white/55">
-                  Les prochaines affiches apparaîtront dès que les matchs réels seront disponibles.
+                  {t("home.noMatches")}
                 </div>
               )}
             </div>
@@ -592,7 +592,7 @@ function HomeContent() {
               to="/pari-foot"
               className="mt-4 inline-flex items-center gap-2 rounded-full bg-gold-gradient px-5 py-2.5 font-bold text-[var(--gold-foreground)] shadow-gold transition hover:brightness-110"
             >
-              Voir les matchs <ArrowRight className="h-4 w-4" />
+              {t("home.viewMatches")} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
@@ -600,9 +600,9 @@ function HomeContent() {
 
           <div className="mt-6 grid grid-cols-3 gap-2 max-w-xl">
             {[
-              { icon: Zap, label: "3 clics" },
-              { icon: Smartphone, label: "Mobile Money" },
-              { icon: ShieldCheck, label: "QR sécurisé" },
+              { icon: Zap, label: t("home.threeClicks") },
+              { icon: Smartphone, label: t("home.mobileMoney") },
+              { icon: ShieldCheck, label: t("home.secureQr") },
             ].map((b) => (
               <div
                 key={b.label}
@@ -621,7 +621,7 @@ function HomeContent() {
           to="/resultats"
           className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-bold text-primary hover:border-primary/40"
         >
-          Voir les derniers résultats publiés <ArrowRight className="h-4 w-4" />
+          {t("home.viewLatestResults")} <ArrowRight className="h-4 w-4" />
         </Link>
       </section>
 
