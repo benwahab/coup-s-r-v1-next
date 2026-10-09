@@ -25,8 +25,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const onAdmin = pathname.startsWith("/admin");
   const showGlobalBackdrop = !onAuth && !onCompte;
   const navigate = useNavigate();
+  // L'accueil fait partie du parcours authentifié : après un chargement, un
+  // utilisateur sans session valide doit passer par /auth au lieu de rester
+  // sur l'accueil avec les boutons « Connexion » et « Créer un compte ».
   const protectedRoute =
-    onAdmin || pathname.startsWith("/mes-tickets") || pathname.startsWith("/ticket/");
+    pathname === "/" ||
+    onAdmin ||
+    pathname.startsWith("/mes-tickets") ||
+    pathname.startsWith("/ticket/");
   const blocked = authChecked && !authed && protectedRoute;
   const pending = !authChecked && protectedRoute;
 
