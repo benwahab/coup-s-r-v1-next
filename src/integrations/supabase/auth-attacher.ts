@@ -6,10 +6,19 @@ import { supabase } from "./client";
 // the browser never attaches the bearer token to serverFn RPCs.
 export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
   async ({ next }) => {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    return next({
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    // Public server functions (registration, recovery/account lookup, OTP request)
+    // must remain callable when there is no valid client session. A local
+    // getSession() failure must not be turned into a misleading "network"
+    // error before the RPC is even sent.
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      return next({
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+    } catch (error) {
+      console.warn("[Supabase] Unable to attach auth session to public RPC", error);
+      return next({ headers: {} });
+    }
   },
 );
