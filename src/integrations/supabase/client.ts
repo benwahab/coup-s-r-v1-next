@@ -31,11 +31,18 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 }
 
 function createSupabaseClient() {
-  // Use import.meta.env for client-side (Vite build-time replacement)
-  // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  // Use environment configuration when available (preview/staging deployments).
+  // The fallback targets this application's existing Supabase project and uses
+  // only its publishable key, which is designed to be exposed in browser code.
+  // Never put a secret/service-role key in this client.
+  const SUPABASE_URL =
+    import.meta.env.VITE_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    "https://gisjxogimycghgkxedif.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY =
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    "sb_publishable_e78qE-VEbGfHB6TOBwM19A_hSVaxPOP";
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [
