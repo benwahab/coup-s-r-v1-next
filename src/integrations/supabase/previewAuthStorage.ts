@@ -24,9 +24,13 @@ export function brokeredPreviewStorage() {
     ? /^https:\/\/([a-z0-9-]+\.)*(lovable\.dev|gptengineer\.app)$|^http:\/\/localhost:3000$/
     : /^https:\/\/([a-z0-9-]+\.)*(lovable\.dev|gptengineer\.app)$/;
   const ancestor = (location.ancestorOrigins && location.ancestorOrigins[0]) || (document.referrer ? new URL(document.referrer).origin : '');
-  const editorOrigins = ancestor && EDITOR.test(ancestor)
-    ? [ancestor]
-    : (dev ? ['https://lovable.dev', 'http://localhost:3000'] : ['https://lovable.dev']);
+  // Only broker credentials when the immediate parent is a verified editor origin.
+  // window.parent.postMessage cannot target a more distant ancestor; falling back
+  // to a guessed editor origin can throw a target-origin mismatch and is unsafe.
+  // A normal localStorage session still works when this preview is not directly
+  // embedded by the trusted editor.
+  if (!ancestor || !EDITOR.test(ancestor)) return localStorage;
+  const editorOrigins = [ancestor];
   const RESULT = 'lovable-preview-auth:result';
   const TIMEOUT = 2000;
   const newId = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
