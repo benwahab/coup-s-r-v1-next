@@ -4,7 +4,6 @@ import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=480&quality=92
 
 const SERVER_RETRY_MS = 2000;
 
-import splashVisual from "@/assets/coup-sur-splash-visual.svg";
 export function Splash() {
   const { t } = useI18n();
   const [show, setShow] = useState(true);
@@ -81,43 +80,36 @@ export function Splash() {
       aria-live="polite"
       aria-label={t("shell.splash.skip")}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(16,185,129,0.22),transparent_42%),linear-gradient(180deg,#062d20_0%,#031c13_55%,#01130c_100%)]" />
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url("/coup-sur-auth-background.webp")' }}
+        aria-hidden
+      />
+      <div className="absolute inset-0 bg-black/45" aria-hidden />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(16,185,129,0.14),transparent_48%),linear-gradient(180deg,rgba(1,19,12,0.12)_0%,rgba(1,19,12,0.52)_100%)]" aria-hidden />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center px-4 pb-7 pt-7 text-center sm:px-6 sm:pt-10">
         <div className="relative z-10 shrink-0">
-          <div className="absolute inset-[-12%] rounded-full bg-emerald-400/15 blur-2xl" aria-hidden />
+          <div className="absolute inset-[-10%] rounded-full bg-emerald-400/20 blur-2xl" aria-hidden />
           <img
             src={logoCoupSur}
             alt="Coup Sûr"
-            className="relative h-32 w-32 object-contain drop-shadow-[0_12px_28px_rgba(0,0,0,0.55)] sm:h-40 sm:w-40"
+            className="relative h-24 w-24 object-contain drop-shadow-[0_12px_28px_rgba(0,0,0,0.65)] sm:h-28 sm:w-28"
           />
         </div>
 
-        <div className="relative z-10 mt-1 shrink-0 space-y-1 sm:mt-2">
-          <p className="text-xs font-bold tracking-[0.2em] text-white sm:text-sm">
-            PMU · LOTO BALSA · PARI FOOT
-          </p>
-          <p className="text-xs text-emerald-100/75 sm:text-sm">
-            Jouez responsable, gagnez en confiance
-          </p>
-        </div>
-
-        <div className="relative z-10 my-5 flex min-h-0 w-full flex-1 items-center justify-center sm:my-7">
-          <img
-            src={splashVisual}
-            alt="Course hippique, boules de loto et football"
-            className="h-auto max-h-[58vh] w-full max-w-[940px] object-contain drop-shadow-[0_18px_45px_rgba(0,0,0,0.48)] sm:max-h-[60vh]"
-          />
+        <div className="relative z-10 my-4 flex min-h-0 w-full flex-1 items-end justify-center sm:my-6 sm:items-center">
+          <div className="rounded-2xl border border-white/15 bg-black/25 px-5 py-4 shadow-2xl backdrop-blur-[2px]">
+            <p className="text-sm font-bold text-white sm:text-base">Initialisation de l'application...</p>
+            <div className="mt-3 flex items-center justify-center gap-3">
+              <div className="cs-splash-spinner" aria-hidden />
+              <p className="text-xs font-medium text-emerald-50/85 sm:text-sm">{statusText}</p>
+            </div>
+          </div>
         </div>
 
         <div className="relative z-10 flex shrink-0 flex-col items-center">
-          <div className="cs-splash-spinner" aria-hidden />
-          <p className="mt-4 text-sm font-semibold text-white sm:text-base">
-            Initialisation de l'application...
-          </p>
-          <p className="mt-1 text-xs text-emerald-100/70 sm:text-sm">
-            {statusText}
-          </p>
+          <p className="text-[11px] text-white/60">Connexion sécurisée au serveur</p>
         </div>
       </div>
 
