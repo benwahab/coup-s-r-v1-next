@@ -78,15 +78,20 @@ function useLiveStage(openHour: number, closeHour: number, drawHour: number, dra
 }
 
 function Index() {
-  const { t } = useI18n();
   const { authed, authChecked } = useAuth();
 
-  // / is authenticated. Keep the route content out of the initial render until
-  // the browser has resolved the Supabase session; this prevents the home page
-  // from flashing before AppShell redirects an unauthenticated visitor to /auth.
+  // Keep the protected route out of SSR and the first client render until the
+  // session check completes. The content lives in a child component so its
+  // hooks are never conditionally skipped when authentication resolves.
   if (!authChecked || !authed) {
     return null;
   }
+
+  return <HomeContent />;
+}
+
+function HomeContent() {
+  const { t } = useI18n();
   const [schedules, setSchedules] = useState<
     Partial<
       Record<
