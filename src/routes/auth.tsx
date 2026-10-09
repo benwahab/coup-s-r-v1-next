@@ -547,7 +547,7 @@ function AuthPage() {
                   value={region}
                   onChange={(event) => setRegion(event.target.value)}
                   aria-invalid={Boolean(errors.region)}
-                  className="h-12 w-full rounded-md border border-input/80 bg-background/35 px-3 text-base text-foreground outline-none transition-all duration-200 hover:border-accent/45 hover:bg-background/45 focus:border-accent focus:bg-background/50"
+                  className="h-12 w-full rounded-md border border-input/80 bg-white/[0.035] px-3 text-base text-foreground outline-none transition-all duration-200 hover:border-accent/45 hover:bg-white/[0.05] focus:border-accent focus:bg-white/[0.075]"
                 >
                   <option value="">{t("auth.regionRequired")}</option>
                   {NIGER_REGIONS.map((r) => (
@@ -790,7 +790,7 @@ function TextField({
         autoFocus={autoFocus}
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={Boolean(error)}
-        className="h-12 w-full rounded-md border border-input/80 bg-background/35 px-3 text-base text-foreground outline-none transition-all duration-200 hover:border-accent/45 hover:bg-background/45 focus:border-accent focus:bg-background/50"
+        className="h-12 w-full rounded-md border border-input/80 bg-white/[0.035] px-3 text-base text-foreground outline-none transition-all duration-200 hover:border-accent/45 hover:bg-white/[0.05] focus:border-accent focus:bg-white/[0.075]"
       />
       {error && <FieldError>{error}</FieldError>}
     </label>
@@ -813,7 +813,7 @@ function PhoneField({
     <label className="block">
       <span className="mb-2 block text-sm font-semibold text-foreground">{t("phone")}</span>
       <span
-        className={`flex h-12 items-center rounded-md border bg-background/35 transition-all duration-200 hover:border-accent/45 hover:bg-background/45 focus-within:bg-background/50 focus-within:ring-2 focus-within:ring-accent/20 ${error ? "border-destructive" : "border-input/80 focus-within:border-accent"}`}
+        className={`flex h-12 items-center rounded-md border bg-background/35 transition-all duration-200 hover:border-accent/45 hover:bg-background/45 focus-within:bg-white/[0.075] focus-within:ring-2 focus-within:ring-accent/20 ${error ? "border-destructive" : "border-input/80 focus-within:border-accent"}`}
       >
         <span className="flex h-full items-center gap-2 border-r border-input px-3 font-semibold text-foreground">
           <Phone className="h-4 w-4 text-accent" /> +227
