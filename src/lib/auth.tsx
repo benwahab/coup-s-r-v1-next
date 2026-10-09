@@ -229,7 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState(next);
       save(next);
       if (res.reason === "expired") {
-        return { ok: false, reason: "wrong-code", remaining: 3 - failed };
+        return { ok: false, reason: "expired" };
       }
       if (res.reason === "locked") {
         return { ok: false, reason: "locked" };
