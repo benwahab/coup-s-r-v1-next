@@ -18,15 +18,6 @@ export function Splash() {
 
     const checkServer = async () => {
       try {
-        const clientOk =
-          !!import.meta.env.VITE_SUPABASE_URL &&
-          !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-        if (!clientOk) {
-          if (!cancelled) setServerError(true);
-          return;
-        }
-
         const healthResponse = await fetch("/health", {
           method: "GET",
           cache: "no-store",
@@ -41,15 +32,11 @@ export function Splash() {
           throw new Error("Health check returned an invalid status");
         }
 
-        const { error } = await supabase.auth.getSession();
         if (cancelled) return;
 
-        if (error) {
-          setServerReady(false);
-          setServerError(true);
-          return;
-        }
-
+        // The splash is a server-readiness gate, not an authentication gate.
+        // Supabase session recovery is handled independently by AuthProvider so a
+        // transient auth/storage failure cannot trap the entire Preview on startup.
         setServerError(false);
         setServerReady(true);
       } catch {
