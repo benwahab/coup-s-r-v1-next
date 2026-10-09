@@ -66,7 +66,7 @@ export function Splash() {
     <div
       className={[
         "fixed inset-0 z-[100] overflow-hidden",
-        "bg-[#031c13] bg-[url('/coup-sur-auth-background.webp')] bg-cover bg-center bg-no-repeat",
+        "bg-black bg-[url('/coup-sur-auth-background.webp')] bg-cover bg-center bg-no-repeat",
         "transition-opacity duration-500",
         leaving ? "opacity-0" : "opacity-100",
       ].join(" ")}
