@@ -203,6 +203,55 @@
     -webkit-backdrop-filter: blur(12px);
   }
 
+  /* Carte /auth : verre premium très transparent, avec profondeur et reflets subtils. */
+  .glass-auth-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    border-radius: 1.25rem;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.105), rgba(255,255,255,0.028) 52%, rgba(255,255,255,0.065)),
+      rgba(8, 35, 31, 0.12);
+    box-shadow:
+      0 30px 80px -28px rgba(0,0,0,0.72),
+      inset 0 1px 0 rgba(255,255,255,0.24),
+      inset 0 -1px 0 rgba(255,255,255,0.06);
+    backdrop-filter: blur(18px) saturate(135%);
+    -webkit-backdrop-filter: blur(18px) saturate(135%);
+    isolation: isolate;
+    transition: border-color 300ms ease, background-color 300ms ease, box-shadow 300ms ease;
+  }
+
+  .glass-auth-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(115deg, rgba(255,255,255,0.18), transparent 24%, transparent 72%, rgba(255,255,255,0.08)),
+      radial-gradient(500px 180px at 50% -10%, rgba(255,255,255,0.13), transparent 70%);
+  }
+
+  .glass-auth-card:focus-within {
+    border-color: rgba(255,255,255,0.28);
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.125), rgba(255,255,255,0.035) 52%, rgba(255,255,255,0.075)),
+      rgba(8, 35, 31, 0.14);
+    box-shadow:
+      0 34px 88px -28px rgba(0,0,0,0.76),
+      inset 0 1px 0 rgba(255,255,255,0.28),
+      0 0 0 1px rgba(255,255,255,0.035);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .glass-auth-card {
+      background: rgba(8, 35, 31, 0.82);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
   /* Fond global émeraude + sphères flottantes (hors /auth qui a son propre décor) */
   .cs-app-bg {
     position: fixed; inset: 0; z-index: -1; pointer-events: none;
