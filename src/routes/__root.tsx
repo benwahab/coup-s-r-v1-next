@@ -184,6 +184,13 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="fr">
       <head>
+        <style>{`
+          html, body {
+            margin: 0;
+            min-height: 100%;
+            background: #000 url("/coup-sur-auth-background.webp") center / cover no-repeat;
+          }
+        `}</style>
         <HeadContent />
       </head>
       <body>
