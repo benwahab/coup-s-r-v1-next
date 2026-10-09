@@ -20,7 +20,13 @@ async function getServerEntry(): Promise<ServerEntry> {
 
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
-async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
+async function normalizeCatastrophicSsrResponse(request: Request, response: Response): Promise<Response> {
+  // Server-function RPC errors must keep TanStack Start's JSON envelope. Converting
+  // them to an HTML error page makes the browser report a misleading "network"
+  // failure and breaks auth/recovery actions. Only normalize document requests.
+  const acceptsHtml = request.headers.get("accept")?.includes("text/html") ?? false;
+  if (request.method !== "GET" && request.method !== "HEAD") return response;
+  if (!acceptsHtml) return response;
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) return response;
@@ -60,7 +66,7 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return await normalizeCatastrophicSsrResponse(request, response);
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
