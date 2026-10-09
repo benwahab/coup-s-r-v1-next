@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 
 import { supabase } from "@/integrations/supabase/client";
 import { formatFcfa, formatHour } from "@/lib/utils";
@@ -78,6 +79,14 @@ function useLiveStage(openHour: number, closeHour: number, drawHour: number, dra
 
 function Index() {
   const { t } = useI18n();
+  const { authed, authChecked } = useAuth();
+
+  // / is authenticated. Keep the route content out of the initial render until
+  // the browser has resolved the Supabase session; this prevents the home page
+  // from flashing before AppShell redirects an unauthenticated visitor to /auth.
+  if (!authChecked || !authed) {
+    return null;
+  }
   const [schedules, setSchedules] = useState<
     Partial<
       Record<
