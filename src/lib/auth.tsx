@@ -46,7 +46,7 @@ interface Ctx extends AuthState {
     accountPhone: string | null,
   ) => Promise<{
     ok: boolean;
-    reason?: "wrong-phone" | "wrong-code" | "locked" | "permanent" | "rate-limited";
+    reason?: "wrong-phone" | "wrong-code" | "expired" | "already-used" | "locked" | "permanent" | "rate-limited";
     remaining?: number; // attempts left
     lockedUntil?: number | null;
     rate?: RateCheck;
