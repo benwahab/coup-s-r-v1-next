@@ -40,12 +40,18 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     if (new URL(request.url).pathname === "/health") {
+      // Keep this endpoint runtime-agnostic: Lovable Preview may execute the
+      // server entry in an edge-like runtime where Node's process API is absent.
+      const runtimeProcess = typeof process !== "undefined" ? process : undefined;
       return Response.json(
         {
           status: "healthy",
           timestamp: new Date().toISOString(),
-          uptime: process.uptime(),
-          version: process.env.npm_package_version ?? "unknown",
+          uptime:
+            runtimeProcess && typeof runtimeProcess.uptime === "function"
+              ? runtimeProcess.uptime()
+              : null,
+          version: runtimeProcess?.env?.npm_package_version ?? "unknown",
         },
         { headers: { "Cache-Control": "no-store" } },
       );
