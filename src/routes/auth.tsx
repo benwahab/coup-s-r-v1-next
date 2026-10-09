@@ -458,7 +458,7 @@ function AuthPage() {
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-white/15 bg-white/[0.035] p-5 shadow-elevated backdrop-blur-xl ring-1 ring-white/[0.035] transition-[background-color,border-color,box-shadow] duration-300 focus-within:border-white/20 focus-within:bg-white/[0.055] focus-within:shadow-elevated sm:p-7">
+        <div className="glass-auth-card p-5 sm:p-7">
           {(mode !== "login" || step !== "form") && (
             <Button
               type="button"
