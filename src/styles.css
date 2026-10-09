@@ -203,15 +203,15 @@
     -webkit-backdrop-filter: blur(12px);
   }
 
-  /* Carte /auth : verre premium très transparent, avec profondeur et reflets subtils. */
+  /* Carte /auth : verre premium, légèrement plus opaque pour améliorer la lisibilité. */
   .glass-auth-card {
     position: relative;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.20);
     border-radius: 1.25rem;
     background:
-      linear-gradient(135deg, rgba(255,255,255,0.105), rgba(255,255,255,0.028) 52%, rgba(255,255,255,0.065)),
-      rgba(8, 35, 31, 0.12);
+      linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04) 52%, rgba(255,255,255,0.075)),
+      rgba(8, 35, 31, 0.16);
     box-shadow:
       0 30px 80px -28px rgba(0,0,0,0.72),
       inset 0 1px 0 rgba(255,255,255,0.24),
@@ -236,8 +236,8 @@
   .glass-auth-card:focus-within {
     border-color: rgba(255,255,255,0.28);
     background:
-      linear-gradient(135deg, rgba(255,255,255,0.125), rgba(255,255,255,0.035) 52%, rgba(255,255,255,0.075)),
-      rgba(8, 35, 31, 0.14);
+      linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.045) 52%, rgba(255,255,255,0.085)),
+      rgba(8, 35, 31, 0.18);
     box-shadow:
       0 34px 88px -28px rgba(0,0,0,0.76),
       inset 0 1px 0 rgba(255,255,255,0.28),
