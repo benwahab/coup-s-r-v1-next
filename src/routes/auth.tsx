@@ -347,7 +347,16 @@ function AuthPage() {
       setStep("new-password");
       setStatus(t("auth.numberVerified"));
     } catch {
+      // Une erreur serveur pendant la vérification n'est pas une faute de saisie.
+      // Le serveur peut avoir consommé l'OTP avant d'échouer plus loin dans le flux :
+      // abandonner ce code et permettre au citoyen d'en demander un nouveau.
+      clearPending();
+      setDemoCode(null);
+      setStatus(null);
+      setOtp("");
+      setResendIn(0);
       setErrors({ otp: t("auth.verifyFailed") });
+      otpRefs.current[0]?.focus();
     } finally {
       setBusy(false);
     }
