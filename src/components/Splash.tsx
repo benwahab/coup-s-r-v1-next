@@ -62,10 +62,6 @@ export function Splash() {
 
   if (!show) return null;
 
-  const statusText = serverError
-    ? t("shell.splash.serverError")
-    : t("shell.splash.checkingServer");
-
   return (
     <div
       className={[
@@ -100,11 +96,8 @@ export function Splash() {
         <div className="relative z-10 flex min-h-0 w-full flex-1 items-end justify-center pb-10 sm:items-center sm:pb-0">
           <div className="flex flex-col items-center">
             <div className="cs-splash-spinner" aria-hidden />
-            <p className="mt-4 text-sm font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)] sm:text-base">
-              Initialisation de l'application...
-            </p>
-            <p className="mt-1 text-xs font-medium text-emerald-50/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)] sm:text-sm">
-              {statusText}
+            <p className="mt-4 text-sm font-semibold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)] sm:text-base">
+              Connexion
             </p>
           </div>
         </div>
