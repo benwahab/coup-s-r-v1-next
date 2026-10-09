@@ -19,10 +19,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatFcfa, formatHour } from "@/lib/utils";
 import { nextDailyEvent, diffParts, drawNameForDate, nigerDateLabel } from "@/lib/schedule";
 import heroBackground from "@/assets/coup-sur-home-background.webp";
-import ogImage from "@/assets/og-coup-sur.png.asset.json";
-import { SITE_ORIGIN, absoluteOgUrl } from "@/lib/og";
-
-const OG_IMAGE_URL = absoluteOgUrl(ogImage.url);
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -38,18 +34,10 @@ export const Route = createFileRoute("/")({
         property: "og:description",
         content: "PMU, Loto Balsa, Pari Foot. Jouez en 3 clics depuis Niamey ou partout au Niger.",
       },
-      { property: "og:image", content: OG_IMAGE_URL },
-      { property: "og:image:width", content: "1254" },
-      { property: "og:image:height", content: "1254" },
-      { property: "og:image:alt", content: "Coup Sûr — Loterie Nationale du Niger" },
-      { property: "og:url", content: SITE_ORIGIN },
-      { name: "twitter:image", content: OG_IMAGE_URL },
-      { name: "twitter:image:alt", content: "Coup Sûr — Loterie Nationale du Niger" },
     ],
     links: [
-      { rel: "canonical", href: SITE_ORIGIN },
-      // Précharge le hero (LCP de la home) au format WebP — variante réellement utilisée par la majorité des navigateurs.
-      { rel: "preload", as: "image", href: heroBackground, type: "image/webp", fetchPriority: "high" },
+      // Keep route head runtime-safe in Lovable Preview. The hero remains rendered
+      // normally by the page; no generated asset manifest is evaluated during route bootstrap.
     ],
   }),
   component: Index,
