@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { supabase } from "@/integrations/supabase/client";
 import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=480&quality=92&url";
 
 const SERVER_RETRY_MS = 2000;
