@@ -27,7 +27,7 @@ async function normalizeCatastrophicSsrResponse(request: Request, response: Resp
   const acceptsHtml = request.headers.get("accept")?.includes("text/html") ?? false;
   if (request.method !== "GET" && request.method !== "HEAD") return response;
   if (!acceptsHtml) return response;
-  if (response.status < 500) return response;
+  // Keep Server Function RPC errors in Start's JSON format; HTML is only for document requests.\n  if (request.method !== "GET" && request.method !== "HEAD") return response;\n  if (!(request.headers.get("accept")?.includes("text/html") ?? false)) return response;\n  if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) return response;
 
