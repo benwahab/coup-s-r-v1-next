@@ -157,6 +157,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: logoCoupSur,
         type: "image/png",
       },
+      {
+        rel: "preload",
+        href: "/coup-sur-auth-background.webp",
+        as: "image",
+      },
       ...(import.meta.env.VITE_SUPABASE_URL
         ? [
             { rel: "preconnect", href: import.meta.env.VITE_SUPABASE_URL },
