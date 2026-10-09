@@ -71,7 +71,14 @@ function load(): AuthState {
   }
 }
 function save(s: AuthState) {
-  if (typeof window !== "undefined") localStorage.setItem(KEY, JSON.stringify(s));
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(KEY, JSON.stringify(s));
+  } catch (error) {
+    // Le cache anti-abus local ne doit jamais transformer une vérification OTP
+    // déjà validée côté serveur en échec apparent.
+    console.warn("[auth] unable to persist local lock state", error);
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -197,13 +204,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // que le profil existe côté serveur. On le recharge pour réafficher
         // nom/région correctement au lieu de laisser un compte local incomplet.
         if (res.profile) {
-          saveAccount({
-            firstName: res.profile.firstName ?? account?.firstName ?? "",
-            lastName: res.profile.lastName ?? account?.lastName ?? "",
-            region: res.profile.region ?? account?.region ?? "",
-            phone,
-            userId: res.userId,
-          });
+          try {
+            saveAccount({
+              firstName: res.profile.firstName ?? account?.firstName ?? "",
+              lastName: res.profile.lastName ?? account?.lastName ?? "",
+              region: res.profile.region ?? account?.region ?? "",
+              phone,
+              userId: res.userId,
+            });
+          } catch (error) {
+            // Le profil serveur et la session restent valides même si le cache
+            // local du compte est indisponible (ex. stockage du navigateur bloqué).
+            console.warn("[auth] OTP succeeded but local account cache failed", error);
+          }
         }
         const fresh = { ...defaultState, lockCount: state.lockCount };
         setState(fresh);
