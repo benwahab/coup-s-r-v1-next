@@ -96,16 +96,26 @@ function Index() {
     >
   >({});
   useEffect(() => {
-    void supabase
-      .from("game_schedules")
-      .select("game_id,open_hour,close_hour,draw_hour,draw_minute,enabled,daily_stats_date,today_winners_count,today_paid_fcfa")
-      .in("game_id", ["pmu", "loto"])
-      .then(({ data }) => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { data } = await supabase
+          .from("game_schedules")
+          .select("game_id,open_hour,close_hour,draw_hour,draw_minute,enabled,daily_stats_date,today_winners_count,today_paid_fcfa")
+          .in("game_id", ["pmu", "loto"]);
+        if (cancelled) return;
         const next: typeof schedules = {};
         for (const row of data ?? [])
           if (row.game_id === "pmu" || row.game_id === "loto") next[row.game_id] = row;
         setSchedules(next);
-      });
+      } catch (error) {
+        console.error("[home] schedule load failed", error);
+        if (!cancelled) setSchedules({});
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
   const pmuSchedule = schedules.pmu;
   const lotoSchedule = schedules.loto;
@@ -129,98 +139,112 @@ function Index() {
     }>
   >([]);
   useEffect(() => {
+    let cancelled = false;
     const loadResults = async () => {
-      const [{ data: pmuRows }, { data: lotoRows }] = await Promise.all([
-        supabase
-          .from("draw_results")
-          .select("draw_date,result")
-          .eq("game_id", "pmu")
-          .eq("status", "published")
-          .order("draw_date", { ascending: false })
-          .limit(1),
-        supabase
-          .from("draw_results")
-          .select("draw_date,result")
-          .eq("game_id", "loto")
-          .eq("status", "published")
-          .order("draw_date", { ascending: false })
-          .limit(1),
-      ]);
-      const pmu = pmuRows?.[0];
-      const loto = lotoRows?.[0];
-      const pr = pmu?.result as Record<string, unknown> | null | undefined;
-      const lr = loto?.result as Record<string, unknown> | null | undefined;
-      setLastPmu(
-        pmu && Array.isArray(pr?.horses)
-          ? {
-              date: pmu.draw_date,
-              horses: pr.horses.filter((n): n is number => typeof n === "number"),
-            }
-          : null,
-      );
-      setLastLoto(
-        loto && Array.isArray(lr?.numbers)
-          ? {
-              date: loto.draw_date,
-              numbers: lr.numbers.filter((n): n is number => typeof n === "number"),
-            }
-          : null,
-      );
+      try {
+        const [{ data: pmuRows }, { data: lotoRows }] = await Promise.all([
+          supabase
+            .from("draw_results")
+            .select("draw_date,result")
+            .eq("game_id", "pmu")
+            .eq("status", "published")
+            .order("draw_date", { ascending: false })
+            .limit(1),
+          supabase
+            .from("draw_results")
+            .select("draw_date,result")
+            .eq("game_id", "loto")
+            .eq("status", "published")
+            .order("draw_date", { ascending: false })
+            .limit(1),
+        ]);
+        if (cancelled) return;
+        const pmu = pmuRows?.[0];
+        const loto = lotoRows?.[0];
+        const pr = pmu?.result as Record<string, unknown> | null | undefined;
+        const lr = loto?.result as Record<string, unknown> | null | undefined;
+        setLastPmu(
+          pmu && Array.isArray(pr?.horses)
+            ? {
+                date: pmu.draw_date,
+                horses: pr.horses.filter((n): n is number => typeof n === "number"),
+              }
+            : null,
+        );
+        setLastLoto(
+          loto && Array.isArray(lr?.numbers)
+            ? {
+                date: loto.draw_date,
+                numbers: lr.numbers.filter((n): n is number => typeof n === "number"),
+              }
+            : null,
+        );
+      } catch (error) {
+        console.error("[home] results load failed", error);
+      }
     };
     void loadResults();
+    return () => {
+      cancelled = true;
+    };
   }, []);
   useEffect(() => {
+    let cancelled = false;
     const loadFootHighlights = async () => {
-      const now = new Date().toISOString();
-      const { data } = await supabase
-        .from("foot_fixtures")
-        .select("id,league_name,kickoff_at,home_team,away_team,odds_home,odds_draw,odds_away")
-        .eq("status", "scheduled")
-        .gte("kickoff_at", now)
-        .order("kickoff_at", { ascending: true })
-        .limit(100);
+      try {
+        const now = new Date().toISOString();
+        const { data } = await supabase
+          .from("foot_fixtures")
+          .select("id,league_name,kickoff_at,home_team,away_team,odds_home,odds_draw,odds_away")
+          .eq("status", "scheduled")
+          .gte("kickoff_at", now)
+          .order("kickoff_at", { ascending: true })
+          .limit(100);
+        if (cancelled) return;
 
-      const rows = (data ?? [])
-        .filter(
-          (m) =>
-            m.odds_home != null &&
-            m.odds_draw != null &&
-            m.odds_away != null &&
-            Number(m.odds_home) > 0 &&
-            Number(m.odds_draw) > 0 &&
-            Number(m.odds_away) > 0,
-        )
-        .map((m) => ({
-          id: m.id,
-          league: m.league_name,
-          kickoffAt: m.kickoff_at,
-          home: m.home_team,
-          away: m.away_team,
-          odds: {
-            home: Number(m.odds_home),
-            draw: Number(m.odds_draw),
-            away: Number(m.odds_away),
-          },
-        }));
+        const rows = (data ?? [])
+          .filter(
+            (m) =>
+              m.odds_home != null &&
+              m.odds_draw != null &&
+              m.odds_away != null &&
+              Number(m.odds_home) > 0 &&
+              Number(m.odds_draw) > 0 &&
+              Number(m.odds_away) > 0,
+          )
+          .map((m) => ({
+            id: m.id,
+            league: m.league_name,
+            kickoffAt: m.kickoff_at,
+            home: m.home_team,
+            away: m.away_team,
+            odds: {
+              home: Number(m.odds_home),
+              draw: Number(m.odds_draw),
+              away: Number(m.odds_away),
+            },
+          }));
 
-      const majorCompetition = (league: string) =>
-        /champions|ligue des champions|premier league|la liga|laliga|serie a|bundesliga|ligue 1|europa|conference league|coupe du monde|world cup|can|afcon/i.test(
-          league,
-        );
+        const majorCompetition = (league: string) =>
+          /champions|ligue des champions|premier league|la liga|laliga|serie a|bundesliga|ligue 1|europa|conference league|coupe du monde|world cup|can|afcon/i.test(
+            league,
+          );
 
-      const score = (m: (typeof rows)[number]) => {
-        const maxOdd = Math.max(m.odds.home, m.odds.draw, m.odds.away);
-        return (majorCompetition(m.league) ? 100 : 0) + maxOdd + (m.league ? 1 : 0);
-      };
+        const score = (m: (typeof rows)[number]) => {
+          const maxOdd = Math.max(m.odds.home, m.odds.draw, m.odds.away);
+          return (majorCompetition(m.league) ? 100 : 0) + maxOdd + (m.league ? 1 : 0);
+        };
 
-      const selected = [...rows]
-        .sort((a, b) => score(b) - score(a))
-        .slice(0, 3);
-
-      setFootHighlights(selected);
+        setFootHighlights([...rows].sort((a, b) => score(b) - score(a)).slice(0, 3));
+      } catch (error) {
+        console.error("[home] football highlights load failed", error);
+      }
     };
 
     void loadFootHighlights();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const lotoEvtRaw = useLiveStage(
