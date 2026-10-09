@@ -85,16 +85,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState(load());
     // Session initiale + abonnement aux changements d'auth Supabase.
     let mounted = true;
-    // Garde-fou : ne jamais laisser l'écran vide si la vérification ne répond pas.
-    const fallback = setTimeout(() => {
-      if (mounted) setAuthChecked(true);
-    }, 1000);
+    // Ne déclare pas l'authentification terminée avant la réponse de Supabase :
+    // un délai fixe pourrait rediriger un utilisateur connecté si le réseau est lent.
     let initialUserRequest: ReturnType<typeof supabase.auth.getUser>;
     try {
       initialUserRequest = supabase.auth.getUser();
     } catch (err) {
       console.error("[auth] getUser initialization failed", err);
-      clearTimeout(fallback);
       setAuthChecked(true);
       return () => {
         mounted = false;
@@ -116,7 +113,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("[auth] getUser failed", err);
       })
       .finally(() => {
-        clearTimeout(fallback);
         if (mounted) setAuthChecked(true);
       });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
