@@ -32,9 +32,6 @@ export function Splash() {
 
         if (cancelled) return;
 
-        // The splash is a server-readiness gate, not an authentication gate.
-        // Supabase session recovery is handled independently by AuthProvider so a
-        // transient auth/storage failure cannot trap the entire Preview on startup.
         setServerError(false);
         setServerReady(true);
       } catch {
@@ -72,7 +69,8 @@ export function Splash() {
   return (
     <div
       className={[
-        "fixed inset-0 z-[100] overflow-hidden bg-[#031c13]",
+        "fixed inset-0 z-[100] overflow-hidden",
+        "bg-[#031c13] bg-[url('/coup-sur-auth-background.webp')] bg-cover bg-center bg-no-repeat",
         "transition-opacity duration-500",
         leaving ? "opacity-0" : "opacity-100",
       ].join(" ")}
@@ -80,17 +78,18 @@ export function Splash() {
       aria-live="polite"
       aria-label={t("shell.splash.skip")}
     >
+      <div className="absolute inset-0 bg-black/40" aria-hidden />
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: 'url("/coup-sur-auth-background.webp")' }}
+        className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(16,185,129,0.12),transparent_46%),linear-gradient(180deg,rgba(1,19,12,0.08)_0%,rgba(1,19,12,0.48)_100%)]"
         aria-hidden
       />
-      <div className="absolute inset-0 bg-black/45" aria-hidden />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(16,185,129,0.14),transparent_48%),linear-gradient(180deg,rgba(1,19,12,0.12)_0%,rgba(1,19,12,0.52)_100%)]" aria-hidden />
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center px-4 pb-7 pt-7 text-center sm:px-6 sm:pt-10">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center px-4 pb-10 pt-10 text-center sm:px-6 sm:pt-14">
         <div className="relative z-10 shrink-0">
-          <div className="absolute inset-[-10%] rounded-full bg-emerald-400/20 blur-2xl" aria-hidden />
+          <div
+            className="absolute inset-[-12%] rounded-full bg-emerald-400/20 blur-2xl"
+            aria-hidden
+          />
           <img
             src={logoCoupSur}
             alt="Coup Sûr"
@@ -98,18 +97,16 @@ export function Splash() {
           />
         </div>
 
-        <div className="relative z-10 my-4 flex min-h-0 w-full flex-1 items-end justify-center sm:my-6 sm:items-center">
-          <div className="rounded-2xl border border-white/15 bg-black/25 px-5 py-4 shadow-2xl backdrop-blur-[2px]">
-            <p className="text-sm font-bold text-white sm:text-base">Initialisation de l'application...</p>
-            <div className="mt-3 flex items-center justify-center gap-3">
-              <div className="cs-splash-spinner" aria-hidden />
-              <p className="text-xs font-medium text-emerald-50/85 sm:text-sm">{statusText}</p>
-            </div>
+        <div className="relative z-10 flex min-h-0 w-full flex-1 items-end justify-center pb-10 sm:items-center sm:pb-0">
+          <div className="flex flex-col items-center">
+            <div className="cs-splash-spinner" aria-hidden />
+            <p className="mt-4 text-sm font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)] sm:text-base">
+              Initialisation de l'application...
+            </p>
+            <p className="mt-1 text-xs font-medium text-emerald-50/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.75)] sm:text-sm">
+              {statusText}
+            </p>
           </div>
-        </div>
-
-        <div className="relative z-10 flex shrink-0 flex-col items-center">
-          <p className="text-[11px] text-white/60">Connexion sécurisée au serveur</p>
         </div>
       </div>
 
