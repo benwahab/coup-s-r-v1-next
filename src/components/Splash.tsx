@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=480&quality=92&url";
