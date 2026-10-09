@@ -320,10 +320,18 @@ function AuthPage() {
           locked: t("auth.locked"),
           "rate-limited": t("auth.rateLimitedVerify"),
           "wrong-phone": t("auth.wrongPhone"),
+          expired: t("auth.codeExpired"),
+          "already-used": t("auth.codeUsed"),
           "wrong-code": t("auth.wrongCode", { remaining: result.remaining ?? 0 }),
         };
         setErrors({ otp: messages[result.reason ?? "wrong-code"] });
         setOtp("");
+        if (result.reason === "expired" || result.reason === "already-used") {
+          clearPending();
+          setDemoCode(null);
+          setStatus(null);
+          setResendIn(0);
+        }
         otpRefs.current[0]?.focus();
         return;
       }
