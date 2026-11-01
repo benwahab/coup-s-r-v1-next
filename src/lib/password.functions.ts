@@ -229,10 +229,27 @@ export const setUserPassword = createServerFn({ method: "POST" })
       throw new Error("password_update_failed");
     }
 
-    // Clear the profile gate before app_metadata. If either remote operation
-    // fails, the remaining true flag keeps the account gated and a retry can
-    // safely finish the transition. The handler above deliberately accepts
-    // either partially-pending state.
+    // app_metadata is cleared first; the server-authoritative profile gate
+    // stays enabled until every preceding step has succeeded.
+    if (metadataPending) {
+      const { error: metadataError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        app_metadata: {
+          ...(userData.user.app_metadata ?? {}),
+          password_setup_required: false,
+        },
+      });
+      if (metadataError) {
+        await writeAuditLog(supabaseAdmin, {
+          userId,
+          action: "auth.password_setup.metadata_flag_failed",
+          detail: { reason: metadataError.message },
+        });
+        throw new Error("password_setup_state_update_failed");
+      }
+    }
+
+    // Clear the authoritative profile gate last. A failed update leaves the
+    // account blocked and the partially completed operation can be retried.
     if (profilePending) {
       const { data: updatedProfile, error: profileFlagError } = await supabaseAdmin
         .from("profiles")
@@ -246,23 +263,6 @@ export const setUserPassword = createServerFn({ method: "POST" })
           userId,
           action: "auth.password_setup.profile_flag_failed",
           detail: { reason: profileFlagError?.message ?? "profile_state_not_updated" },
-        });
-        throw new Error("password_setup_state_update_failed");
-      }
-    }
-
-    if (metadataPending) {
-      const { error: metadataError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-        app_metadata: {
-          ...(userData.user.app_metadata ?? {}),
-          password_setup_required: false,
-        },
-      });
-      if (metadataError) {
-        await writeAuditLog(supabaseAdmin, {
-          userId,
-          action: "auth.password_setup.metadata_flag_failed",
-          detail: { reason: metadataError.message },
         });
         throw new Error("password_setup_state_update_failed");
       }
