@@ -190,34 +190,66 @@ export const setUserPassword = createServerFn({ method: "POST" })
       .eq("id", userId)
       .maybeSingle();
     if (profileStateError || !profileState) throw new Error("password_setup_state_unavailable");
-    if (
-      userData.user.app_metadata?.password_setup_required !== true ||
-      profileState.password_setup_required !== true
-    ) {
-      throw new Error("password_setup_not_pending");
+    const metadataPending = userData.user.app_metadata?.password_setup_required === true;
+    const profilePending = profileState.password_setup_required === true;
+
+    // Idempotence: a previous request may have changed the password and cleared
+    // one of the two authoritative flags before a transient failure occurred.
+    // If both flags are already clear, the setup has completed successfully.
+    if (!metadataPending && !profilePending) {
+      return { ok: true as const };
     }
 
-    // Passe par la session de l'utilisateur pour que Supabase Auth applique ses
-    // contrôles (dont la protection contre les mots de passe compromis).
+    // Supabase Auth applies its password policy and compromised-password checks.
+    // Keep this operation first: no setup flag is cleared unless Auth accepted
+    // the new password.
     const { error: pwError } = await context.supabase.auth.updateUser({ password: data.password });
     if (pwError) {
       if (isWeakPasswordError(pwError)) return { ok: false as const, reason: "weak-password" as const };
       throw new Error("password_update_failed");
     }
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-      app_metadata: { ...(userData.user.app_metadata ?? {}), password_setup_required: false },
-    });
-    if (error) throw new Error(`password_update_failed: ${error.message}`);
 
-    const { error: profileFlagError } = await supabaseAdmin
-      .from("profiles")
-      .update({ password_setup_required: false })
-      .eq("id", userId)
-      .eq("password_setup_required", true);
-    if (profileFlagError) throw new Error("password_setup_state_update_failed");
+    // Clear the profile gate before app_metadata. If either remote operation
+    // fails, the remaining true flag keeps the account gated and a retry can
+    // safely finish the transition. The handler above deliberately accepts
+    // either partially-pending state.
+    if (profilePending) {
+      const { data: updatedProfile, error: profileFlagError } = await supabaseAdmin
+        .from("profiles")
+        .update({ password_setup_required: false })
+        .eq("id", userId)
+        .eq("password_setup_required", true)
+        .select("id")
+        .maybeSingle();
+      if (profileFlagError || !updatedProfile) {
+        await writeAuditLog(supabaseAdmin, {
+          userId,
+          action: "auth.password_setup.profile_flag_failed",
+          detail: { reason: profileFlagError?.message ?? "profile_state_not_updated" },
+        });
+        throw new Error("password_setup_state_update_failed");
+      }
+    }
 
-    // A password reset/setup is a security-sensitive event. Keep the current
-    // verified session, but revoke refresh tokens for other devices/sessions.
+    if (metadataPending) {
+      const { error: metadataError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        app_metadata: {
+          ...(userData.user.app_metadata ?? {}),
+          password_setup_required: false,
+        },
+      });
+      if (metadataError) {
+        await writeAuditLog(supabaseAdmin, {
+          userId,
+          action: "auth.password_setup.metadata_flag_failed",
+          detail: { reason: metadataError.message },
+        });
+        throw new Error("password_setup_state_update_failed");
+      }
+    }
+
+    // A password reset/setup is security-sensitive. Keep the verified current
+    // session and revoke refresh tokens for other devices/sessions.
     const { error: revokeError } = await context.supabase.auth.signOut({ scope: "others" });
     if (revokeError) {
       await writeAuditLog(supabaseAdmin, {
