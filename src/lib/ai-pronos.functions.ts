@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireConfiguredUser } from "@/lib/secure-user.functions";
 
 const PmuOut = z.object({
   summary: z.string().describe("Synthèse globale (1-2 phrases)"),
@@ -35,7 +35,7 @@ const LotoOut = z.object({
 });
 
 export const analyzePmu = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: { horses: { number: number; name: string; jockey: string }[] }) =>
     z
       .object({
@@ -59,7 +59,7 @@ export const analyzePmu = createServerFn({ method: "POST" })
   });
 
 export const analyzeLoto = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: { history: number[][]; hotSeed: number[] }) =>
     z.object({ history: z.array(z.array(z.number().int().min(1).max(90)).max(5)).max(100), hotSeed: z.array(z.number().int().min(1).max(90)).max(20) }).parse(data),
   )
