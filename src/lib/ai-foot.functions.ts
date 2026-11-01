@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireConfiguredUser } from "@/lib/secure-user.functions";
 
 const FootAnalysisOut = z.object({
   summary: z.string().describe("Synthèse globale du match en 2-3 phrases"),
@@ -31,7 +31,7 @@ const AI_MODEL = "google/gemini-3-5-flash";
  * rencontre existant en base).
  */
 export const analyzeFootMatch = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: { homeTeam: string; awayTeam: string; league: string }) =>
     z
       .object({
