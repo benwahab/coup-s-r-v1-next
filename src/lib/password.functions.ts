@@ -159,6 +159,8 @@ export const changeUserPassword = createServerFn({ method: "POST" })
       throw new Error("password_change_metadata_failed");
     }
 
+    // Keep the authoritative profile gate until the Auth metadata update has
+    // succeeded. A failed profile update remains safely blocked and retryable.
     const { data: updatedProfile, error: profileFlagError } = await supabaseAdmin
       .from("profiles")
       .update({ password_setup_required: false })
@@ -174,7 +176,6 @@ export const changeUserPassword = createServerFn({ method: "POST" })
       });
       throw new Error("password_setup_state_update_failed");
     }
-    // A zero-row update is expected for an already-configured account.
     void updatedProfile;
 
     const { error: revokeError } = await context.supabase.auth.signOut({ scope: "others" });
