@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireConfiguredUser } from "@/lib/secure-user.functions";
 import type { Json } from "@/integrations/supabase/types";
 
 const MODEL_VERSION = "adaptive-v1";
@@ -62,7 +62,7 @@ async function storePrediction(
 }
 
 export const generateAdaptivePmu = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => z.object({ raceId: z.string().uuid() }).parse(data))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -178,7 +178,7 @@ export const generateAdaptivePmu = createServerFn({ method: "POST" })
   });
 
 export const generateAdaptiveLoto = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) =>
     z.object({ drawDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).parse(data),
   )
@@ -243,7 +243,7 @@ export const generateAdaptiveLoto = createServerFn({ method: "POST" })
   });
 
 export const generateAdaptiveFoot = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) =>
     z.object({ fixtureId: z.string().uuid() }).parse(data),
   )
