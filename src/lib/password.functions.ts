@@ -150,12 +150,32 @@ export const changeUserPassword = createServerFn({ method: "POST" })
     const { error: metaError } = await supabaseAdmin.auth.admin.updateUserById(context.userId, {
       app_metadata: { ...(userData.user.app_metadata ?? {}), password_setup_required: false },
     });
-    const { error: profileFlagError } = await supabaseAdmin
+    if (metaError) {
+      await writeAuditLog(supabaseAdmin, {
+        userId: context.userId,
+        action: "auth.password_change.metadata_flag_failed",
+        detail: { reason: metaError.message },
+      });
+      throw new Error("password_change_metadata_failed");
+    }
+
+    const { data: updatedProfile, error: profileFlagError } = await supabaseAdmin
       .from("profiles")
       .update({ password_setup_required: false })
-      .eq("id", context.userId);
-    if (profileFlagError) throw new Error("password_setup_state_update_failed");
-    if (metaError) throw new Error("password_change_metadata_failed");
+      .eq("id", context.userId)
+      .eq("password_setup_required", true)
+      .select("id")
+      .maybeSingle();
+    if (profileFlagError) {
+      await writeAuditLog(supabaseAdmin, {
+        userId: context.userId,
+        action: "auth.password_change.profile_flag_failed",
+        detail: { reason: profileFlagError.message },
+      });
+      throw new Error("password_setup_state_update_failed");
+    }
+    // A zero-row update is expected for an already-configured account.
+    void updatedProfile;
 
     const { error: revokeError } = await context.supabase.auth.signOut({ scope: "others" });
     if (revokeError) {
@@ -278,15 +298,27 @@ export async function createOrResetPasswordForOtp(phoneE164: string): Promise<{
   const existingUserId = await findUserIdByPhone(phoneE164);
 
   if (existingUserId) {
+    // Preserve existing authorization/provider metadata (roles, tenant flags,
+    // etc.). Replacing app_metadata with only the setup flag could silently
+    // strip permissions and break unrelated platform workflows.
+    const { data: existingAuthUser, error: lookupError } =
+      await supabaseAdmin.auth.admin.getUserById(existingUserId);
+    if (lookupError || !existingAuthUser.user) {
+      throw new Error("user_reset_lookup_failed");
+    }
+
     const { error } = await supabaseAdmin.auth.admin.updateUserById(existingUserId, {
       email,
       password,
       email_confirm: true,
       phone: phoneE164,
       phone_confirm: true,
-      app_metadata: { password_setup_required: true },
+      app_metadata: {
+        ...(existingAuthUser.user.app_metadata ?? {}),
+        password_setup_required: true,
+      },
     });
-    if (error) throw new Error(`user_reset_failed: ${error.message}`);
+    if (error) throw new Error("user_reset_failed");
     return { email, password, userId: existingUserId };
   }
 
