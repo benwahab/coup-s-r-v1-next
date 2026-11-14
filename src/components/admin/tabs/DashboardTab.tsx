@@ -7,6 +7,7 @@ import {
   ListChecks,
   LogIn,
   Send,
+  Wallet,
   Settings,
   TrendingUp,
   Trophy,
@@ -66,6 +67,7 @@ interface Props {
       | "regions"
       | "balls"
       | "ops"
+      | "cashouts"
       | "results"
       | "claims"
       | "admins",
@@ -301,10 +303,10 @@ export function DashboardTab(p: Props) {
               hint="Suivi des réclamations"
             />
             <QuickAction
-              onClick={() => p.setTab("ops")}
-              icon={Send}
-              label={t("cashoutRequests")}
-              hint={t("admin.dash.requests", { count: p.cashoutRequestsCount })}
+              onClick={() => p.setTab("cashouts")}
+              icon={Wallet}
+              label="Encaissement"
+              hint={p.cashoutRequestsCount + " demande(s) en attente"}
               tone="gold"
             />
             <QuickAction
