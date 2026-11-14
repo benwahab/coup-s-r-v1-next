@@ -243,6 +243,7 @@ export function DashboardTab(p: Props) {
                         {new Date(it.at).toLocaleTimeString("fr-FR", {
                           hour: "2-digit",
                           minute: "2-digit",
+                          timeZone: "Africa/Niamey",
                         })}
                       </span>
                     </div>

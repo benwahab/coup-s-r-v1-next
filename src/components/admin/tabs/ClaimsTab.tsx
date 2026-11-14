@@ -134,7 +134,7 @@ export function ClaimsTab({ claimPhone, setClaimPhone, claim }: Props) {
                 {claim.authEvents.map((e, i) => (
                   <li key={i} className="p-3 text-xs flex items-center justify-between gap-2">
                     <span className="text-muted-foreground">
-                      {new Date(e.at).toLocaleString("fr-FR", { hour12: false })}
+                      {new Date(e.at).toLocaleString("fr-FR", { timeZone: "Africa/Niamey", hour12: false })}
                     </span>
                     <span className="font-bold">{e.kind}</span>
                     <span className="font-mono text-muted-foreground">{e.ip}</span>

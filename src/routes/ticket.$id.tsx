@@ -207,7 +207,7 @@ function TicketPage() {
               }
             />
             <Row label={t("payment")} value={ticket.payment} />
-            <Row label={t("drawDate")} value={new Date(ticket.drawDate).toLocaleString()} />
+            <Row label={t("drawDate")} value={new Date(ticket.drawDate).toLocaleString("fr-FR", { timeZone: "Africa/Niamey" })} />
             <Row label={t("status")} value={<StatusBadge status={ticket.status} />} />
           </dl>
 
