@@ -20,6 +20,8 @@ import { cn, formatFcfa } from "@/lib/utils";
 
 import {
   adminGetLotoBallStatistics,
+  adminGetDashboardFinancialSummary,
+  adminGetDailyFinancialReport,
   adminListTickets,
   adminGetRegisteredPlayerCount,
   adminGetPlayerStatistics,
@@ -165,11 +167,34 @@ function AdminPage() {
     setTab(first);
   }, [permissionsReady, adminPermissions, tab]);
 
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const weekAgoIso = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
+  const todayIso = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Niamey" }).format(new Date());
+  const dateOffset = (date: string, days: number) => {
+    const [year, month, day] = date.split("-").map(Number);
+    return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+  };
+  const weekAgoIso = dateOffset(todayIso, -7);
   const [csvFrom, setCsvFrom] = useState(weekAgoIso);
   const [csvTo, setCsvTo] = useState(todayIso);
   const [csvScope, setCsvScope] = useState<"all" | "winners" | "cashout">("all");
+  const [financialSummary, setFinancialSummary] = useState<{
+    monthTotal: number;
+    todayTotal: number;
+    yesterdayTotal: number;
+    monthStart: string;
+    today: string;
+  } | null>(null);
+  const [reportDate, setReportDate] = useState(todayIso);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (gate !== "ok" || !permissionsReady || adminPermissions !== "all") return;
+    let active = true;
+    adminGetDashboardFinancialSummary()
+      .then((summary) => { if (active) setFinancialSummary(summary); })
+      .catch(() => { if (active) setFinancialSummary(null); });
+    return () => { active = false; };
+  }, [gate, permissionsReady, adminPermissions]);
 
   useEffect(() => {
     if (gate !== "ok" || !permissionsReady) return;
@@ -194,7 +219,7 @@ function AdminPage() {
 
 
   // KPIs
-  const totalStaked = adminTicketRows.reduce((s, t) => s + t.stake, 0);
+  const totalStaked = financialSummary?.monthTotal ?? 0;
   const totalPayout = adminTicketRows
     .filter((t) => t.status === "paid")
     .reduce((s, t) => s + (t.prize ?? 0), 0);
@@ -202,14 +227,9 @@ function AdminPage() {
     (t) => t.status === "paid" || t.status === "winning",
   ).length;
 
-  const todayStake = adminTicketRows
-    .filter((t) => t.createdAt.slice(0, 10) === todayIso)
-    .reduce((a, b) => a + b.stake, 0);
-  const yestIso = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
-  const yestStake = adminTicketRows
-    .filter((t) => t.createdAt.slice(0, 10) === yestIso)
-    .reduce((a, b) => a + b.stake, 0);
-  const growth = yestStake === 0 ? 100 : Math.round(((todayStake - yestStake) / yestStake) * 100);
+  const todayStake = financialSummary?.todayTotal ?? 0;
+  const yestStake = financialSummary?.yesterdayTotal ?? 0;
+  const growth = yestStake === 0 ? (todayStake > 0 ? 100 : 0) : Math.round(((todayStake - yestStake) / yestStake) * 100);
   const last7 = adminTicketRows
     .filter((s) => Date.now() - new Date(s.createdAt).getTime() < 7 * 86400000)
     .reduce((a, b) => a + b.stake, 0);
@@ -456,6 +476,111 @@ function AdminPage() {
     );
   };
 
+  const exportDailyPdf = async () => {
+    if (!reportDate || pdfLoading) return;
+    setPdfLoading(true);
+    setPdfError(null);
+    try {
+      const report = await adminGetDailyFinancialReport({ data: { date: reportDate } });
+      const { jsPDF } = await import("jspdf");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 14;
+      let y = 18;
+
+      const write = (value: string, bold = false, indent = margin) => {
+        pdf.setFont("helvetica", bold ? "bold" : "normal");
+        pdf.setFontSize(bold ? 10 : 9);
+        const lines = pdf.splitTextToSize(value, pageWidth - margin * 2 - (indent - margin));
+        const height = lines.length * 4.8;
+        if (y + height > pageHeight - 17) {
+          pdf.addPage();
+          y = 18;
+        }
+        pdf.text(lines, indent, y);
+        y += height + 1.5;
+      };
+      const section = (title: string) => {
+        y += 3;
+        if (y > pageHeight - 24) { pdf.addPage(); y = 18; }
+        pdf.setDrawColor(190);
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 6;
+        write(title.toUpperCase(), true);
+      };
+      const fcfa = (amount: number) => `${new Intl.NumberFormat("fr-FR").format(amount)} FCFA`;
+      const statusLabel: Record<string, string> = {
+        pending: "En attente de résultat",
+        losing: "Perdu",
+        winning: "Gagnant — gain à payer",
+        paid: "Payé",
+      };
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(17);
+      pdf.text("COUP SÛR — RAPPORT JOURNALIER", margin, y);
+      y += 8;
+      write(`Date : ${report.date} (heure du Niger — Africa/Niamey)`);
+      write(`Généré le : ${new Date().toLocaleString("fr-FR", { timeZone: "Africa/Niamey" })}`);
+      section("1. Bilan général");
+      write(`Nombre total de tickets : ${report.totals.ticketCount}`);
+      write(`Ventes du jour / total des mises : ${fcfa(report.totals.stakes)}`);
+      write(`Gains attribués aux gagnants : ${fcfa(report.totals.prizesAwarded)}`);
+      write(`Gains enregistrés comme déjà payés : ${fcfa(report.totals.prizesPaid)}`);
+      write(`Gains gagnants restant à payer : ${fcfa(report.totals.prizesAwarded - report.totals.prizesPaid)}`);
+      write(`Tickets gagnants : ${report.totals.winnersCount} | Perdants : ${report.totals.losingCount} | En attente : ${report.totals.pendingTicketsCount}`);
+
+      section("2. Détail par jeu");
+      for (const game of report.byGame) {
+        write(`${game.gameName} — ${game.ticketCount} ticket(s) — mises : ${fcfa(game.stakes)}`, true);
+        write(`Gains attribués : ${fcfa(game.prizesAwarded)} | Payés : ${fcfa(game.prizesPaid)} | Gagnants : ${game.winnersCount} | Perdants : ${game.losingCount} | En attente : ${game.pendingCount}`, false, margin + 4);
+      }
+      if (report.byGame.length === 0) write("Aucun ticket enregistré pour cette date.");
+
+      section("3. Détail par région");
+      for (const region of report.byRegion) {
+        write(`${region.region} — ${region.ticketCount} ticket(s) — mises : ${fcfa(region.stakes)}`, true);
+        write(`Gains attribués : ${fcfa(region.prizesAwarded)} | Payés : ${fcfa(region.prizesPaid)} | Gagnants : ${region.winnersCount}`, false, margin + 4);
+      }
+      if (report.byRegion.length === 0) write("Aucune donnée régionale pour cette date.");
+
+      section("4. Paiements et opérations en attente");
+      write(`Paiements confirmés : ${report.payments.confirmedCount} — ${fcfa(report.payments.confirmedAmount)}`);
+      write(`Paiements entrants en attente : ${report.payments.pendingCount} — ${fcfa(report.payments.pendingAmount)}`);
+      write(`Tickets en attente de résultat : ${report.totals.pendingTicketsCount}`);
+      write(`Gains enregistrés gagnants restant à payer : ${report.totals.unpaidWinningCount} ticket(s) — ${fcfa(report.totals.prizesAwarded - report.totals.prizesPaid)}`);
+      write("Les gains payés correspondent aux tickets dont le statut est « payé » dans la base. Le retrait réel reste soumis à la disponibilité du fournisseur de paiement.");
+
+      section("5. Liste détaillée des tickets");
+      if (report.tickets.length === 0) {
+        write("Aucun ticket pour cette date.");
+      } else {
+        for (const ticket of report.tickets) {
+          const time = new Date(ticket.createdAt).toLocaleTimeString("fr-FR", {
+            timeZone: "Africa/Niamey", hour: "2-digit", minute: "2-digit",
+          });
+          write(`${time} | ${ticket.code} | ${ticket.gameName} | ${ticket.region || "Région non renseignée"}`, true);
+          write(`Mise : ${fcfa(ticket.stake)} | Statut : ${statusLabel[ticket.status] ?? ticket.status} | Gain : ${fcfa(ticket.prize)}`, false, margin + 4);
+        }
+      }
+
+      const pages = pdf.getNumberOfPages();
+      for (let page = 1; page <= pages; page += 1) {
+        pdf.setPage(page);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        pdf.text(`Coup Sûr — Document de suivi interne | Page ${page}/${pages}`, margin, pageHeight - 8);
+      }
+      pdf.save(`coup-sur-rapport-journalier-${report.date}.pdf`);
+    } catch (error) {
+      console.error("Daily PDF export failed", error);
+      setPdfError("Impossible de générer le rapport. Réessayez ou vérifiez votre connexion.");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   const exportTransactionsCsv = () => {
     const header = ["id", "date", "jeu", "telephone", "region", "mise", "statut", "gain", "source"];
     const body = filteredRows.map((r) =>
@@ -586,6 +711,13 @@ function AdminPage() {
               <DashboardTab
                 totalStaked={totalStaked}
                 todayStake={todayStake}
+                monthStart={financialSummary?.monthStart ?? `${todayIso.slice(0, 7)}-01`}
+                todayIso={todayIso}
+                reportDate={reportDate}
+                setReportDate={setReportDate}
+                exportDailyPdf={() => void exportDailyPdf()}
+                pdfLoading={pdfLoading}
+                pdfError={pdfError}
                 activePlayers={registeredPlayers}
                 winnersCount={winnersCount}
                 weekGrowth={weekGrowth}
