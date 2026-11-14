@@ -71,6 +71,13 @@ interface Props {
       | "admins",
   ) => void;
   exportCsv: (scope?: "all" | "winners" | "cashout") => void;
+  monthStart: string;
+  todayIso: string;
+  reportDate: string;
+  setReportDate: (date: string) => void;
+  exportDailyPdf: () => void;
+  pdfLoading: boolean;
+  pdfError: string | null;
 }
 
 export function DashboardTab(p: Props) {
@@ -80,10 +87,9 @@ export function DashboardTab(p: Props) {
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi
           icon={TrendingUp}
-          label={t("admin.dash.revenue")}
+          label="Chiffre d’affaires du mois"
           value={`${formatFcfa(p.totalStaked)} FCFA`}
-          delta={p.weekGrowth}
-          sub={t("admin.dash.vs7d")}
+          sub={`Du ${p.monthStart} au ${p.todayIso}`
         />
         <Kpi
           icon={Zap}
@@ -157,6 +163,38 @@ export function DashboardTab(p: Props) {
           chart={p.chart}
         />
       </Suspense>
+
+      <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
+        <div className="flex items-center gap-2">
+          <Download className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-base font-bold">Rapport journalier PDF</h2>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Choisissez une date pour obtenir le bilan complet des ventes, gains, paiements, régions et tickets.
+        </p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
+          <label className="block flex-1">
+            <span className="mb-1 block text-xs font-semibold text-muted-foreground">Date du rapport</span>
+            <input
+              type="date"
+              value={p.reportDate}
+              max={p.todayIso}
+              onChange={(event) => p.setReportDate(event.target.value)}
+              className="w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={p.exportDailyPdf}
+            disabled={p.pdfLoading || !p.reportDate}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Download className="h-4 w-4" />
+            {p.pdfLoading ? "Génération…" : "Télécharger le PDF"}
+          </button>
+        </div>
+        {p.pdfError && <p role="alert" className="mt-2 text-xs font-semibold text-destructive">{p.pdfError}</p>}
+      </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
         <div className="rounded-3xl border border-border bg-card shadow-soft">
