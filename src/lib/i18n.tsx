@@ -611,6 +611,7 @@ const dict = {
     "shell.verify.notLocal": "Ticket non trouvé localement (achat depuis un autre appareil).",
 
     "auth.phoneInvalid": "Saisissez un numéro nigérien à 8 chiffres.",
+    "auth.airtelPhoneHint": "Utilisez le même numéro que celui de votre compte Airtel Money pour effectuer vos paiements et recevoir vos gains.",
     "auth.otpInvalid": "Saisissez les 6 chiffres du code.",
     "auth.passwordMin": "Utilisez au moins 8 caractères.",
     "auth.passwordMax": "Le mot de passe ne doit pas dépasser 128 caractères.",
@@ -1407,6 +1408,7 @@ const dict = {
     "shell.verify.notLocal": "Ticket not found locally (purchased from another device).",
 
     "auth.phoneInvalid": "Enter an 8-digit Nigerien phone number.",
+    "auth.airtelPhoneHint": "Use the same number as your Airtel Money account to make payments and receive your winnings.",
     "auth.otpInvalid": "Enter the 6 digits of the code.",
     "auth.passwordMin": "Use at least 8 characters.",
     "auth.passwordMax": "Password must not exceed 128 characters.",

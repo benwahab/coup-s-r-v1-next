@@ -573,7 +573,7 @@ function AuthPage() {
                 </select>
                 {errors.region && <FieldError>{errors.region}</FieldError>}
               </label>
-              <PhoneField phone={phone} onChange={setPhone} error={errors.phone} />
+              <PhoneField phone={phone} onChange={setPhone} error={errors.phone} helperText={t("auth.airtelPhoneHint")} />
               <PasswordField
                 label={t("auth.password")}
                 value={password}
@@ -824,6 +824,7 @@ function PhoneField({
   onChange: (value: string) => void;
   error?: string;
   autoFocus?: boolean;
+  helperText?: string;
 }) {
   const { t } = useI18n();
   return (
@@ -849,6 +850,7 @@ function PhoneField({
         />
       </span>
       {error && <FieldError>{error}</FieldError>}
+      {helperText && <p className="mt-2 text-xs leading-5 text-muted-foreground">{helperText}</p>}
     </label>
   );
 }
