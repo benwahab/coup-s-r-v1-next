@@ -140,11 +140,14 @@ export function ResultsTab() {
     setMessage(null);
     try {
       const enteredValues = resultValues.map((value) => value.trim()).filter(Boolean);
-      if (enteredValues.length === 0) {
-        throw new Error(gameId === "loto" ? t("admin.static.invalidLoto") : t("admin.static.invalidPmu"));
+      if (gameId === "pmu" && (resultValues.length !== 5 || resultValues.some((value) => !value.trim()))) {
+        throw new Error("Les cinq places PMU doivent être renseignées.");
+      }
+      if (gameId === "loto" && enteredValues.length === 0) {
+        throw new Error(t("admin.static.invalidLoto"));
       }
 
-      const parsedValues = enteredValues.map(Number);
+      const parsedValues = (gameId === "pmu" ? resultValues : enteredValues).map((value) => Number(value.trim()));
       if (parsedValues.some((n) => !Number.isInteger(n) || n <= 0)) {
         throw new Error(gameId === "loto" ? t("admin.static.invalidLoto") : t("admin.static.invalidPmu"));
       }
@@ -160,8 +163,8 @@ export function ResultsTab() {
         }
         result = { numbers: parsedValues };
       } else {
-        if (parsedValues.length > 20 || new Set(parsedValues).size !== parsedValues.length) {
-          throw new Error(t("admin.static.invalidPmu"));
+        if (parsedValues.length !== 5 || new Set(parsedValues).size !== 5) {
+          throw new Error("Le résultat PMU doit contenir exactement cinq chevaux différents.");
         }
         result = { horses: parsedValues };
       }
@@ -255,32 +258,10 @@ export function ResultsTab() {
             </label>
           ))}
         </div>
-        {gameId === "pmu" && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setResultValues((current) => current.length < 20 ? [...current, ""] : current)}
-              disabled={busy || resultValues.length >= 20}
-              className="rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"
-            >
-              + Ajouter une place
-            </button>
-            {resultValues.length > 1 && (
-              <button
-                type="button"
-                onClick={() => setResultValues((current) => current.slice(0, -1))}
-                disabled={busy}
-                className="rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"
-              >
-                Retirer la dernière case
-              </button>
-            )}
-          </div>
-        )}
         <p className="mt-2 text-xs text-muted-foreground">
           {gameId === "loto"
             ? "Renseignez les numéros communiqués officiellement. Les cases vides sont ignorées."
-            : "Saisissez les numéros des chevaux dans leur ordre officiel d'arrivée. Ajoutez des cases si nécessaire."}
+            : "Renseignez les cinq chevaux dans leur ordre officiel d'arrivée. Les cinq places sont fixes et obligatoires."}
         </p>
       </div>
 
