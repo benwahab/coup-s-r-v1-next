@@ -559,12 +559,14 @@ function HomeContent() {
                             {new Date(m.kickoffAt).toLocaleDateString(lang === "en" ? "en-GB" : "fr-FR", {
                               day: "2-digit",
                               month: "2-digit",
+                              timeZone: "Africa/Niamey",
                             })}{" "}
                             ·{" "}
                             {new Date(m.kickoffAt).toLocaleTimeString(lang === "en" ? "en-GB" : "fr-FR", {
                               hour: "2-digit",
                               minute: "2-digit",
                               hour12: false,
+                              timeZone: "Africa/Niamey",
                             })}
                           </span>
                         </div>
