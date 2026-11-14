@@ -9,7 +9,7 @@ export function ResultsTab() {
   const { t } = useI18n();
   const [gameId, setGameId] = useState<"loto" | "pmu">("loto");
   const [drawDate, setDrawDate] = useState(new Date().toISOString().slice(0, 10));
-  const [values, setValues] = useState("");
+  const [resultValues, setResultValues] = useState<string[]>(["", "", "", "", ""]);
   const [raceId, setRaceId] = useState("");
   const [races, setRaces] = useState<{ id: string; raceNumber: number; venue: string; startAt: string }[]>([]);
   const [racesLoading, setRacesLoading] = useState(false);
@@ -52,36 +52,41 @@ export function ResultsTab() {
     };
   }, [gameId, drawDate]);
 
+  const updateResultValue = (index: number, value: string) => {
+    setResultValues((current) => current.map((item, i) => (i === index ? value : item)));
+  };
 
   const publish = async () => {
     setBusy(true);
     setMessage(null);
     try {
-      let result: DrawResultPayload = { numbers: [] };
+      const enteredValues = resultValues.map((value) => value.trim()).filter(Boolean);
+      if (enteredValues.length === 0) {
+        throw new Error(gameId === "loto" ? t("admin.static.invalidLoto") : t("admin.static.invalidPmu"));
+      }
+
+      const parsedValues = enteredValues.map(Number);
+      if (parsedValues.some((n) => !Number.isInteger(n) || n <= 0)) {
+        throw new Error(gameId === "loto" ? t("admin.static.invalidLoto") : t("admin.static.invalidPmu"));
+      }
+
+      let result: DrawResultPayload;
       if (gameId === "loto") {
-        const numbers = values
-          .split(/[,\s]+/)
-          .filter(Boolean)
-          .map(Number);
         if (
-          numbers.length < 1 ||
-          numbers.length > 5 ||
-          numbers.some((n) => !Number.isInteger(n) || n < 1 || n > 90) ||
-          new Set(numbers).size !== numbers.length
+          parsedValues.length > 5 ||
+          parsedValues.some((n) => n > 90) ||
+          new Set(parsedValues).size !== parsedValues.length
         ) {
           throw new Error(t("admin.static.invalidLoto"));
         }
-        result = { numbers };
-      } else if (gameId === "pmu") {
-        const horses = values
-          .split(/[,\s]+/)
-          .filter(Boolean)
-          .map(Number);
-        if (!horses.length || horses.some((n) => !Number.isInteger(n) || n <= 0)) {
+        result = { numbers: parsedValues };
+      } else {
+        if (parsedValues.length > 20 || new Set(parsedValues).size !== parsedValues.length) {
           throw new Error(t("admin.static.invalidPmu"));
         }
-        result = { horses };
+        result = { horses: parsedValues };
       }
+
       if (gameId === "pmu" && !raceId) throw new Error("Aucune course PMU terminée sélectionnée.");
       const created = await adminCreateDrawResult({
         data: gameId === "pmu" ? { gameId, drawDate, raceId, result } : { gameId, drawDate, result },
@@ -104,13 +109,16 @@ export function ResultsTab() {
       setMessage(
         t("admin.static.published", { results: resultIds.length, settled, winners, losers, skipped }),
       );
-      setValues("");
+      setResultValues(["", "", "", "", ""]);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : t("shell.errorTitle"));
     } finally {
       setBusy(false);
     }
   };
+
+  const boxClassName =
+    "h-14 w-14 rounded-xl border-2 border-border bg-background text-center text-xl font-extrabold tabular-nums outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20";
 
   return (
     <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
@@ -122,7 +130,12 @@ export function ResultsTab() {
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <select
           value={gameId}
-          onChange={(e) => setGameId(e.target.value as "loto" | "pmu")}
+          onChange={(e) => {
+            const nextGame = e.target.value as "loto" | "pmu";
+            setGameId(nextGame);
+            setResultValues(["", "", "", "", ""]);
+            setMessage(null);
+          }}
           className="rounded-xl border bg-background px-3 py-2"
         >
           <option value="loto">Loto Balsa</option>
@@ -131,11 +144,17 @@ export function ResultsTab() {
         <select
           value={raceId}
           onChange={(e) => setRaceId(e.target.value)}
-          disabled={racesLoading || races.length === 0}
+          disabled={gameId !== "pmu" || racesLoading || races.length === 0}
           className="rounded-xl border bg-background px-3 py-2 disabled:opacity-50"
         >
           <option value="">
-            {racesLoading ? "Chargement des courses…" : races.length ? "Choisir une course" : "Aucune course terminée"}
+            {gameId !== "pmu"
+              ? "Sélectionnez une course uniquement pour le PMU"
+              : racesLoading
+                ? "Chargement des courses…"
+                : races.length
+                  ? "Choisir une course"
+                  : "Aucune course terminée"}
           </option>
           {races.map((race) => (
             <option key={race.id} value={race.id}>
@@ -151,19 +170,58 @@ export function ResultsTab() {
         />
       </div>
 
-      <textarea
-        value={values}
-        onChange={(e) => setValues(e.target.value)}
-        rows={8}
-        placeholder={
-          (gameId as string) === "foot"
-            ? 'match-id:1\nmatch-id:X\nou JSON: {"matchId":"match-id","result":"1","homeGoals":2,"awayGoals":1,"halfTimeHomeGoals":1,"halfTimeAwayGoals":0,"yellowCards":4,"corners":8,"scorers":["home_star"]}'
-            : gameId === "loto"
-              ? "7, 12, 19, 28, 34"
-              : "3, 7, 5, 1, 9"
-        }
-        className="mt-4 w-full rounded-xl border bg-background px-3 py-2 font-mono text-sm"
-      />
+      <div className="mt-5">
+        <p className="mb-3 text-sm font-semibold">
+          {gameId === "loto" ? "Numéros gagnants (une case par numéro)" : "Ordre d'arrivée des chevaux (une case par numéro)"}
+        </p>
+        <div className="flex flex-wrap gap-3">
+          {resultValues.map((value, index) => (
+            <label key={index} className="flex flex-col items-center gap-1.5">
+              <span className="text-xs font-semibold text-muted-foreground">
+                {gameId === "loto" ? `Numéro ${index + 1}` : `Place ${index + 1}`}
+              </span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={gameId === "loto" ? 90 : undefined}
+                value={value}
+                onChange={(e) => updateResultValue(index, e.target.value)}
+                aria-label={gameId === "loto" ? `Numéro gagnant ${index + 1}` : `Cheval classé ${index + 1}`}
+                className={boxClassName}
+                disabled={busy}
+              />
+            </label>
+          ))}
+        </div>
+        {gameId === "pmu" && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setResultValues((current) => current.length < 20 ? [...current, ""] : current)}
+              disabled={busy || resultValues.length >= 20}
+              className="rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              + Ajouter une place
+            </button>
+            {resultValues.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setResultValues((current) => current.slice(0, -1))}
+                disabled={busy}
+                className="rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"
+              >
+                Retirer la dernière case
+              </button>
+            )}
+          </div>
+        )}
+        <p className="mt-2 text-xs text-muted-foreground">
+          {gameId === "loto"
+            ? "Renseignez les numéros communiqués officiellement. Les cases vides sont ignorées."
+            : "Saisissez les numéros des chevaux dans leur ordre officiel d'arrivée. Ajoutez des cases si nécessaire."}
+        </p>
+      </div>
 
       {message && <div className="mt-4 rounded-xl border p-3 text-sm">{message}</div>}
 
