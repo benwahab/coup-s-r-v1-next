@@ -114,11 +114,9 @@ export function ResultsTab() {
 
   return (
     <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
-      <h2 className="text-xl font-extrabold">{t("admin.static.resultPublishTitle")}</h2>
+      <h2 className="text-xl font-extrabold">Résultats du jour</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Les résultats PMU et Loto sont publiés manuellement par un administrateur. Le règlement des
-        coupons est déclenché après publication. Une future intégration API pourra automatiser cette
-        étape, sans changer le contrôle serveur.
+        Les résultats officiels sont communiqués par la LONANI. Saisissez ici les informations reçues, puis publiez-les pour les joueurs. Le règlement des coupons se déclenche automatiquement après publication.
       </p>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -174,7 +172,7 @@ export function ResultsTab() {
         onClick={publish}
         className="mt-4 rounded-xl bg-primary px-5 py-2.5 font-bold text-primary-foreground disabled:opacity-50"
       >
-        {busy ? "Publication…" : "Publier et régler automatiquement"}
+        {busy ? "Publication…" : "Publier le résultat"}
       </button>
     </section>
   );
