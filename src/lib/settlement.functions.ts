@@ -441,10 +441,11 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
       .select("id,status")
       .eq("game_id", data.gameId)
       .eq("draw_date", data.drawDate)
+      .in("status", ["pending", "published"])
       .maybeSingle();
     if (existingError) throw new Error(existingError.message);
     if (existing?.status === "published") throw new Error("result_already_published");
-    if (existing) throw new Error("result_draft_exists");
+    if (existing?.status === "pending") throw new Error("result_pending_approval");
 
     const { data: row, error } = await supabaseAdmin
       .from("draw_results")
@@ -453,7 +454,7 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
         draw_date: data.drawDate,
         draw_name: data.drawName ?? null,
         result: data.result,
-        status: "draft",
+        status: "pending",
         pmu_race_id: data.gameId === "pmu" ? data.raceId : null,
       })
       .select("id,game_id,draw_date,status")
@@ -469,12 +470,17 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
     return { result: row };
   });
 
-export const adminPublishDrawResult = createServerFn({ method: "POST" })
+export const adminApproveDrawResult = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => z.object({ resultId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await assertPublishResultsPermission(context.supabase, context.userId);
+    const { data: isSuperAdmin, error: roleError } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "super_admin",
+    });
+    if (roleError) throw new Error("role_check_failed");
+    if (isSuperAdmin !== true) throw new Error("Forbidden: super_admin role required");
 
     const { data: result, error: resultError } = await supabaseAdmin
       .from("draw_results")
@@ -483,7 +489,7 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
       .maybeSingle();
     if (resultError) throw new Error(resultError.message);
     if (!result) throw new Error("result_not_found");
-    const wasAlreadyPublished = result.status === "published";
+    if (result.status !== "pending") throw new Error("result_not_pending_approval");
 
     const { data: published, error: publishError } = await supabaseAdmin
       .from("draw_results")
@@ -493,11 +499,12 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
         published_by: context.userId,
       })
       .eq("id", result.id)
-      .eq("status", "draft")
+      .eq("status", "pending")
       .select("id")
       .maybeSingle();
     if (publishError) throw new Error(publishError.message);
-    if (!published && !wasAlreadyPublished) throw new Error("result_publish_conflict");
+    if (!published) throw new Error("result_publish_conflict");
+    const wasAlreadyPublished = false;
 
     const aiReference =
       result.game_id === "loto"
@@ -547,7 +554,7 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
 
     await writeAuditLog(supabaseAdmin, {
       userId: context.userId,
-      action: "admin.draw_result.published",
+      action: "admin.draw_result.approved_and_published",
       detail: {
         resultId: result.id,
         gameId: result.game_id,
@@ -556,7 +563,7 @@ export const adminPublishDrawResult = createServerFn({ method: "POST" })
         winners,
         losers,
         skipped,
-        alreadyPublished: wasAlreadyPublished,
+        approvedBySuperAdmin: true,
       },
     });
 
