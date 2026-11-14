@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useI18n();
   const { account } = useAccount();
   const { authed, authChecked, remainingLockMs, isPermanent, logout, session } = useAuth();
-  const isAdmin = useIsAdmin();
+  const { isAdmin, verificationFailed } = useIsAdmin();
   const lockMs = remainingLockMs();
   const locked = isPermanent() || lockMs > 0;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -111,6 +111,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link to="/admin" className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition">
                 <ShieldCheck className="h-3.5 w-3.5" /> {t("admin")}
               </Link>
+            )}
+            {authed && verificationFailed && (
+              <span role="status" className="max-w-28 text-right text-[10px] leading-tight text-amber-500">
+                Vérification Admin impossible
+              </span>
             )}
             <LangSwitch lang={lang} setLang={setLang} />
           </div>
