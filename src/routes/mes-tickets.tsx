@@ -307,7 +307,7 @@ function TicketCard({ tk, cashoutStatus, onCashoutRequested }: { tk: Ticket; cas
             </span>
             {tk.status === "winning" && (tk.prize ?? 0) > 0 && (
               <div className="mt-1 text-xs font-bold text-success">
-                Gain : {tk.prize!.toLocaleString()} {t("fcfa")}
+                Gain : {(tk.prize ?? 0).toLocaleString()} {t("fcfa")}
               </div>
             )}
           </div>
