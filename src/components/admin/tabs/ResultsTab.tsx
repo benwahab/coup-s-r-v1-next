@@ -135,7 +135,9 @@ export function ResultsTab() {
 
       setMessage(
         created.publication
-          ? `Résultat publié directement. Coupons réglés : ${created.publication.settled}.`
+          ? created.publication.failed > 0 || created.publication.skipped > 0
+            ? `Résultat publié directement. ${created.publication.settled} coupon(s) réglé(s), ${created.publication.skipped} ignoré(s), ${created.publication.failed} erreur(s). Consultez « Règlements à reprendre » pour relancer les coupons encore en attente.`
+            : `Résultat publié directement. Coupons réglés : ${created.publication.settled}.`
           : "Résultat soumis avec succès. En attente de l'approbation du Super Administrateur.",
       );
       setResultValues(["", "", "", "", ""]);
@@ -325,7 +327,11 @@ export function ResultsTab() {
                       setReviewBusy(pending.id);
                       try {
                         const out = await adminApproveDrawResult({ data: { resultId: pending.id } });
-                        setMessage(`Résultat approuvé et publié. Coupons réglés : ${out.settled}.`);
+                        setMessage(
+                          out.failed > 0 || out.skipped > 0
+                            ? `Résultat publié. ${out.settled} coupon(s) réglé(s), ${out.skipped} ignoré(s), ${out.failed} erreur(s). Consultez « Règlements à reprendre » pour relancer les coupons encore en attente.`
+                            : `Résultat approuvé et publié. Coupons réglés : ${out.settled}.`,
+                        );
                         await refreshPendingResults();
                       } catch (e) {
                         setMessage(e instanceof Error ? e.message : t("shell.errorTitle"));
