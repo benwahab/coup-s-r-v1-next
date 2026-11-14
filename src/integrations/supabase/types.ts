@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -995,6 +995,9 @@ export type Database = {
         Returns: boolean
       }
       monitoring_db_stats: { Args: never; Returns: Json }
+      purge_legacy_auth_user: { Args: never; Returns: undefined }
+      remove_legacy_bootstrap_user: { Args: never; Returns: undefined }
+      remove_legacy_user_role: { Args: never; Returns: undefined }
       set_admin_permissions_atomic: {
         Args: {
           p_actor_user_id: string
