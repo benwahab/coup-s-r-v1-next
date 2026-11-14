@@ -84,7 +84,9 @@ export function ResultsTab() {
             startAt: r.start_at,
           }));
           setRaces(next);
-          setRaceId((current) => (next.some((r) => r.id === current) ? current : next[0]?.id ?? ""));
+          // Le PMU Coup Sûr fonctionne avec une seule course par tirage :
+          // la course terminée du jour est associée automatiquement au résultat.
+          setRaceId(next.length === 1 ? next[0].id : "");
         }
         setRacesLoading(false);
       });
@@ -128,7 +130,11 @@ export function ResultsTab() {
         result = { horses: parsedValues };
       }
 
-      if (gameId === "pmu" && !raceId) throw new Error("Aucune course PMU terminée sélectionnée.");
+      if (gameId === "pmu" && !raceId) {
+        throw new Error(races.length > 1
+          ? "Plusieurs courses PMU terminées existent pour cette date. Le tirage doit être associé à une seule course."
+          : "Aucune course PMU terminée trouvée pour cette date.");
+      }
       const created = await adminCreateDrawResult({
         data: gameId === "pmu" ? { gameId, drawDate, raceId, result } : { gameId, drawDate, result },
       });
@@ -172,27 +178,6 @@ export function ResultsTab() {
         >
           <option value="loto">Loto Balsa</option>
           <option value="pmu">PMU</option>
-        </select>
-        <select
-          value={raceId}
-          onChange={(e) => setRaceId(e.target.value)}
-          disabled={gameId !== "pmu" || racesLoading || races.length === 0}
-          className="rounded-xl border bg-background px-3 py-2 disabled:opacity-50"
-        >
-          <option value="">
-            {gameId !== "pmu"
-              ? "Sélectionnez une course uniquement pour le PMU"
-              : racesLoading
-                ? "Chargement des courses…"
-                : races.length
-                  ? "Choisir une course"
-                  : "Aucune course terminée"}
-          </option>
-          {races.map((race) => (
-            <option key={race.id} value={race.id}>
-              R{race.raceNumber} · {race.venue} · {new Date(race.startAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </option>
-          ))}
         </select>
         <input
           type="date"
