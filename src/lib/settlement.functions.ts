@@ -27,7 +27,11 @@ const drawResultSchema = z.discriminatedUnion("gameId", [
     drawDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     raceId: z.string().uuid(),
     drawName: z.string().max(200).optional(),
-    result: z.object({ horses: z.array(z.number().int().positive()).min(1).max(20) }),
+    result: z
+      .object({ horses: z.array(z.number().int().positive()).length(5) })
+      .refine((v) => new Set(v.horses).size === 5, {
+        message: "pmu_result_requires_five_unique_horses",
+      }),
   }),
   z.object({
     gameId: z.literal("foot"),
