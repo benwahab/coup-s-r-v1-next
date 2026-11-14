@@ -540,15 +540,17 @@ async function settlePublishedDrawResult(result: {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   if (result.status !== "published") throw new Error("result_not_published");
 
+  const pmuRaceId = result.game_id === "pmu" ? result.pmu_race_id : null;
+  if (result.game_id === "pmu" && !pmuRaceId) throw new Error("pmu_result_race_id_missing");
+
   let publishedResultsQuery = supabaseAdmin
     .from("draw_results")
     .select("id,game_id,draw_date,result,status,pmu_race_id")
     .eq("game_id", result.game_id)
     .eq("draw_date", result.draw_date)
     .eq("status", "published");
-  if (result.game_id === "pmu") {
-    if (!result.pmu_race_id) throw new Error("pmu_result_race_id_missing");
-    publishedResultsQuery = publishedResultsQuery.eq("pmu_race_id", result.pmu_race_id);
+  if (pmuRaceId) {
+    publishedResultsQuery = publishedResultsQuery.eq("pmu_race_id", pmuRaceId);
   }
   const { data: publishedResults, error: publishedResultsError } = await publishedResultsQuery;
   if (publishedResultsError) throw new Error("published_results_lookup_failed: " + publishedResultsError.message);
@@ -560,7 +562,7 @@ async function settlePublishedDrawResult(result: {
     .eq("draw_date", result.draw_date)
     .eq("status", "pending");
   // PMU publishes one result per race, not one result for all races on a date.
-  if (result.game_id === "pmu") ticketsQuery = ticketsQuery.eq("pmu_race_id", result.pmu_race_id);
+  if (pmuRaceId) ticketsQuery = ticketsQuery.eq("pmu_race_id", pmuRaceId);
   const { data: tickets, error: ticketsError } = await ticketsQuery;
   if (ticketsError) throw new Error("pending_tickets_lookup_failed: " + ticketsError.message);
 
