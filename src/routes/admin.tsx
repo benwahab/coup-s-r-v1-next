@@ -447,7 +447,7 @@ function AdminPage() {
     { id: "regions", label: t("regions"), icon: MapPin },
     { id: "balls", label: t("ballsStats"), icon: Circle },
     { id: "ops", label: t("admin.nav.ops"), icon: Send },
-    { id: "results", label: t("admin.static.results"), icon: ListChecks },
+    { id: "results", label: "Résultats du jour", icon: ListChecks },
     { id: "claims", label: t("admin.static.claims"), icon: ShieldCheck },
     { id: "admins", label: t("admin.ops.title"), icon: Settings },
     { id: "supervision", label: t("admin.static.supervision"), icon: Activity },
