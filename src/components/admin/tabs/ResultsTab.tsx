@@ -132,6 +132,14 @@ export function ResultsTab() {
   }, [gameId, drawDate]);
 
   const updateResultValue = (index: number, value: string) => {
+    if (gameId === "loto" && value.trim() !== "") {
+      const duplicate = resultValues.some((item, i) => i !== index && item.trim() === value.trim());
+      if (duplicate) {
+        setMessage("Ce numéro est déjà saisi. Chaque numéro du Loto doit être différent.");
+        return;
+      }
+    }
+    setMessage(null);
     setResultValues((current) => current.map((item, i) => (i === index ? value : item)));
   };
 
