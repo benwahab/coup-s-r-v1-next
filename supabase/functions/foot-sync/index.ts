@@ -100,10 +100,10 @@ Deno.serve(async (req) => {
   }
 
   console.info("foot-sync fixture summary", { successfulLeagues, failedLeagues: providerFailures.length, upserted, from, to });
-  if (successfulLeagues === 0 || providerFailures.length > 0) {
+  if (successfulLeagues === 0) {
     return Response.json({
       ok: false,
-      error: successfulLeagues === 0 ? "all_provider_requests_failed" : "partial_provider_sync_failure",
+      error: "all_provider_requests_failed",
       successfulLeagues, failedLeagues: providerFailures, upserted, at: now.toISOString(),
     }, { status: 502 });
   }
@@ -244,5 +244,14 @@ Deno.serve(async (req) => {
     if (!error && result?.length) settled++;
   }
 
-  return Response.json({ ok: true, upserted, settled, at: now.toISOString() });
+  const partialFailure = providerFailures.length > 0;
+  return Response.json({
+    ok: !partialFailure,
+    error: partialFailure ? "partial_provider_sync_failure" : undefined,
+    successfulLeagues,
+    failedLeagues: providerFailures,
+    upserted,
+    settled,
+    at: now.toISOString(),
+  }, { status: partialFailure ? 207 : 200 });
 });
