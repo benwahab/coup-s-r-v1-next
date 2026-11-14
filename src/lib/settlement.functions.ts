@@ -470,6 +470,53 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
     return { result: row };
   });
 
+export const adminListPendingDrawResults = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .handler(async ({ context }) => {
+    const { data: isSuperAdmin, error } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "super_admin",
+    });
+    if (error) throw new Error("role_check_failed");
+    if (isSuperAdmin !== true) throw new Error("Forbidden: super_admin role required");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error: listError } = await supabaseAdmin
+      .from("draw_results")
+      .select("id,game_id,draw_date,draw_name,result,pmu_race_id,created_at")
+      .eq("status", "pending")
+      .order("created_at", { ascending: true });
+    if (listError) throw new Error("pending_results_lookup_failed");
+    return { results: data ?? [] };
+  });
+
+export const adminRejectDrawResult = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .inputValidator((data: unknown) => z.object({ resultId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: isSuperAdmin, error } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "super_admin",
+    });
+    if (error) throw new Error("role_check_failed");
+    if (isSuperAdmin !== true) throw new Error("Forbidden: super_admin role required");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rejected, error: rejectError } = await supabaseAdmin
+      .from("draw_results")
+      .update({ status: "rejected", reviewed_by: context.userId, reviewed_at: new Date().toISOString() })
+      .eq("id", data.resultId)
+      .eq("status", "pending")
+      .select("id,game_id,draw_date")
+      .maybeSingle();
+    if (rejectError) throw new Error("result_rejection_failed");
+    if (!rejected) throw new Error("result_not_pending_approval");
+    await writeAuditLog(supabaseAdmin, {
+      userId: context.userId,
+      action: "admin.draw_result.rejected",
+      detail: { resultId: rejected.id, gameId: rejected.game_id, drawDate: rejected.draw_date },
+    });
+    return { ok: true as const };
+  });
+
 export const adminApproveDrawResult = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => z.object({ resultId: z.string().uuid() }).parse(data))
