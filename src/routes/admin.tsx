@@ -661,7 +661,7 @@ function AdminPage() {
             case "ops":
               return can("operations");
             case "cashouts":
-              return adminPermissions === "all";
+              return false;
             case "supervision":
               return can("supervision");
             case "security_logs":
