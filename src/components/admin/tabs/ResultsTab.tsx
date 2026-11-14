@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { adminCreateDrawResult, adminPublishDrawResult } from "@/lib/settlement.functions";
+import {
+  adminCreateDrawResult,
+  adminListPendingDrawResults,
+  adminApproveDrawResult,
+  adminRejectDrawResult,
+} from "@/lib/settlement.functions";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,6 +20,26 @@ export function ResultsTab() {
   const [racesLoading, setRacesLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [pendingResults, setPendingResults] = useState<
+    { id: string; game_id: string; draw_date: string; draw_name: string | null; result: unknown }[]
+  >([]);
+  const [reviewBusy, setReviewBusy] = useState<string | null>(null);
+
+  const refreshPendingResults = async () => {
+    try {
+      const response = await adminListPendingDrawResults();
+      setIsSuperAdmin(true);
+      setPendingResults(response.results as typeof pendingResults);
+    } catch {
+      setIsSuperAdmin(false);
+      setPendingResults([]);
+    }
+  };
+
+  useEffect(() => {
+    void refreshPendingResults();
+  }, []);
 
   useEffect(() => {
     if (gameId !== "pmu") {
@@ -92,24 +117,9 @@ export function ResultsTab() {
         data: gameId === "pmu" ? { gameId, drawDate, raceId, result } : { gameId, drawDate, result },
       });
 
-      const resultIds: string[] = [created.result.id];
-      let settled = 0;
-      let winners = 0;
-      let losers = 0;
-      let skipped = 0;
-
-      for (const resultId of resultIds) {
-        const out = await adminPublishDrawResult({ data: { resultId } });
-        settled += out.settled;
-        winners += out.winners;
-        losers += out.losers;
-        skipped += out.skipped;
-      }
-
-      setMessage(
-        t("admin.static.published", { results: resultIds.length, settled, winners, losers, skipped }),
-      );
+      setMessage("Résultat soumis avec succès. En attente de l'approbation du Super Administrateur.");
       setResultValues(["", "", "", "", ""]);
+      await refreshPendingResults();
     } catch (e) {
       setMessage(e instanceof Error ? e.message : t("shell.errorTitle"));
     } finally {
@@ -232,6 +242,64 @@ export function ResultsTab() {
       >
         {busy ? "Publication…" : "Publier le résultat"}
       </button>
+
+      {isSuperAdmin && pendingResults.length > 0 && (
+        <div className="mt-6 border-t border-border pt-5">
+          <h3 className="text-base font-bold">Résultats en attente d'approbation</h3>
+          <div className="mt-3 space-y-3">
+            {pendingResults.map((pending) => (
+              <div key={pending.id} className="rounded-xl border border-border p-3">
+                <div className="text-sm font-semibold">
+                  {pending.game_id === "pmu" ? "PMU" : "Loto Balsa"} · {pending.draw_date}
+                </div>
+                <pre className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">
+                  {JSON.stringify(pending.result, null, 2)}
+                </pre>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={reviewBusy !== null}
+                    onClick={async () => {
+                      setReviewBusy(pending.id);
+                      try {
+                        const out = await adminApproveDrawResult({ data: { resultId: pending.id } });
+                        setMessage(`Résultat approuvé et publié. Coupons réglés : ${out.settled}.`);
+                        await refreshPendingResults();
+                      } catch (e) {
+                        setMessage(e instanceof Error ? e.message : t("shell.errorTitle"));
+                      } finally {
+                        setReviewBusy(null);
+                      }
+                    }}
+                    className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                  >
+                    {reviewBusy === pending.id ? "Traitement…" : "Approuver"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={reviewBusy !== null}
+                    onClick={async () => {
+                      setReviewBusy(pending.id);
+                      try {
+                        await adminRejectDrawResult({ data: { resultId: pending.id } });
+                        setMessage("Résultat rejeté. L'administrateur pourra le corriger et le soumettre à nouveau.");
+                        await refreshPendingResults();
+                      } catch (e) {
+                        setMessage(e instanceof Error ? e.message : t("shell.errorTitle"));
+                      } finally {
+                        setReviewBusy(null);
+                      }
+                    }}
+                    className="rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"
+                  >
+                    Rejeter
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
