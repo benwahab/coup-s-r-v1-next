@@ -373,7 +373,11 @@ export const adminGetDailyFinancialReport = createServerFn({ method: "POST" })
       if (batch.length < 1000) break;
     }
 
-    const gameMap = new Map<string, AdminDailyFinancialReport["byGame"][number]>();
+    const gameMap = new Map<string, AdminDailyFinancialReport["byGame"][number]>([
+      ["pmu", { gameId: "pmu", gameName: "PMU", ticketCount: 0, stakes: 0, prizesAwarded: 0, prizesPaid: 0, winnersCount: 0, losingCount: 0, pendingCount: 0 }],
+      ["loto", { gameId: "loto", gameName: "Loto Balsa", ticketCount: 0, stakes: 0, prizesAwarded: 0, prizesPaid: 0, winnersCount: 0, losingCount: 0, pendingCount: 0 }],
+      ["foot", { gameId: "foot", gameName: "Pari Foot", ticketCount: 0, stakes: 0, prizesAwarded: 0, prizesPaid: 0, winnersCount: 0, losingCount: 0, pendingCount: 0 }],
+    ]);
     const regionMap = new Map<string, AdminDailyFinancialReport["byRegion"][number]>();
     const totals: AdminDailyFinancialReport["totals"] = {
       ticketCount: tickets.length,
