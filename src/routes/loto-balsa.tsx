@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/AppShell";
 import { cn, formatFcfa, formatHour } from "@/lib/utils";
 import { lotoMultipliers } from "@/lib/game-config";
 import { supabase } from "@/integrations/supabase/client";
-import { drawNameForDate, nigerDateLabel, isGameOpen } from "@/lib/schedule";
+import { drawNameForDate, nigerDateLabel, isGameOpen, nigerParts, nigerInstant } from "@/lib/schedule";
 import type { TicketLeg } from "@/lib/tickets";
 import ogAsset from "@/assets/og-loto.jpg.asset.json";
 import { SITE_ORIGIN, absoluteOgUrl } from "@/lib/og";
@@ -80,10 +80,15 @@ function LotoPage() {
   const drawName = drawNameForDate();
   const dateLabel = nigerDateLabel();
   const drawDateIso = useMemo(() => {
-    const d = new Date();
     if (!schedule) return "";
-    d.setHours(schedule.draw_hour, schedule.draw_minute, 0, 0);
-    return d.toISOString();
+    const today = nigerParts();
+    return nigerInstant(
+      today.year,
+      today.month,
+      today.day,
+      schedule.draw_hour,
+      schedule.draw_minute,
+    ).toISOString();
   }, [schedule]);
 
   const changeMode = (m: Mode) => {

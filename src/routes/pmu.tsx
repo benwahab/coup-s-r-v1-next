@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Trophy, Info, Plus, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
-import { isGameOpen } from "@/lib/schedule";
+import { isGameOpen, nigerDateIso } from "@/lib/schedule";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { pmuBets, findBet, type PmuBetId } from "@/lib/pmu-bets";
@@ -86,7 +86,7 @@ function PmuPage() {
   const loadRace = async () => {
     setLoading(true);
     setLoadError(false);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = nigerDateIso();
     const { data: races, error: raceError } = await supabase
       .from("pmu_races")
       .select("id,start_at")

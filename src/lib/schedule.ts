@@ -2,7 +2,7 @@
 // Tous les calculs sont faits dans le fuseau Niger en convertissant
 // l'instant courant via toLocaleString. Pas de dépendance externe.
 
-const NIGER_TZ = "Africa/Niamey";
+export const NIGER_TIME_ZONE = "Africa/Niamey";
 
 const DRAW_NAMES = [
   "BALSA", // dimanche
@@ -17,7 +17,8 @@ const DRAW_NAMES = [
 export function nigerParts(d: Date = new Date()) {
   // Convertit l'instant en composants horaires Niger.
   const fmt = new Intl.DateTimeFormat("fr-FR", {
-    timeZone: NIGER_TZ,
+    timeZone: NIGER_TIME_ZONE,
+    hourCycle: "h23",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -61,6 +62,18 @@ export function nigerDayOfWeek(d: Date = new Date()): number {
 /** Nom du tirage Loto Balsa pour la date donnée (Niger TZ). */
 export function drawNameForDate(d: Date = new Date()): string {
   return `Tirage ${DRAW_NAMES[nigerDayOfWeek(d)]}`;
+}
+
+/** Clé de date civile au Niger (AAAA-MM-JJ), indépendante du fuseau du navigateur. */
+export function nigerDateIso(d: Date = new Date()): string {
+  const p = nigerParts(d);
+  return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+}
+
+/** Clé de mois civil au Niger (AAAA-MM), indépendante du fuseau du navigateur. */
+export function nigerMonthKey(d: Date = new Date()): string {
+  const p = nigerParts(d);
+  return `${p.year}-${String(p.month).padStart(2, "0")}`;
 }
 
 /** Date du jour Niger formatée JJ/MM/AAAA. */

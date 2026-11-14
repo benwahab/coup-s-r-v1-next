@@ -286,6 +286,7 @@ function TicketCard({ tk, cashoutStatus, onCashoutRequested }: { tk: Ticket; cas
                   day: "2-digit",
                   month: "short",
                   year: "numeric",
+                  timeZone: "Africa/Niamey",
                 })}
               </time>
             </div>

@@ -18,6 +18,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { PageHeader } from "@/components/AppShell";
 import { cn, formatFcfa } from "@/lib/utils";
+import { nigerDateIso, nigerMonthKey, nigerParts } from "@/lib/schedule";
 
 import {
   adminGetLotoBallStatistics,
@@ -190,7 +191,7 @@ function AdminPage() {
     setTab(first);
   }, [permissionsReady, adminPermissions, tab]);
 
-  const todayIso = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Niamey" }).format(new Date());
+  const todayIso = nigerDateIso();
   const dateOffset = (date: string, days: number) => {
     const [year, month, day] = date.split("-").map(Number);
     return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
@@ -278,15 +279,13 @@ function AdminPage() {
 
   const revenueSeries = useMemo(() => {
     const days: { date: string; label: string; mises: number; gains: number }[] = [];
-    const now = new Date();
     for (let i = 29; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const iso = d.toISOString().slice(0, 10);
-      const rows = adminTicketRows.filter((t) => t.createdAt.slice(0, 10) === iso);
+      const iso = dateOffset(todayIso, -i);
+      const [, month, day] = iso.split("-").map(Number);
+      const rows = adminTicketRows.filter((t) => nigerDateIso(new Date(t.createdAt)) === iso);
       days.push({
         date: iso,
-        label: `${d.getDate()}/${d.getMonth() + 1}`,
+        label: `${day}/${month}`,
         mises: rows.reduce((a, b) => a + b.stake, 0),
         gains: rows.filter((t) => t.status === "paid").reduce((a, b) => a + (b.prize ?? 0), 0),
       });
@@ -317,7 +316,7 @@ function AdminPage() {
   const hourlyData = useMemo(() => {
     const hours = Array.from({ length: 24 }, (_, h) => ({ hour: `${h}h`, count: 0 }));
     adminTicketRows.forEach((t) => {
-      hours[new Date(t.createdAt).getHours()].count += 1;
+      hours[nigerParts(new Date(t.createdAt)).hour].count += 1;
     });
     return hours;
   }, [adminTicketRows]);
@@ -325,14 +324,15 @@ function AdminPage() {
 
   const monthlyData = useMemo(() => {
     const map: Record<string, { month: string; mises: number; gains: number }> = {};
-    const now = new Date();
+    const current = nigerParts();
     for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      map[key] = { month: d.toLocaleDateString("fr-FR", { month: "short" }), mises: 0, gains: 0 };
+      const d = new Date(Date.UTC(current.year, current.month - 1 - i, 1));
+      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+      const monthLabel = new Intl.DateTimeFormat("fr-FR", { month: "short", timeZone: "UTC" }).format(d);
+      map[key] = { month: monthLabel, mises: 0, gains: 0 };
     }
     adminTicketRows.forEach((t) => {
-      const key = t.createdAt.slice(0, 7);
+      const key = nigerMonthKey(new Date(t.createdAt));
       if (map[key]) {
         map[key].mises += t.stake;
         map[key].gains += t.status === "paid" ? (t.prize ?? 0) : 0;
@@ -457,7 +457,10 @@ function AdminPage() {
     const from = csvFrom;
     const to = csvTo;
     const rows = adminTicketRows
-      .filter((t) => t.createdAt.slice(0, 10) >= from && t.createdAt.slice(0, 10) <= to)
+      .filter((t) => {
+        const ticketDate = nigerDateIso(new Date(t.createdAt));
+        return ticketDate >= from && ticketDate <= to;
+      })
       .filter((t) =>
         scope === "all"
           ? true
@@ -467,7 +470,7 @@ function AdminPage() {
       )
       .map((t) => ({
         id: t.code,
-        date: t.createdAt.slice(0, 10),
+        date: nigerDateIso(new Date(t.createdAt)),
         game: t.gameName,
         phone: t.phone ?? "",
         region: t.region ?? "",
