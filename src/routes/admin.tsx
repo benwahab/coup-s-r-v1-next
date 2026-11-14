@@ -45,7 +45,7 @@ import { RegionsTab } from "@/components/admin/tabs/RegionsTab";
 import { BallsTab } from "@/components/admin/tabs/BallsTab";
 import { OpsTab } from "@/components/admin/tabs/OpsTab";
 import { CashoutsTab } from "@/components/admin/tabs/CashoutsTab";
-import { adminListCashoutRequests } from "@/lib/cashout.functions";
+import { adminGetCashoutCounts, adminListCashoutRequests } from "@/lib/cashout.functions";
 import { ProductionReadiness } from "@/components/admin/ProductionReadiness";
 import { ResultsTab } from "@/components/admin/tabs/ResultsTab";
 import { AdminsSection } from "@/components/admin/AdminsSection";
@@ -158,7 +158,7 @@ function AdminPage() {
     let active = true;
     const refreshCashoutCount = async () => {
       try {
-        const result = await adminListCashoutRequests();
+        const result = await adminGetCashoutCounts();
         if (active) setPendingCashoutsCount(result.pendingCount);
       } catch {
         if (active) setPendingCashoutsCount(0);
