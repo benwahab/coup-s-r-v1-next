@@ -91,6 +91,19 @@ export const adminListCashoutRequests = createServerFn({ method: "POST" })
     };
   });
 
+export const adminGetCashoutCounts = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .handler(async ({ context }) => {
+    await assertSuperAdmin(context.supabase, context.userId);
+    const db = await getAdminDb();
+    const [pending, completed] = await Promise.all([
+      db.from("cashout_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      db.from("cashout_requests").select("id", { count: "exact", head: true }).eq("status", "completed"),
+    ]);
+    if (pending.error || completed.error) throw new Error("cashout_counts_load_failed");
+    return { pendingCount: pending.count ?? 0, completedCount: completed.count ?? 0 };
+  });
+
 export const adminCompleteCashoutRequest = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => z.object({
