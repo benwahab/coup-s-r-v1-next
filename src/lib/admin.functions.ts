@@ -249,6 +249,7 @@ export const adminGetDashboardFinancialSummary = createServerFn({ method: "POST"
           .gte("created_at", start)
           .lt("created_at", end)
           .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
           .range(offset, offset + 999);
         if (error) throw new Error("financial_summary_failed: " + error.message);
         const rows = data ?? [];
