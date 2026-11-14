@@ -130,38 +130,6 @@ export function OpsTab() {
                 />
                 Jeu actif
               </label>
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <label className="block">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("todayWinners")}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={s.today_winners_count ?? ""}
-                    onChange={(e) =>
-                      setSchedules((prev) => ({
-                        ...prev,
-                        [gameId]: { ...prev[gameId]!, today_winners_count: e.target.value === "" ? null : Number(e.target.value) },
-                      }))
-                    }
-                    className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t("totalPaidToday")} ({t("fcfa")})</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={s.today_paid_fcfa ?? ""}
-                    onChange={(e) =>
-                      setSchedules((prev) => ({
-                        ...prev,
-                        [gameId]: { ...prev[gameId]!, today_paid_fcfa: e.target.value === "" ? null : Number(e.target.value) },
-                      }))
-                    }
-                    className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
-                  />
-                </label>
-              </div>
               <button
                 type="button"
                 onClick={() => void saveSchedule(gameId)}
