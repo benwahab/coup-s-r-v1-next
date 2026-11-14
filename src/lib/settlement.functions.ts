@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
-import { nigerParts, nigerInstant } from "@/lib/schedule";
+import { isGameOpen, nigerParts } from "@/lib/schedule";
 import { evaluatePublishedAiPredictions } from "./ai-adaptive.functions";
 
 async function writeAuditLog(...args: Parameters<(typeof import("./audit.server"))["writeAuditLog"]>) {
@@ -95,6 +95,57 @@ async function assertPublishResultsPermission(supabase: SupabaseClient<Database>
   if (error) throw new Error("permission_check_failed");
   if (data !== true) throw new Error("Forbidden: publish_results permission required");
 }
+
+async function assertGameClosedForResult(
+  supabaseAdmin: SupabaseClient<Database>,
+  gameId: "loto" | "pmu",
+  drawDate: string,
+) {
+  const { data: schedule, error } = await supabaseAdmin
+    .from("game_schedules")
+    .select("open_hour,close_hour,enabled")
+    .eq("game_id", gameId)
+    .maybeSingle();
+  if (error) throw new Error("schedule_lookup_failed: " + error.message);
+  if (!schedule?.enabled) throw new Error("game_schedule_disabled");
+  const now = new Date();
+  const parts = nigerParts(now);
+  const today = `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+  if (drawDate !== today) throw new Error("result_date_must_match_niger_schedule");
+  if (isGameOpen(schedule.open_hour, schedule.close_hour, now)) {
+    throw new Error("result_publication_blocked_game_open");
+  }
+}
+
+export const getResultPublicationState = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .inputValidator((data: unknown) => z.object({ gameId: z.enum(["loto", "pmu"]) }).parse(data))
+  .handler(async ({ data, context }) => {
+    await assertPublishResultsPermission(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: schedule, error } = await supabaseAdmin
+      .from("game_schedules")
+      .select("open_hour,close_hour,enabled")
+      .eq("game_id", data.gameId)
+      .maybeSingle();
+    if (error) throw new Error("schedule_lookup_failed: " + error.message);
+    const now = new Date();
+    const parts = nigerParts(now);
+    const drawDate = `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+    const enabled = schedule?.enabled === true;
+    const isOpen = enabled
+      ? isGameOpen(schedule!.open_hour, schedule!.close_hour, now)
+      : false;
+    return {
+      gameId: data.gameId,
+      drawDate,
+      canPublish: enabled && !isOpen,
+      gameEnabled: enabled,
+      isOpen,
+      openHour: schedule?.open_hour ?? null,
+      closeHour: schedule?.close_hour ?? null,
+    };
+  });
 
 async function evaluateLoto(picks: unknown[], result: { numbers: number[] }, stake: number, frozenMultiplier: number | null) {
   const nums = picks.filter((p): p is number => typeof p === "number");
@@ -387,28 +438,8 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
     });
     if (roleError) throw new Error("role_check_failed");
 
-    if (data.gameId === "loto") {
-      const now = new Date();
-      const today = nigerParts(now);
-      const drawDateToday = `${today.year}-${String(today.month).padStart(2, "0")}-${String(today.day).padStart(2, "0")}`;
-      if (data.drawDate > drawDateToday) throw new Error("loto_result_future_date");
-      if (data.drawDate === drawDateToday) {
-        const { data: schedule, error: scheduleError } = await supabaseAdmin
-          .from("game_schedules")
-          .select("draw_hour,draw_minute,enabled")
-          .eq("game_id", "loto")
-          .maybeSingle();
-        if (scheduleError) throw new Error("schedule_lookup_failed: " + scheduleError.message);
-        if (!schedule?.enabled) throw new Error("game_schedule_disabled");
-        const drawAt = nigerInstant(
-          today.year,
-          today.month,
-          today.day,
-          schedule.draw_hour,
-          schedule.draw_minute,
-        );
-        if (now < drawAt) throw new Error("loto_draw_not_reached");
-      }
+    if (data.gameId === "loto" || data.gameId === "pmu") {
+      await assertGameClosedForResult(supabaseAdmin, data.gameId, data.drawDate);
     }
 
     if (data.gameId === "pmu") {
@@ -619,6 +650,9 @@ async function publishAndSettleDrawResult(resultId: string, userId: string) {
   if (resultError) throw new Error(resultError.message);
   if (!result) throw new Error("result_not_found");
   if (result.status !== "pending") throw new Error("result_not_pending_approval");
+  if (result.game_id === "loto" || result.game_id === "pmu") {
+    await assertGameClosedForResult(supabaseAdmin, result.game_id, result.draw_date);
+  }
 
   const { data: published, error: publishError } = await supabaseAdmin
     .from("draw_results")
