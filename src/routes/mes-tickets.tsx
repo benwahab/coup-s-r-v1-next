@@ -261,7 +261,7 @@ function TicketCard({ tk, cashoutStatus, onCashoutRequested }: { tk: Ticket; cas
   const { t } = useI18n();
   const [cashoutBusy, setCashoutBusy] = useState(false);
   const [cashoutError, setCashoutError] = useState<string | null>(null);
-  const canRequestCashout = tk.status === "winning" && !cashoutStatus;
+  const canRequestCashout = tk.status === "winning" && (tk.prize ?? 0) > 0 && !cashoutStatus;
   const statusLabel: Record<string, string> = {
     pending: t("pending"),
     losing: t("losing"),
@@ -305,6 +305,11 @@ function TicketCard({ tk, cashoutStatus, onCashoutRequested }: { tk: Ticket; cas
             >
               {statusLabel[tk.status] ?? tk.status}
             </span>
+            {tk.status === "winning" && (tk.prize ?? 0) > 0 && (
+              <div className="mt-1 text-xs font-bold text-success">
+                Gain : {tk.prize!.toLocaleString()} {t("fcfa")}
+              </div>
+            )}
           </div>
         </div>
         </Link>
