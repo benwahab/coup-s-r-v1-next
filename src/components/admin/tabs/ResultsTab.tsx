@@ -4,6 +4,8 @@ import {
   adminListPendingDrawResults,
   adminApproveDrawResult,
   adminRejectDrawResult,
+  adminListDrawResultsNeedingSettlement,
+  adminRetryDrawSettlement,
 } from "@/lib/settlement.functions";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,15 +27,29 @@ export function ResultsTab() {
     { id: string; game_id: string; draw_date: string; draw_name: string | null; result: unknown }[]
   >([]);
   const [reviewBusy, setReviewBusy] = useState<string | null>(null);
+  const [settlementRetries, setSettlementRetries] = useState<
+    { id: string; game_id: string; draw_date: string; draw_name: string | null; pendingTickets: number }[]
+  >([]);
+
+  const refreshSettlementRetries = async () => {
+    try {
+      const response = await adminListDrawResultsNeedingSettlement();
+      setSettlementRetries(response.results);
+    } catch {
+      setSettlementRetries([]);
+    }
+  };
 
   const refreshPendingResults = async () => {
     try {
       const response = await adminListPendingDrawResults();
       setIsSuperAdmin(true);
       setPendingResults(response.results as typeof pendingResults);
+      await refreshSettlementRetries();
     } catch {
       setIsSuperAdmin(false);
       setPendingResults([]);
+      setSettlementRetries([]);
     }
   };
 
@@ -246,6 +262,48 @@ export function ResultsTab() {
       >
         {busy ? "Publication…" : "Publier le résultat"}
       </button>
+
+      {isSuperAdmin && settlementRetries.length > 0 && (
+        <div className="mt-6 border-t border-border pt-5">
+          <h3 className="text-base font-bold">Règlements à reprendre</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Ces résultats sont déjà publiés. Les coupons encore en attente peuvent être réglés à nouveau sans republier le résultat ; les coupons déjà réglés ne seront pas modifiés.
+          </p>
+          <div className="mt-3 space-y-3">
+            {settlementRetries.map((item) => (
+              <div key={item.id} className="rounded-xl border border-border p-3">
+                <div className="text-sm font-semibold">
+                  {item.game_id === "pmu" ? "PMU" : "Loto Balsa"} · {item.draw_date}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {item.pendingTickets} coupon(s) encore en attente
+                </p>
+                <button
+                  type="button"
+                  disabled={reviewBusy !== null}
+                  onClick={async () => {
+                    setReviewBusy(item.id);
+                    try {
+                      const out = await adminRetryDrawSettlement({ data: { resultId: item.id } });
+                      setMessage(
+                        `Reprise terminée : ${out.settled} réglé(s), ${out.skipped} ignoré(s), ${out.failed} erreur(s).`,
+                      );
+                      await refreshPendingResults();
+                    } catch (e) {
+                      setMessage(e instanceof Error ? e.message : t("shell.errorTitle"));
+                    } finally {
+                      setReviewBusy(null);
+                    }
+                  }}
+                  className="mt-3 rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"
+                >
+                  {reviewBusy === item.id ? "Reprise…" : "Reprendre le règlement"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {isSuperAdmin && pendingResults.length > 0 && (
         <div className="mt-6 border-t border-border pt-5">
