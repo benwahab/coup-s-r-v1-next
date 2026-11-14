@@ -43,7 +43,7 @@ function TicketsPage() {
       setCashouts(Object.fromEntries(requests.map((request) => [request.ticket_code, request.status])));
     }).catch(() => { if (active) setCashouts({}); });
     return () => { active = false; };
-  }, [tickets.length]);
+  }, [tickets]);
 
   const [status, setStatus] = useState<StatusFilter>("all");
   const [game, setGame] = useState<GameFilter>("all");
