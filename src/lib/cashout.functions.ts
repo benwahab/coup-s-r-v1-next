@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
 
 type CashoutRow = {
@@ -17,16 +19,38 @@ type CashoutRow = {
   player_phone?: string | null;
   region?: string | null;
 };
+type ProfileMini = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  region: string | null;
+};
+type QueryResult<T> = PromiseLike<{
+  data: T[] | null;
+  error: { message: string } | null;
+  count: number | null;
+}>;
+type CashoutQuery = QueryResult<CashoutRow> & {
+  select: (columns: string, options?: { count?: "exact"; head?: boolean }) => CashoutQuery;
+  eq: (column: string, value: string) => CashoutQuery;
+  order: (column: string, options?: { ascending: boolean }) => CashoutQuery;
+  in: (column: string, values: string[]) => QueryResult<ProfileMini>;
+};
+type CashoutDb = {
+  from: (table: "cashout_requests" | "profiles") => CashoutQuery;
+  rpc: (name: string, args: Record<string, unknown>) => Promise<{
+    data: unknown;
+    error: { message: string } | null;
+  }>;
+};
 
-async function getAdminDb() {
+async function getAdminDb(): Promise<CashoutDb> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as unknown as {
-    from: (table: string) => any;
-    rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
-  };
+  return supabaseAdmin as unknown as CashoutDb;
 }
 
-async function assertSuperAdmin(supabase: any, userId: string) {
+async function assertSuperAdmin(supabase: SupabaseClient<Database>, userId: string) {
   const { data, error } = await supabase.rpc("has_role", {
     _user_id: userId,
     _role: "super_admin",
@@ -76,9 +100,9 @@ export const adminListCashoutRequests = createServerFn({ method: "POST" })
         .select("id,first_name,last_name,phone,region")
         .in("id", userIds);
       if (profileError) throw new Error("cashout_profiles_load_failed");
-      const byUser = new Map((profiles ?? []).map((p: any) => [p.id, p]));
+      const byUser = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
       for (const row of requests) {
-        const profile = byUser.get(row.user_id) as any;
+        const profile = byUser.get(row.user_id);
         row.player_name = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(" ") : null;
         row.player_phone = profile?.phone ?? null;
         row.region = profile?.region ?? null;
