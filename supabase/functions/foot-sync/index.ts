@@ -36,14 +36,23 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(url, serviceKey);
   const now = new Date();
-  const from = now.toISOString().slice(0, 10);
-  const to = new Date(now.getTime() + 14 * 86400000).toISOString().slice(0, 10);
+  const nigerDateParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Niamey",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const nigerDate = Object.fromEntries(nigerDateParts.map((part) => [part.type, part.value]));
+  const from = `${nigerDate.year}-${nigerDate.month}-${nigerDate.day}`;
+  const [year, month, day] = from.split("-").map(Number);
+  const toDate = new Date(Date.UTC(year, month - 1, day + 14));
+  const to = `${toDate.getUTCFullYear()}-${String(toDate.getUTCMonth() + 1).padStart(2, "0")}-${String(toDate.getUTCDate()).padStart(2, "0")}`;
   let upserted = 0;
   let successfulLeagues = 0;
   const providerFailures: { league: number; status?: number; reason: string }[] = [];
 
   for (const league of LEAGUES) {
-    const endpoint = API_BASE + "/fixtures?league=" + league + "&season=" + now.getUTCFullYear() + "&from=" + from + "&to=" + to;
+    const endpoint = API_BASE + "/fixtures?league=" + league + "&season=" + year + "&from=" + from + "&to=" + to;
     let response: Response;
     try {
       response = await fetch(endpoint, {
