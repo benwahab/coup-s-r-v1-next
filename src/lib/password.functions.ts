@@ -133,9 +133,21 @@ export const changeUserPassword = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     if (data.currentPassword === data.newPassword) throw new Error("password_must_change");
 
-    const { error } = await context.supabase.auth.updateUser({
+    const { data: current, error: currentError } = await supabaseAdmin.auth.admin.getUserById(
+      context.userId,
+    );
+    if (currentError || !current.user?.email) throw new Error("password_change_user_invalid");
+    const { createClient } = await import("@supabase/supabase-js");
+    const anon = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    });
+    const { error: checkError } = await anon.auth.signInWithPassword({
+      email: current.user.email,
+      password: data.currentPassword,
+    });
+    if (checkError) throw new Error("password_change_failed");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(context.userId, {
       password: data.newPassword,
-      current_password: data.currentPassword,
     });
     if (error) {
       if (isWeakPasswordError(error)) return { ok: false as const, reason: "weak-password" as const };
@@ -224,7 +236,12 @@ export const setUserPassword = createServerFn({ method: "POST" })
     // Supabase Auth applies its password policy and compromised-password checks.
     // Keep this operation first: no setup flag is cleared unless Auth accepted
     // the new password.
-    const { error: pwError } = await context.supabase.auth.updateUser({ password: data.password });
+    // Le client serveur n'a pas de session interne (persistSession: false) :
+    // updateUser() échoue toujours avec AuthSessionMissingError. L'appelant est
+    // déjà authentifié par requireSupabaseAuth, on écrit donc via l'API admin.
+    const { error: pwError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      password: data.password,
+    });
     if (pwError) {
       if (isWeakPasswordError(pwError)) return { ok: false as const, reason: "weak-password" as const };
       throw new Error("password_update_failed");
