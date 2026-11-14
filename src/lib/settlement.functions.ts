@@ -545,6 +545,8 @@ export const adminApproveDrawResult = createServerFn({ method: "POST" })
         status: "published",
         published_at: new Date().toISOString(),
         published_by: context.userId,
+        reviewed_by: context.userId,
+        reviewed_at: new Date().toISOString(),
       })
       .eq("id", result.id)
       .eq("status", "pending")
