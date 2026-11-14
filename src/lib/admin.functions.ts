@@ -211,7 +211,7 @@ function niameyDateIso(value = new Date()): string {
 }
 
 function niameyDayBounds(dateIso: string): { start: string; end: string } {
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(dateIso)) throw new Error("invalid_report_date");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateIso)) throw new Error("invalid_report_date");
   const startLocal = new Date(`${dateIso}T00:00:00+01:00`);
   if (!Number.isFinite(startLocal.getTime()) || niameyDateIso(startLocal) !== dateIso) {
     throw new Error("invalid_report_date");
