@@ -529,6 +529,84 @@ export const adminRejectDrawResult = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+async function settlePublishedDrawResult(result: {
+  id: string;
+  game_id: string;
+  draw_date: string;
+  result: unknown;
+  status: string;
+  pmu_race_id: string | null;
+}, userId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  if (result.status !== "published") throw new Error("result_not_published");
+
+  let publishedResultsQuery = supabaseAdmin
+    .from("draw_results")
+    .select("id,game_id,draw_date,result,status,pmu_race_id")
+    .eq("game_id", result.game_id)
+    .eq("draw_date", result.draw_date)
+    .eq("status", "published");
+  if (result.game_id === "pmu") {
+    if (!result.pmu_race_id) throw new Error("pmu_result_race_id_missing");
+    publishedResultsQuery = publishedResultsQuery.eq("pmu_race_id", result.pmu_race_id);
+  }
+  const { data: publishedResults, error: publishedResultsError } = await publishedResultsQuery;
+  if (publishedResultsError) throw new Error("published_results_lookup_failed: " + publishedResultsError.message);
+
+  let ticketsQuery = supabaseAdmin
+    .from("tickets")
+    .select("id,code,user_id,game_id,draw_date,picks,stake,status,prize,loto_multiplier,pmu_race_id")
+    .eq("game_id", result.game_id)
+    .eq("draw_date", result.draw_date)
+    .eq("status", "pending");
+  // PMU publishes one result per race, not one result for all races on a date.
+  if (result.game_id === "pmu") ticketsQuery = ticketsQuery.eq("pmu_race_id", result.pmu_race_id);
+  const { data: tickets, error: ticketsError } = await ticketsQuery;
+  if (ticketsError) throw new Error("pending_tickets_lookup_failed: " + ticketsError.message);
+
+  let settled = 0;
+  let winners = 0;
+  let losers = 0;
+  let skipped = 0;
+  let failed = 0;
+  for (const ticket of (tickets ?? []) as TicketRow[]) {
+    try {
+      const out = await settleTicket(ticket, (publishedResults ?? []) as PublishedResult[]);
+      if (!out.changed) {
+        skipped++;
+        continue;
+      }
+      settled++;
+      if (out.status === "winning") winners++;
+      if (out.status === "losing") losers++;
+    } catch (error) {
+      failed++;
+      console.error("draw result ticket settlement failed", {
+        resultId: result.id,
+        ticketId: ticket.id,
+        reason: error instanceof Error ? error.message : "unknown_settlement_error",
+      });
+    }
+  }
+
+  await writeAuditLog(supabaseAdmin, {
+    userId,
+    action: "admin.draw_result.settlement_attempted",
+    detail: {
+      resultId: result.id,
+      gameId: result.game_id,
+      drawDate: result.draw_date,
+      settled,
+      winners,
+      losers,
+      skipped,
+      failed,
+    },
+  });
+
+  return { ok: failed === 0 && skipped === 0, settled, winners, losers, skipped, failed };
+}
+
 async function publishAndSettleDrawResult(resultId: string, userId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: result, error: resultError } = await supabaseAdmin
@@ -562,60 +640,19 @@ async function publishAndSettleDrawResult(resultId: string, userId: string) {
       : result.game_id === "pmu"
         ? result.pmu_race_id
         : result.id;
-  if (aiReference) await evaluatePublishedAiPredictions(result.game_id, aiReference, result.result);
-
-  let publishedResultsQuery = supabaseAdmin
-    .from("draw_results")
-    .select("id,game_id,draw_date,result,status,pmu_race_id")
-    .eq("game_id", result.game_id)
-    .eq("draw_date", result.draw_date)
-    .eq("status", "published");
-  if (result.game_id === "pmu") {
-    if (!result.pmu_race_id) throw new Error("pmu_result_race_id_missing");
-    publishedResultsQuery = publishedResultsQuery.eq("pmu_race_id", result.pmu_race_id);
-  }
-  const { data: publishedResults, error: publishedResultsError } = await publishedResultsQuery;
-  if (publishedResultsError) throw new Error(publishedResultsError.message);
-
-  const { data: tickets, error: ticketsError } = await supabaseAdmin
-    .from("tickets")
-    .select("id,code,user_id,game_id,draw_date,picks,stake,status,prize,loto_multiplier,pmu_race_id")
-    .eq("game_id", result.game_id)
-    .eq("draw_date", result.draw_date)
-    .eq("status", "pending");
-  if (ticketsError) throw new Error(ticketsError.message);
-
-  let settled = 0,
-    winners = 0,
-    losers = 0,
-    skipped = 0;
-  for (const ticket of (tickets ?? []) as TicketRow[]) {
-    const out = await settleTicket(ticket, (publishedResults ?? []) as PublishedResult[]);
-    if (!out.changed) {
-      skipped++;
-      continue;
+  if (aiReference) {
+    try {
+      await evaluatePublishedAiPredictions(result.game_id, aiReference, result.result);
+    } catch (error) {
+      // Prediction analytics must not prevent official ticket settlement.
+      console.error("published result AI evaluation failed", {
+        resultId: result.id,
+        reason: error instanceof Error ? error.message : "unknown_ai_evaluation_error",
+      });
     }
-    settled++;
-    if (out.status === "winning") winners++;
-    if (out.status === "losing") losers++;
   }
 
-  await writeAuditLog(supabaseAdmin, {
-    userId,
-    action: "admin.draw_result.approved_and_published",
-    detail: {
-      resultId: result.id,
-      gameId: result.game_id,
-      drawDate: result.draw_date,
-      settled,
-      winners,
-      losers,
-      skipped,
-      approvedBySuperAdmin: true,
-    },
-  });
-
-  return { ok: true as const, settled, winners, losers, skipped };
+  return settlePublishedDrawResult({ ...result, status: "published" }, userId);
 }
 
 export const adminApproveDrawResult = createServerFn({ method: "POST" })
@@ -629,6 +666,65 @@ export const adminApproveDrawResult = createServerFn({ method: "POST" })
     if (roleError) throw new Error("role_check_failed");
     if (isSuperAdmin !== true) throw new Error("Forbidden: super_admin role required");
     return publishAndSettleDrawResult(data.resultId, context.userId);
+  });
+
+export const adminListDrawResultsNeedingSettlement = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .handler(async ({ context }) => {
+    const { data: isSuperAdmin, error: roleError } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "super_admin",
+    });
+    if (roleError) throw new Error("role_check_failed");
+    if (isSuperAdmin !== true) throw new Error("Forbidden: super_admin role required");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: results, error: resultsError } = await supabaseAdmin
+      .from("draw_results")
+      .select("id,game_id,draw_date,draw_name,result,pmu_race_id,created_at")
+      .eq("status", "published")
+      .in("game_id", ["loto", "pmu"])
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (resultsError) throw new Error("published_results_lookup_failed");
+    const { data: tickets, error: ticketsError } = await supabaseAdmin
+      .from("tickets")
+      .select("game_id,draw_date,pmu_race_id")
+      .eq("status", "pending")
+      .in("game_id", ["loto", "pmu"]);
+    if (ticketsError) throw new Error("pending_tickets_lookup_failed");
+    const outstanding = (results ?? []).map((item) => ({
+      ...item,
+      pendingTickets: (tickets ?? []).filter((ticket) =>
+        ticket.game_id === item.game_id &&
+        ticket.draw_date === item.draw_date &&
+        (item.game_id !== "pmu" || ticket.pmu_race_id === item.pmu_race_id)
+      ).length,
+    })).filter((item) => item.pendingTickets > 0);
+    return { results: outstanding };
+  });
+
+export const adminRetryDrawSettlement = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .inputValidator((data: unknown) => z.object({ resultId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: isSuperAdmin, error: roleError } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "super_admin",
+    });
+    if (roleError) throw new Error("role_check_failed");
+    if (isSuperAdmin !== true) throw new Error("Forbidden: super_admin role required");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: result, error } = await supabaseAdmin
+      .from("draw_results")
+      .select("id,game_id,draw_date,result,status,pmu_race_id")
+      .eq("id", data.resultId)
+      .maybeSingle();
+    if (error) throw new Error("draw_result_lookup_failed");
+    if (!result) throw new Error("result_not_found");
+    if (result.status !== "published" || !["loto", "pmu"].includes(result.game_id)) {
+      throw new Error("result_not_eligible_for_settlement_retry");
+    }
+    return settlePublishedDrawResult(result, context.userId);
   });
 
 /**
