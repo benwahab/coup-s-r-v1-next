@@ -2,32 +2,44 @@ import { useEffect, useState } from "react";
 import { checkIsAdmin } from "@/lib/admin.functions";
 import { useAuth } from "@/lib/auth";
 
+type AdminCheckState = "checking" | "allowed" | "denied" | "error";
+
 /**
- * Retourne le statut admin de l'utilisateur courant.
- * `null` tant que la vérification est en cours (évite tout flash du bouton Admin).
+ * Vérifie les droits du compte connecté sans jamais accorder l'accès en cas d'erreur.
+ * L'état d'erreur est exposé à l'interface pour distinguer un refus d'accès
+ * d'un problème de session ou d'appel serveur.
  */
-export function useIsAdmin(): boolean | null {
+export function useIsAdmin(): { isAdmin: boolean; verificationFailed: boolean } {
   const { authed, session } = useAuth();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const userId = session?.userId;
+  const [state, setState] = useState<AdminCheckState>("checking");
 
   useEffect(() => {
-    if (!authed || !session) {
-      setIsAdmin(false);
+    if (!authed || !userId) {
+      setState("denied");
       return;
     }
+
     let cancelled = false;
+    setState("checking");
+
     (async () => {
       try {
-        const { isAdmin: result } = await checkIsAdmin();
-        if (!cancelled) setIsAdmin(result);
-      } catch {
-        if (!cancelled) setIsAdmin(false);
+        const { isAdmin } = await checkIsAdmin();
+        if (!cancelled) setState(isAdmin ? "allowed" : "denied");
+      } catch (error) {
+        console.error("[Coup Sûr] Échec de vérification des droits administrateur.", error);
+        if (!cancelled) setState("error");
       }
     })();
+
     return () => {
       cancelled = true;
     };
-  }, [authed, session]);
+  }, [authed, userId]);
 
-  return isAdmin;
+  return {
+    isAdmin: state === "allowed",
+    verificationFailed: state === "error",
+  };
 }
