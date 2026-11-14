@@ -305,6 +305,7 @@ export interface AdminDailyFinancialReport {
   };
   tickets: Array<{
     code: string;
+    gameId: string;
     gameName: string;
     region: string | null;
     stake: number;
@@ -335,6 +336,7 @@ export const adminGetDailyFinancialReport = createServerFn({ method: "POST" })
       const batch = rows ?? [];
       tickets.push(...batch.map((row) => ({
         code: row.code,
+        gameId: row.game_id,
         gameName: row.game_name || row.game_id,
         region: row.region,
         stake: row.stake,
@@ -385,11 +387,9 @@ export const adminGetDailyFinancialReport = createServerFn({ method: "POST" })
     };
 
     for (const ticket of tickets) {
-      const gameId =
-        ticket.gameName.toLowerCase().includes("pmu") ? "pmu" :
-        ticket.gameName.toLowerCase().includes("loto") ? "loto" :
-        ticket.gameName.toLowerCase().includes("pari") || ticket.gameName.toLowerCase().includes("foot") ? "foot" :
-        "other";
+      const gameId = ticket.gameId === "pmu" || ticket.gameId === "loto" || ticket.gameId === "foot"
+        ? ticket.gameId
+        : "other";
       const gameName = gameId === "pmu" ? "PMU" : gameId === "loto" ? "Loto Balsa" : gameId === "foot" ? "Pari Foot" : ticket.gameName;
       const game = gameMap.get(gameId) ?? {
         gameId, gameName, ticketCount: 0, stakes: 0, prizesAwarded: 0, prizesPaid: 0,
