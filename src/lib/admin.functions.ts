@@ -200,6 +200,246 @@ export const adminListTickets = createServerFn({ method: "POST" })
     };
   });
 
+
+function niameyDateIso(value = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Niamey",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(value);
+}
+
+function niameyDayBounds(dateIso: string): { start: string; end: string } {
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(dateIso)) throw new Error("invalid_report_date");
+  const startLocal = new Date(`${dateIso}T00:00:00+01:00`);
+  if (!Number.isFinite(startLocal.getTime()) || niameyDateIso(startLocal) !== dateIso) {
+    throw new Error("invalid_report_date");
+  }
+  const nextLocal = new Date(startLocal.getTime() + 86_400_000);
+  return { start: startLocal.toISOString(), end: nextLocal.toISOString() };
+}
+
+function addNiameyDays(dateIso: string, days: number): string {
+  const [year, month, day] = dateIso.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+
+/** Reliable accounting totals from the complete ticket dataset, calculated on the server. */
+export const adminGetDashboardFinancialSummary = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .handler(async ({ context }) => {
+    await assertSuperAdmin(context.supabase as SB, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const today = niameyDateIso();
+    const monthStart = `${today.slice(0, 7)}-01`;
+    const monthBounds = {
+      start: niameyDayBounds(monthStart).start,
+      end: new Date(`${addNiameyDays(today, 1)}T00:00:00+01:00`).toISOString(),
+    };
+    const todayBounds = niameyDayBounds(today);
+    const yesterdayBounds = niameyDayBounds(addNiameyDays(today, -1));
+
+    const sumStakes = async (start: string, end: string) => {
+      let total = 0;
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await supabaseAdmin
+          .from("tickets")
+          .select("stake")
+          .gte("created_at", start)
+          .lt("created_at", end)
+          .order("created_at", { ascending: true })
+          .range(offset, offset + 999);
+        if (error) throw new Error("financial_summary_failed: " + error.message);
+        const rows = data ?? [];
+        total += rows.reduce((sum, row) => sum + row.stake, 0);
+        if (rows.length < 1000) break;
+      }
+      return total;
+    };
+
+    const [monthTotal, todayTotal, yesterdayTotal] = await Promise.all([
+      sumStakes(monthBounds.start, monthBounds.end),
+      sumStakes(todayBounds.start, todayBounds.end),
+      sumStakes(yesterdayBounds.start, yesterdayBounds.end),
+    ]);
+    return { monthTotal, todayTotal, yesterdayTotal, monthStart, today };
+  });
+
+export interface AdminDailyFinancialReport {
+  date: string;
+  totals: {
+    ticketCount: number;
+    stakes: number;
+    prizesAwarded: number;
+    prizesPaid: number;
+    winnersCount: number;
+    losingCount: number;
+    pendingTicketsCount: number;
+    unpaidWinningCount: number;
+  };
+  byGame: Array<{
+    gameId: string;
+    gameName: string;
+    ticketCount: number;
+    stakes: number;
+    prizesAwarded: number;
+    prizesPaid: number;
+    winnersCount: number;
+    losingCount: number;
+    pendingCount: number;
+  }>;
+  byRegion: Array<{
+    region: string;
+    ticketCount: number;
+    stakes: number;
+    prizesAwarded: number;
+    prizesPaid: number;
+    winnersCount: number;
+  }>;
+  payments: {
+    confirmedCount: number;
+    confirmedAmount: number;
+    pendingCount: number;
+    pendingAmount: number;
+  };
+  tickets: Array<{
+    code: string;
+    gameName: string;
+    region: string | null;
+    stake: number;
+    status: "pending" | "losing" | "winning" | "paid";
+    prize: number;
+    createdAt: string;
+  }>;
+}
+
+export const adminGetDailyFinancialReport = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .inputValidator((input: unknown) => z.object({ date: z.string() }).parse(input))
+  .handler(async ({ data, context }): Promise<AdminDailyFinancialReport> => {
+    await assertSuperAdmin(context.supabase as SB, context.userId);
+    const { start, end } = niameyDayBounds(data.date);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const tickets: AdminDailyFinancialReport["tickets"] = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data: rows, error } = await supabaseAdmin
+        .from("tickets")
+        .select("code,game_id,game_name,region,stake,status,prize,created_at")
+        .gte("created_at", start)
+        .lt("created_at", end)
+        .order("created_at", { ascending: true })
+        .range(offset, offset + 999);
+      if (error) throw new Error("daily_ticket_report_failed: " + error.message);
+      const batch = rows ?? [];
+      tickets.push(...batch.map((row) => ({
+        code: row.code,
+        gameName: row.game_name || row.game_id,
+        region: row.region,
+        stake: row.stake,
+        status: row.status,
+        prize: row.prize ?? 0,
+        createdAt: row.created_at,
+      })));
+      if (batch.length < 1000) break;
+    }
+
+    let confirmedCount = 0;
+    let confirmedAmount = 0;
+    let pendingCount = 0;
+    let pendingAmount = 0;
+    for (let offset = 0; ; offset += 1000) {
+      const { data: rows, error } = await supabaseAdmin
+        .from("payments")
+        .select("amount,status")
+        .gte("created_at", start)
+        .lt("created_at", end)
+        .order("created_at", { ascending: true })
+        .range(offset, offset + 999);
+      if (error) throw new Error("daily_payment_report_failed: " + error.message);
+      const batch = rows ?? [];
+      for (const row of batch) {
+        if (row.status === "confirmed") {
+          confirmedCount += 1;
+          confirmedAmount += row.amount;
+        } else if (row.status === "pending") {
+          pendingCount += 1;
+          pendingAmount += row.amount;
+        }
+      }
+      if (batch.length < 1000) break;
+    }
+
+    const gameMap = new Map<string, AdminDailyFinancialReport["byGame"][number]>();
+    const regionMap = new Map<string, AdminDailyFinancialReport["byRegion"][number]>();
+    const totals: AdminDailyFinancialReport["totals"] = {
+      ticketCount: tickets.length,
+      stakes: 0,
+      prizesAwarded: 0,
+      prizesPaid: 0,
+      winnersCount: 0,
+      losingCount: 0,
+      pendingTicketsCount: 0,
+      unpaidWinningCount: 0,
+    };
+
+    for (const ticket of tickets) {
+      const gameId =
+        ticket.gameName.toLowerCase().includes("pmu") ? "pmu" :
+        ticket.gameName.toLowerCase().includes("loto") ? "loto" :
+        ticket.gameName.toLowerCase().includes("pari") || ticket.gameName.toLowerCase().includes("foot") ? "foot" :
+        "other";
+      const gameName = gameId === "pmu" ? "PMU" : gameId === "loto" ? "Loto Balsa" : gameId === "foot" ? "Pari Foot" : ticket.gameName;
+      const game = gameMap.get(gameId) ?? {
+        gameId, gameName, ticketCount: 0, stakes: 0, prizesAwarded: 0, prizesPaid: 0,
+        winnersCount: 0, losingCount: 0, pendingCount: 0,
+      };
+      game.ticketCount += 1;
+      game.stakes += ticket.stake;
+      if (ticket.status === "winning" || ticket.status === "paid") {
+        game.prizesAwarded += ticket.prize;
+        game.winnersCount += 1;
+      }
+      if (ticket.status === "paid") game.prizesPaid += ticket.prize;
+      if (ticket.status === "losing") game.losingCount += 1;
+      if (ticket.status === "pending") game.pendingCount += 1;
+      gameMap.set(gameId, game);
+
+      const regionName = ticket.region?.trim() || "Non renseignée";
+      const region = regionMap.get(regionName) ?? {
+        region: regionName, ticketCount: 0, stakes: 0, prizesAwarded: 0, prizesPaid: 0, winnersCount: 0,
+      };
+      region.ticketCount += 1;
+      region.stakes += ticket.stake;
+      if (ticket.status === "winning" || ticket.status === "paid") {
+        region.prizesAwarded += ticket.prize;
+        region.winnersCount += 1;
+      }
+      if (ticket.status === "paid") region.prizesPaid += ticket.prize;
+      regionMap.set(regionName, region);
+
+      totals.stakes += ticket.stake;
+      if (ticket.status === "winning" || ticket.status === "paid") {
+        totals.prizesAwarded += ticket.prize;
+        totals.winnersCount += 1;
+      }
+      if (ticket.status === "paid") totals.prizesPaid += ticket.prize;
+      if (ticket.status === "losing") totals.losingCount += 1;
+      if (ticket.status === "pending") totals.pendingTicketsCount += 1;
+      if (ticket.status === "winning") totals.unpaidWinningCount += 1;
+    }
+
+    return {
+      date: data.date,
+      totals,
+      byGame: [...gameMap.values()].sort((a, b) => a.gameName.localeCompare(b.gameName, "fr")),
+      byRegion: [...regionMap.values()].sort((a, b) => a.region.localeCompare(b.region, "fr")),
+      payments: { confirmedCount, confirmedAmount, pendingCount, pendingAmount },
+      tickets: tickets.sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+    };
+  });
+
 export interface AdminPlayerStat {
   player: string;
   region: string;
