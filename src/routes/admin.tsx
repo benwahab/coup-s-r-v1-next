@@ -46,6 +46,7 @@ import { ResultsTab } from "@/components/admin/tabs/ResultsTab";
 import { AdminsSection } from "@/components/admin/AdminsSection";
 import { MonitoringTab } from "@/components/admin/tabs/MonitoringTab";
 import { SecurityLogsTab } from "@/components/admin/tabs/SecurityLogsTab";
+import { adminListPendingDrawResults } from "@/lib/settlement.functions";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -86,6 +87,7 @@ function AdminPage() {
   >([]);
   const [lotoBallStatsLive, setLotoBallStatsLive] = useState(false);
   const [permissionsReady, setPermissionsReady] = useState(false);
+  const [pendingResultsCount, setPendingResultsCount] = useState(0);
   const can = (p: AdminPermission) => adminPermissions === "all" || adminPermissions.includes(p);
   const gate: "checking" | "ok" | "denied" | "anon" =
     !authed || !session
@@ -104,6 +106,30 @@ function AdminPage() {
       .catch(() => setAdminPermissions([]))
       .finally(() => setPermissionsReady(true));
   }, [gate]);
+
+  useEffect(() => {
+    if (gate !== "ok" || !permissionsReady || adminPermissions !== "all") {
+      setPendingResultsCount(0);
+      return;
+    }
+
+    let active = true;
+    const refreshPendingCount = async () => {
+      try {
+        const response = await adminListPendingDrawResults();
+        if (active) setPendingResultsCount(response.results.length);
+      } catch {
+        if (active) setPendingResultsCount(0);
+      }
+    };
+
+    void refreshPendingCount();
+    const intervalId = window.setInterval(() => void refreshPendingCount(), 15_000);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [gate, permissionsReady, adminPermissions]);
 
   // SECURITY: the admin surface deliberately avoids exposing client selections or
   // sensitive ticket internals. Only authorized aggregates and sanitized activity are available here.
@@ -529,6 +555,19 @@ function AdminPage() {
                     )}
                   >
                     <n.icon className="h-4 w-4" /> <span>{n.label}</span>
+                    {n.id === "results" && adminPermissions === "all" && (
+                      <span
+                        aria-label={`${pendingResultsCount} résultat(s) en attente d'approbation`}
+                        className={cn(
+                          "ml-auto inline-flex min-w-5 h-5 items-center justify-center rounded-full px-1.5 text-[11px] font-extrabold tabular-nums",
+                          pendingResultsCount > 0
+                            ? "bg-destructive text-destructive-foreground"
+                            : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {pendingResultsCount}
+                      </span>
+                    )}
                   </button>
                 );
               })}
