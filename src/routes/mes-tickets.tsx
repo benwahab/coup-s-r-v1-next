@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Ticket as TicketIcon, Search, ArrowUpDown, Loader2, Inbox } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { listMyCashoutRequests, requestMyTicketCashout } from "@/lib/cashout.functions";
 import { useI18n } from "@/lib/i18n";
 import { useTickets, type Ticket } from "@/lib/tickets";
 import { PageHeader } from "@/components/AppShell";
@@ -34,6 +35,15 @@ type PeriodFilter = "7d" | "30d" | "all";
 function TicketsPage() {
   const { t } = useI18n();
   const { tickets, loading, error, refresh } = useTickets();
+  const [cashouts, setCashouts] = useState<Record<string, "pending" | "completed">>({});
+  useEffect(() => {
+    let active = true;
+    void listMyCashoutRequests().then(({ requests }) => {
+      if (!active) return;
+      setCashouts(Object.fromEntries(requests.map((request) => [request.ticket_code, request.status])));
+    }).catch(() => { if (active) setCashouts({}); });
+    return () => { active = false; };
+  }, [tickets.length]);
 
   const [status, setStatus] = useState<StatusFilter>("all");
   const [game, setGame] = useState<GameFilter>("all");
@@ -216,7 +226,7 @@ function TicketsPage() {
           <>
             <ul className="space-y-3">
               {pageItems.map((tk) => (
-                <TicketCard key={tk.id} tk={tk} />
+                <TicketCard key={tk.id} tk={tk} cashoutStatus={cashouts[tk.id]} onCashoutRequested={() => setCashouts((prev) => ({ ...prev, [tk.id]: "pending" }))} />
               ))}
             </ul>
             {totalPages > 1 && (
@@ -247,8 +257,11 @@ function TicketsPage() {
   );
 }
 
-function TicketCard({ tk }: { tk: Ticket }) {
+function TicketCard({ tk, cashoutStatus, onCashoutRequested }: { tk: Ticket; cashoutStatus?: "pending" | "completed"; onCashoutRequested: () => void }) {
   const { t } = useI18n();
+  const [cashoutBusy, setCashoutBusy] = useState(false);
+  const [cashoutError, setCashoutError] = useState<string | null>(null);
+  const canRequestCashout = tk.status === "winning" && !cashoutStatus;
   const statusLabel: Record<string, string> = {
     pending: t("pending"),
     losing: t("losing"),
@@ -257,11 +270,12 @@ function TicketCard({ tk }: { tk: Ticket }) {
   };
   return (
     <li>
-      <Link
-        to="/ticket/$id"
-        params={{ id: tk.id }}
-        className="block rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-elevated"
-      >
+      <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+        <Link
+          to="/ticket/$id"
+          params={{ id: tk.id }}
+          className="block transition"
+        >
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -293,7 +307,40 @@ function TicketCard({ tk }: { tk: Ticket }) {
             </span>
           </div>
         </div>
-      </Link>
+        </Link>
+        {canRequestCashout && (
+          <button
+            type="button"
+            disabled={cashoutBusy}
+            onClick={async () => {
+              setCashoutBusy(true);
+              setCashoutError(null);
+              try {
+                await requestMyTicketCashout({ data: { ticketCode: tk.id } });
+                onCashoutRequested();
+              } catch (error) {
+                setCashoutError(error instanceof Error ? error.message : "Impossible d'envoyer la demande.");
+              } finally {
+                setCashoutBusy(false);
+              }
+            }}
+            className="mt-3 w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
+          >
+            {cashoutBusy ? "Envoi de la demande…" : "Encaisser les gains"}
+          </button>
+        )}
+        {cashoutStatus === "pending" && (
+          <p className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-center text-xs font-semibold text-amber-700">
+            Demande d'encaissement en attente de traitement
+          </p>
+        )}
+        {tk.status === "paid" && (
+          <p className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-center text-xs font-semibold text-emerald-700">
+            Gain encaissé
+          </p>
+        )}
+        {cashoutError && <p role="alert" className="mt-2 text-xs text-destructive">{cashoutError}</p>}
+      </div>
     </li>
   );
 }
