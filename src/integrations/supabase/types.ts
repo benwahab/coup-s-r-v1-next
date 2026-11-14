@@ -180,6 +180,9 @@ export type Database = {
           pmu_race_id: string | null
           published_at: string | null
           published_by: string | null
+          submitted_by: string | null
+          reviewed_by: string | null
+          reviewed_at: string | null
           result: Json
           status: string
           updated_at: string
@@ -193,6 +196,9 @@ export type Database = {
           pmu_race_id?: string | null
           published_at?: string | null
           published_by?: string | null
+          submitted_by?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
           result: Json
           status?: string
           updated_at?: string
@@ -206,6 +212,9 @@ export type Database = {
           pmu_race_id?: string | null
           published_at?: string | null
           published_by?: string | null
+          submitted_by?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
           result?: Json
           status?: string
           updated_at?: string
