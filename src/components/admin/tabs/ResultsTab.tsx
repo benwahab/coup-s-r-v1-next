@@ -6,6 +6,7 @@ import {
   adminRejectDrawResult,
   adminListDrawResultsNeedingSettlement,
   adminRetryDrawSettlement,
+  getResultPublicationState,
 } from "@/lib/settlement.functions";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +16,10 @@ type DrawResultPayload = { numbers: number[] } | { horses: number[] };
 export function ResultsTab() {
   const { t } = useI18n();
   const [gameId, setGameId] = useState<"loto" | "pmu">("loto");
-  const [drawDate, setDrawDate] = useState(new Date().toISOString().slice(0, 10));
+  const [drawDate, setDrawDate] = useState("");
+  const [canPublish, setCanPublish] = useState(false);
+  const [scheduleLoading, setScheduleLoading] = useState(true);
+  const [scheduleMessage, setScheduleMessage] = useState("Vérification des horaires du jeu…");
   const [resultValues, setResultValues] = useState<string[]>(["", "", "", "", ""]);
   const [raceId, setRaceId] = useState("");
   const [races, setRaces] = useState<{ id: string; raceNumber: number; venue: string; startAt: string }[]>([]);
@@ -56,6 +60,38 @@ export function ResultsTab() {
   useEffect(() => {
     void refreshPendingResults();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refreshPublicationState = async () => {
+      setScheduleLoading(true);
+      try {
+        const state = await getResultPublicationState({ data: { gameId } });
+        if (cancelled) return;
+        setDrawDate(state.drawDate);
+        setCanPublish(state.canPublish);
+        setScheduleMessage(
+          state.canPublish
+            ? "Jeu clôturé : la publication des résultats est ouverte."
+            : !state.gameEnabled
+              ? "Jeu désactivé : aucune publication possible."
+              : "Jeu ouvert : la publication des résultats est bloquée jusqu'à la clôture."
+        );
+      } catch {
+        if (cancelled) return;
+        setCanPublish(false);
+        setScheduleMessage("Impossible de vérifier les horaires. Publication bloquée par sécurité.");
+      } finally {
+        if (!cancelled) setScheduleLoading(false);
+      }
+    };
+    void refreshPublicationState();
+    const interval = window.setInterval(() => void refreshPublicationState(), 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [gameId]);
 
   useEffect(() => {
     if (gameId !== "pmu") {
@@ -179,12 +215,20 @@ export function ResultsTab() {
           <option value="loto">Loto Balsa</option>
           <option value="pmu">PMU</option>
         </select>
-        <input
-          type="date"
-          value={drawDate}
-          onChange={(e) => setDrawDate(e.target.value)}
-          className="rounded-xl border bg-background px-3 py-2"
-        />
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-muted-foreground">Date du résultat (automatique)</span>
+          <input
+            type="date"
+            value={drawDate}
+            readOnly
+            disabled
+            className="w-full rounded-xl border bg-muted px-3 py-2 opacity-80"
+          />
+        </label>
+      </div>
+
+      <div className={`mt-3 rounded-xl border p-3 text-sm ${canPublish ? "border-emerald-500/40 bg-emerald-500/5" : "border-amber-500/40 bg-amber-500/5"}`} role="status">
+        {scheduleLoading ? "Vérification du calendrier…" : scheduleMessage}
       </div>
 
       <div className="mt-5">
@@ -243,7 +287,7 @@ export function ResultsTab() {
       {message && <div className="mt-4 rounded-xl border p-3 text-sm">{message}</div>}
 
       <button
-        disabled={busy || (gameId === "pmu" && !raceId)}
+        disabled={busy || scheduleLoading || !canPublish || (gameId === "pmu" && !raceId)}
         onClick={publish}
         className="mt-4 rounded-xl bg-primary px-5 py-2.5 font-bold text-primary-foreground disabled:opacity-50"
       >
