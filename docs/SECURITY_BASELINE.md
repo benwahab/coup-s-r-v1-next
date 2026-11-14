@@ -1,6 +1,6 @@
 # Coup Sûr — Production Security Baseline
 
-Date: 2026-09-23
+Date: 2026-11-14
 Branch: `security/hardening-production-foundation`
 Supabase project: `gisjxogimycghgkxedif`
 
@@ -41,6 +41,13 @@ No client-side write privileges are granted to `authenticated` on public tables.
 - `has_role(uuid, app_role)`
 
 Sensitive financial, ticket, settlement, administrative, and statistics routines are not exposed to client roles.
+
+The following obsolete legacy account-cleanup routines are explicitly revoked from `PUBLIC`, `anon`, and `authenticated`; `service_role` retains execution for trusted server-side maintenance:
+- `purge_legacy_auth_user()`
+- `remove_legacy_bootstrap_user()`
+- `remove_legacy_user_role()`
+
+These routines are retained, not dropped, and no account or user data is deleted by the privilege hardening migration.
 
 ## RLS baseline
 
@@ -92,7 +99,8 @@ The repository therefore treats `final_least_privilege_reconciliation` as a curr
 
 ## Current readiness
 
-- Database security baseline: verified
+- Database security baseline: verified, including legacy cleanup routine execution revocations
+- Leaked-password protection: still disabled; enable in Supabase Auth settings before production
 - Client write surface: locked down
 - Financial integrity: verified
 - Ticket/payment atomicity: implemented
