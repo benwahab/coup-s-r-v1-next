@@ -455,6 +455,7 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
         draw_name: data.drawName ?? null,
         result: data.result,
         status: "pending",
+        submitted_by: context.userId,
         pmu_race_id: data.gameId === "pmu" ? data.raceId : null,
       })
       .select("id,game_id,draw_date,status")
