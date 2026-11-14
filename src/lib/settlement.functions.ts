@@ -381,6 +381,11 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertPublishResultsPermission(context.supabase, context.userId);
+    const { data: isSuperAdmin, error: roleError } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "super_admin",
+    });
+    if (roleError) throw new Error("role_check_failed");
 
     if (data.gameId === "loto") {
       const now = new Date();
@@ -468,7 +473,13 @@ export const adminCreateDrawResult = createServerFn({ method: "POST" })
       action: "admin.draw_result.created",
       detail: { resultId: row.id, gameId: data.gameId, drawDate: data.drawDate },
     });
-    return { result: row };
+
+    if (isSuperAdmin === true) {
+      const publication = await publishAndSettleDrawResult(row.id, context.userId);
+      return { result: { ...row, status: "published" as const }, publication };
+    }
+
+    return { result: row, publication: null };
   });
 
 export const adminListPendingDrawResults = createServerFn({ method: "POST" })
@@ -518,106 +529,106 @@ export const adminRejectDrawResult = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+async function publishAndSettleDrawResult(resultId: string, userId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: result, error: resultError } = await supabaseAdmin
+    .from("draw_results")
+    .select("id,game_id,draw_date,draw_name,result,status,pmu_race_id")
+    .eq("id", resultId)
+    .maybeSingle();
+  if (resultError) throw new Error(resultError.message);
+  if (!result) throw new Error("result_not_found");
+  if (result.status !== "pending") throw new Error("result_not_pending_approval");
+
+  const { data: published, error: publishError } = await supabaseAdmin
+    .from("draw_results")
+    .update({
+      status: "published",
+      published_at: new Date().toISOString(),
+      published_by: userId,
+      reviewed_by: userId,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", result.id)
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
+  if (publishError) throw new Error(publishError.message);
+  if (!published) throw new Error("result_publish_conflict");
+
+  const aiReference =
+    result.game_id === "loto"
+      ? result.draw_date
+      : result.game_id === "pmu"
+        ? result.pmu_race_id
+        : result.id;
+  if (aiReference) await evaluatePublishedAiPredictions(result.game_id, aiReference, result.result);
+
+  let publishedResultsQuery = supabaseAdmin
+    .from("draw_results")
+    .select("id,game_id,draw_date,result,status,pmu_race_id")
+    .eq("game_id", result.game_id)
+    .eq("draw_date", result.draw_date)
+    .eq("status", "published");
+  if (result.game_id === "pmu") {
+    if (!result.pmu_race_id) throw new Error("pmu_result_race_id_missing");
+    publishedResultsQuery = publishedResultsQuery.eq("pmu_race_id", result.pmu_race_id);
+  }
+  const { data: publishedResults, error: publishedResultsError } = await publishedResultsQuery;
+  if (publishedResultsError) throw new Error(publishedResultsError.message);
+
+  const { data: tickets, error: ticketsError } = await supabaseAdmin
+    .from("tickets")
+    .select("id,code,user_id,game_id,draw_date,picks,stake,status,prize,loto_multiplier,pmu_race_id")
+    .eq("game_id", result.game_id)
+    .eq("draw_date", result.draw_date)
+    .eq("status", "pending");
+  if (ticketsError) throw new Error(ticketsError.message);
+
+  let settled = 0,
+    winners = 0,
+    losers = 0,
+    skipped = 0;
+  for (const ticket of (tickets ?? []) as TicketRow[]) {
+    const out = await settleTicket(ticket, (publishedResults ?? []) as PublishedResult[]);
+    if (!out.changed) {
+      skipped++;
+      continue;
+    }
+    settled++;
+    if (out.status === "winning") winners++;
+    if (out.status === "losing") losers++;
+  }
+
+  await writeAuditLog(supabaseAdmin, {
+    userId,
+    action: "admin.draw_result.approved_and_published",
+    detail: {
+      resultId: result.id,
+      gameId: result.game_id,
+      drawDate: result.draw_date,
+      settled,
+      winners,
+      losers,
+      skipped,
+      approvedBySuperAdmin: true,
+    },
+  });
+
+  return { ok: true as const, settled, winners, losers, skipped };
+}
+
 export const adminApproveDrawResult = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .inputValidator((data: unknown) => z.object({ resultId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: isSuperAdmin, error: roleError } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
       _role: "super_admin",
     });
     if (roleError) throw new Error("role_check_failed");
     if (isSuperAdmin !== true) throw new Error("Forbidden: super_admin role required");
-
-    const { data: result, error: resultError } = await supabaseAdmin
-      .from("draw_results")
-      .select("id,game_id,draw_date,draw_name,result,status,pmu_race_id")
-      .eq("id", data.resultId)
-      .maybeSingle();
-    if (resultError) throw new Error(resultError.message);
-    if (!result) throw new Error("result_not_found");
-    if (result.status !== "pending") throw new Error("result_not_pending_approval");
-
-    const { data: published, error: publishError } = await supabaseAdmin
-      .from("draw_results")
-      .update({
-        status: "published",
-        published_at: new Date().toISOString(),
-        published_by: context.userId,
-        reviewed_by: context.userId,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq("id", result.id)
-      .eq("status", "pending")
-      .select("id")
-      .maybeSingle();
-    if (publishError) throw new Error(publishError.message);
-    if (!published) throw new Error("result_publish_conflict");
-    const wasAlreadyPublished = false;
-
-    const aiReference =
-      result.game_id === "loto"
-        ? result.draw_date
-        : result.game_id === "pmu"
-          ? result.pmu_race_id
-          : result.id;
-    if (aiReference) {
-      if (!wasAlreadyPublished) await evaluatePublishedAiPredictions(result.game_id, aiReference, result.result);
-    }
-
-    let publishedResultsQuery = supabaseAdmin
-      .from("draw_results")
-      .select("id,game_id,draw_date,result,status,pmu_race_id")
-      .eq("game_id", result.game_id)
-      .eq("draw_date", result.draw_date)
-      .eq("status", "published");
-    if (result.game_id === "pmu") {
-      if (!result.pmu_race_id) throw new Error("pmu_result_race_id_missing");
-      publishedResultsQuery = publishedResultsQuery.eq("pmu_race_id", result.pmu_race_id);
-    }
-    const { data: publishedResults, error: publishedResultsError } = await publishedResultsQuery;
-    if (publishedResultsError) throw new Error(publishedResultsError.message);
-
-    const { data: tickets, error: ticketsError } = await supabaseAdmin
-      .from("tickets")
-      .select("id,code,user_id,game_id,draw_date,picks,stake,status,prize,loto_multiplier,pmu_race_id")
-      .eq("game_id", result.game_id)
-      .eq("draw_date", result.draw_date)
-      .eq("status", "pending");
-    if (ticketsError) throw new Error(ticketsError.message);
-
-    let settled = 0,
-      winners = 0,
-      losers = 0,
-      skipped = 0;
-    for (const ticket of (tickets ?? []) as TicketRow[]) {
-      const out = await settleTicket(ticket, (publishedResults ?? []) as PublishedResult[]);
-      if (!out.changed) {
-        skipped++;
-        continue;
-      }
-      settled++;
-      if (out.status === "winning") winners++;
-      if (out.status === "losing") losers++;
-    }
-
-    await writeAuditLog(supabaseAdmin, {
-      userId: context.userId,
-      action: "admin.draw_result.approved_and_published",
-      detail: {
-        resultId: result.id,
-        gameId: result.game_id,
-        drawDate: result.draw_date,
-        settled,
-        winners,
-        losers,
-        skipped,
-        approvedBySuperAdmin: true,
-      },
-    });
-
-    return { ok: true as const, settled, winners, losers, skipped };
+    return publishAndSettleDrawResult(data.resultId, context.userId);
   });
 
 /**
