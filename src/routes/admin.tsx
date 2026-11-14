@@ -43,6 +43,8 @@ import { PlayersTab } from "@/components/admin/tabs/PlayersTab";
 import { RegionsTab } from "@/components/admin/tabs/RegionsTab";
 import { BallsTab } from "@/components/admin/tabs/BallsTab";
 import { OpsTab } from "@/components/admin/tabs/OpsTab";
+import { CashoutsTab } from "@/components/admin/tabs/CashoutsTab";
+import { adminListCashoutRequests } from "@/lib/cashout.functions";
 import { ProductionReadiness } from "@/components/admin/ProductionReadiness";
 import { ResultsTab } from "@/components/admin/tabs/ResultsTab";
 import { AdminsSection } from "@/components/admin/AdminsSection";
@@ -65,6 +67,7 @@ type Tab =
   | "regions"
   | "balls"
   | "ops"
+  | "cashouts"
   | "results"
   | "claims"
   | "admins"
@@ -90,6 +93,7 @@ function AdminPage() {
   const [lotoBallStatsLive, setLotoBallStatsLive] = useState(false);
   const [permissionsReady, setPermissionsReady] = useState(false);
   const [pendingResultsCount, setPendingResultsCount] = useState(0);
+  const [pendingCashoutsCount, setPendingCashoutsCount] = useState(0);
   const can = (p: AdminPermission) => adminPermissions === "all" || adminPermissions.includes(p);
   const gate: "checking" | "ok" | "denied" | "anon" =
     !authed || !session
@@ -145,6 +149,24 @@ function AdminPage() {
       .catch(() => setAdminTicketRows([]));
   }, [gate, permissionsReady, adminPermissions]);
   const [tab, setTab] = useState<Tab>("dashboard");
+  useEffect(() => {
+    if (gate !== "ok" || !permissionsReady || adminPermissions !== "all") {
+      setPendingCashoutsCount(0);
+      return;
+    }
+    let active = true;
+    const refreshCashoutCount = async () => {
+      try {
+        const result = await adminListCashoutRequests();
+        if (active) setPendingCashoutsCount(result.pendingCount);
+      } catch {
+        if (active) setPendingCashoutsCount(0);
+      }
+    };
+    void refreshCashoutCount();
+    const intervalId = window.setInterval(() => void refreshCashoutCount(), 15_000);
+    return () => { active = false; window.clearInterval(intervalId); };
+  }, [gate, permissionsReady, adminPermissions]);
   useEffect(() => {
     if (!permissionsReady || adminPermissions === "all" || tab !== "dashboard") return;
     const first = adminPermissions.includes("player_activity")
@@ -609,7 +631,8 @@ function AdminPage() {
     { id: "players", label: t("players"), icon: Users },
     { id: "regions", label: t("regions"), icon: MapPin },
     { id: "balls", label: t("ballsStats"), icon: Circle },
-    { id: "ops", label: t("admin.nav.ops"), icon: Send },
+    { id: "ops", label: "Horaires des jeux", icon: Clock3 },
+    { id: "cashouts", label: "Encaissement", icon: Wallet },
     { id: "results", label: "Résultats du jour", icon: ListChecks },
     { id: "claims", label: t("admin.static.claims"), icon: ShieldCheck },
     { id: "admins", label: t("admin.ops.title"), icon: Settings },
@@ -636,6 +659,8 @@ function AdminPage() {
               return can("complaints");
             case "ops":
               return can("operations");
+            case "cashouts":
+              return adminPermissions === "all";
             case "supervision":
               return can("supervision");
             case "security_logs":
@@ -692,6 +717,12 @@ function AdminPage() {
                     )}
                   >
                     <n.icon className="h-4 w-4" /> <span>{n.label}</span>
+                    {n.id === "cashouts" && adminPermissions === "all" && (
+                      <span aria-label={pendingCashoutsCount + " encaissement(s) en attente"} className={cn(
+                        "ml-auto inline-flex min-w-5 h-5 items-center justify-center rounded-full px-1.5 text-[11px] font-extrabold tabular-nums",
+                        pendingCashoutsCount > 0 ? "bg-amber-500 text-white" : "bg-muted text-muted-foreground",
+                      )}>{pendingCashoutsCount}</span>
+                    )}
                     {n.id === "results" && adminPermissions === "all" && (
                       <span
                         aria-label={`${pendingResultsCount} résultat(s) en attente d'approbation`}
@@ -745,7 +776,7 @@ function AdminPage() {
                 chart={chart}
                 activityFeed={[]}
                 allRowsCount={allRows.length}
-                cashoutRequestsCount={0}
+                cashoutRequestsCount={pendingCashoutsCount}
                 csvFrom={csvFrom}
                 csvTo={csvTo}
                 setTab={setTab}
@@ -798,6 +829,7 @@ function AdminPage() {
             )}
             {can("publish_results") && tab === "results" && <ResultsTab />}
             {can("operations") && tab === "ops" && <OpsTab />}
+            {adminPermissions === "all" && tab === "cashouts" && <CashoutsTab />}
             {adminPermissions === "all" && tab === "admins" && <AdminsSection />}
             {can("supervision") && tab === "supervision" && <MonitoringTab />}
             {can("security_logs") && tab === "security_logs" && <SecurityLogsTab />}
