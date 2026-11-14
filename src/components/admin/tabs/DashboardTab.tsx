@@ -73,6 +73,7 @@ interface Props {
   exportCsv: (scope?: "all" | "winners" | "cashout") => void;
   monthStart: string;
   todayIso: string;
+  financialSummaryStatus: "loading" | "ready" | "error";
   reportDate: string;
   setReportDate: (date: string) => void;
   exportDailyPdf: () => void;
@@ -88,14 +89,14 @@ export function DashboardTab(p: Props) {
         <Kpi
           icon={TrendingUp}
           label="Chiffre d’affaires du mois"
-          value={`${formatFcfa(p.totalStaked)} FCFA`}
-          sub={`Du ${p.monthStart} au ${p.todayIso}`}
+          value={p.financialSummaryStatus === "ready" ? `${formatFcfa(p.totalStaked)} FCFA` : p.financialSummaryStatus === "loading" ? "Chargement…" : "Indisponible"}
+          sub={p.financialSummaryStatus === "ready" ? `Du ${p.monthStart} au ${p.todayIso}` : "Calcul comptable indisponible"}
         />
         <Kpi
           icon={Zap}
           label={t("admin.dash.todaySales")}
-          value={`${formatFcfa(p.todayStake)} FCFA`}
-          delta={p.growth}
+          value={p.financialSummaryStatus === "ready" ? `${formatFcfa(p.todayStake)} FCFA` : p.financialSummaryStatus === "loading" ? "Chargement…" : "Indisponible"}
+          delta={p.financialSummaryStatus === "ready" ? p.growth : undefined}
           sub={t("admin.dash.vsYesterday")}
         />
         <Kpi
@@ -112,6 +113,11 @@ export function DashboardTab(p: Props) {
           sub={t("admin.dash.paidOut", { amount: formatFcfa(p.totalPayout) })}
         />
       </section>
+      {p.financialSummaryStatus === "error" && (
+        <p role="alert" className="text-sm font-semibold text-destructive">
+          Impossible de récupérer les totaux comptables depuis la base de données. Les montants ne sont pas affichés comme des zéros.
+        </p>
+      )}
 
       <section>
         <div className="mb-2 flex items-center gap-2">
