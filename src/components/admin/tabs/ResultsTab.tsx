@@ -117,7 +117,11 @@ export function ResultsTab() {
         data: gameId === "pmu" ? { gameId, drawDate, raceId, result } : { gameId, drawDate, result },
       });
 
-      setMessage("Résultat soumis avec succès. En attente de l'approbation du Super Administrateur.");
+      setMessage(
+        created.publication
+          ? `Résultat publié directement. Coupons réglés : ${created.publication.settled}.`
+          : "Résultat soumis avec succès. En attente de l'approbation du Super Administrateur.",
+      );
       setResultValues(["", "", "", "", ""]);
       await refreshPendingResults();
     } catch (e) {
