@@ -89,7 +89,7 @@ export function DashboardTab(p: Props) {
           icon={TrendingUp}
           label="Chiffre d’affaires du mois"
           value={`${formatFcfa(p.totalStaked)} FCFA`}
-          sub={`Du ${p.monthStart} au ${p.todayIso}`
+          sub={`Du ${p.monthStart} au ${p.todayIso}`}
         />
         <Kpi
           icon={Zap}
