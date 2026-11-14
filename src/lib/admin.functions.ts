@@ -71,17 +71,23 @@ async function assertSuperAdmin(supabase: SB, userId: string) {
 export const checkIsAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: admin, error: adminError } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (adminError) return { isAdmin: false };
-    if (admin === true) return { isAdmin: true };
-    const { data: superAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "super_admin",
-    });
-    return { isAdmin: superAdmin === true };
+    const [{ data: admin, error: adminError }, { data: superAdmin, error: superAdminError }] =
+      await Promise.all([
+        context.supabase.rpc("has_role", {
+          _user_id: context.userId,
+          _role: "admin",
+        }),
+        context.supabase.rpc("has_role", {
+          _user_id: context.userId,
+          _role: "super_admin",
+        }),
+      ]);
+
+    // A failure in the ordinary-admin check must never prevent a super-admin
+    // from being recognized. If both checks fail, surface the infrastructure
+    // error instead of silently treating the authenticated user as unprivileged.
+    if (adminError && superAdminError) throw new Error("role_check_failed");
+    return { isAdmin: admin === true || superAdmin === true };
   });
 
 export const getMyAdminPermissions = createServerFn({ method: "POST" })
