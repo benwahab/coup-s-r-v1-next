@@ -183,6 +183,7 @@ function AdminPage() {
     monthStart: string;
     today: string;
   } | null>(null);
+  const [financialSummaryStatus, setFinancialSummaryStatus] = useState<"loading" | "ready" | "error">("loading");
   const [reportDate, setReportDate] = useState(todayIso);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -190,9 +191,20 @@ function AdminPage() {
   useEffect(() => {
     if (gate !== "ok" || !permissionsReady || adminPermissions !== "all") return;
     let active = true;
+    setFinancialSummaryStatus("loading");
     adminGetDashboardFinancialSummary()
-      .then((summary) => { if (active) setFinancialSummary(summary); })
-      .catch(() => { if (active) setFinancialSummary(null); });
+      .then((summary) => {
+        if (active) {
+          setFinancialSummary(summary);
+          setFinancialSummaryStatus("ready");
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setFinancialSummary(null);
+          setFinancialSummaryStatus("error");
+        }
+      });
     return () => { active = false; };
   }, [gate, permissionsReady, adminPermissions]);
 
@@ -713,6 +725,7 @@ function AdminPage() {
                 todayStake={todayStake}
                 monthStart={financialSummary?.monthStart ?? `${todayIso.slice(0, 7)}-01`}
                 todayIso={todayIso}
+                financialSummaryStatus={financialSummaryStatus}
                 reportDate={reportDate}
                 setReportDate={setReportDate}
                 exportDailyPdf={() => void exportDailyPdf()}
