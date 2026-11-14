@@ -100,6 +100,7 @@ async function assertGameClosedForResult(
   supabaseAdmin: SupabaseClient<Database>,
   gameId: "loto" | "pmu",
   drawDate: string,
+  requireCurrentDate = true,
 ) {
   const { data: schedule, error } = await supabaseAdmin
     .from("game_schedules")
@@ -111,7 +112,8 @@ async function assertGameClosedForResult(
   const now = new Date();
   const parts = nigerParts(now);
   const today = `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
-  if (drawDate !== today) throw new Error("result_date_must_match_niger_schedule");
+  if (requireCurrentDate && drawDate !== today) throw new Error("result_date_must_match_niger_schedule");
+  if (!requireCurrentDate && drawDate > today) throw new Error("result_date_must_not_be_future");
   if (isGameOpen(schedule.open_hour, schedule.close_hour, now)) {
     throw new Error("result_publication_blocked_game_open");
   }
@@ -651,7 +653,7 @@ async function publishAndSettleDrawResult(resultId: string, userId: string) {
   if (!result) throw new Error("result_not_found");
   if (result.status !== "pending") throw new Error("result_not_pending_approval");
   if (result.game_id === "loto" || result.game_id === "pmu") {
-    await assertGameClosedForResult(supabaseAdmin, result.game_id, result.draw_date);
+    await assertGameClosedForResult(supabaseAdmin, result.game_id, result.draw_date, false);
   }
 
   const { data: published, error: publishError } = await supabaseAdmin
