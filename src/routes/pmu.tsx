@@ -75,7 +75,7 @@ function PmuPage() {
   useEffect(() => {
     void supabase
       .from("game_schedules")
-      .select("open_hour,close_hour,draw_hour,draw_minute,enabled")
+      .select("open_hour,close_hour,draw_hour,draw_minute,enabled,day_schedules")
       .eq("game_id", "pmu")
       .maybeSingle()
       .then(({ data }) => {
@@ -83,7 +83,7 @@ function PmuPage() {
       });
   }, []);
 
-  const loadRace = async () => {
+  const todaySchedule = schedule?.day_schedules?.length === 7 ? scheduleForNigerDay(schedule.day_schedules) : schedule;\n\n  const loadRace = async () => {
     setLoading(true);
     setLoadError(false);
     const today = nigerDateIso();
@@ -227,9 +227,9 @@ function PmuPage() {
           defaultStake={unitStake}
           minStake={MIN_STAKE}
           gameOpen={Boolean(
-            schedule?.enabled && schedule && isGameOpen(schedule.open_hour, schedule.close_hour),
+            schedule?.enabled && schedule && (schedule.day_schedules?.length === 7 ? isWeeklyGameOpen(schedule.day_schedules) : isGameOpen(schedule.open_hour, schedule.close_hour)),
           )}
-          openHour={schedule?.open_hour ?? 0}
+          openHour={todaySchedule?.open_hour ?? schedule?.open_hour ?? 0}
           renderSelection={
             <div>
               {/* Sélecteur type de pari */}
