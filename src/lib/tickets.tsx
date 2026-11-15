@@ -111,6 +111,23 @@ export function TicketsProvider({ children }: { children: ReactNode }) {
   const [refreshTick, setRefreshTick] = useState(0);
   const refresh = () => setRefreshTick((n) => n + 1);
 
+  // Keep ticket status counters synchronized when results are settled remotely.
+  const userId = session?.userId;
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`tickets-status-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tickets", filter: `user_id=eq.${userId}` },
+        () => setRefreshTick((n) => n + 1),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
   useEffect(() => {
     if (!session) {
       setTickets([]);
