@@ -16,7 +16,9 @@ const DAYS = [
 type DaySchedule = {
   day: number;
   open_hour: number;
+  open_minute: number;
   close_hour: number;
+  close_minute: number;
   draw_hour: number;
   draw_minute: number;
 };
@@ -32,10 +34,10 @@ type Schedule = {
   day_schedules: DaySchedule[];
 };
 type Game = "pmu" | "loto";
-type EditableSchedule = Pick<DaySchedule, "open_hour" | "close_hour" | "draw_hour" | "draw_minute">;
+type EditableSchedule = Pick<DaySchedule, "open_hour" | "open_minute" | "close_hour" | "close_minute" | "draw_hour" | "draw_minute">;
 
 const fallback = (s: EditableSchedule): DaySchedule[] =>
-  DAYS.map(({ id }) => ({ day: id, ...s }));
+  DAYS.map(({ id }) => ({ day: id, open_minute: 0, close_minute: 0, ...s }));
 
 const timeValue = (hour: number, minute = 0) =>
   `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
@@ -45,8 +47,8 @@ export function OpsTab() {
   const [schedules, setSchedules] = useState<Partial<Record<Game, Schedule>>>({});
   const [selected, setSelected] = useState<Record<Game, number[]>>({ pmu: [1], loto: [1] });
   const [edit, setEdit] = useState<Record<Game, EditableSchedule>>({
-    pmu: { open_hour: 8, close_hour: 14, draw_hour: 15, draw_minute: 0 },
-    loto: { open_hour: 8, close_hour: 14, draw_hour: 15, draw_minute: 0 },
+    pmu: { open_hour: 8, open_minute: 0, close_hour: 14, close_minute: 0, draw_hour: 15, draw_minute: 0 },
+    loto: { open_hour: 8, open_minute: 0, close_hour: 14, close_minute: 0, draw_hour: 15, draw_minute: 0 },
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<Game | null>(null);
@@ -85,7 +87,9 @@ export function OpsTab() {
               ...prev,
               [game]: {
                 open_hour: monday.open_hour,
+                open_minute: monday.open_minute ?? 0,
                 close_hour: monday.close_hour,
+                close_minute: monday.close_minute ?? 0,
                 draw_hour: monday.draw_hour,
                 draw_minute: monday.draw_minute,
               },
@@ -107,7 +111,9 @@ export function OpsTab() {
           ...values,
           [game]: {
             open_hour: current.open_hour,
+            open_minute: current.open_minute ?? 0,
             close_hour: current.close_hour,
+            close_minute: current.close_minute ?? 0,
             draw_hour: current.draw_hour,
             draw_minute: current.draw_minute,
           },
@@ -120,14 +126,17 @@ export function OpsTab() {
     }));
   };
 
-  const updateTime = (game: Game, field: keyof EditableSchedule, value: string) => {
+  const updateTime = (game: Game, field: "open" | "close" | "draw", value: string) => {
     const [hourText, minuteText = "0"] = value.split(":");
+    const hour = Number(hourText);
+    const minute = Number(minuteText);
     setEdit((prev) => ({
       ...prev,
       [game]: {
         ...prev[game],
-        [field]: field === "draw_minute" ? Number(minuteText) : Number(hourText),
-        ...(field === "draw_hour" ? { draw_minute: Number(minuteText) } : {}),
+        ...(field === "open" ? { open_hour: hour, open_minute: minute } : {}),
+        ...(field === "close" ? { close_hour: hour, close_minute: minute } : {}),
+        ...(field === "draw" ? { draw_hour: hour, draw_minute: minute } : {}),
       },
     }));
   };
@@ -136,11 +145,13 @@ export function OpsTab() {
     const current = schedules[game];
     if (!current || selected[game].length === 0) return;
     const value = edit[game];
-    if (value.open_hour >= value.close_hour) {
-      setMessage("L’heure d’ouverture doit être antérieure à la clôture.");
+    const openMinutes = value.open_hour * 60 + value.open_minute;
+    const closeMinutes = value.close_hour * 60 + value.close_minute;
+    if (openMinutes === closeMinutes) {
+      setMessage("L’ouverture et la clôture des mises doivent être différentes.");
       return;
     }
-    if (value.draw_hour * 60 + value.draw_minute < value.close_hour * 60) {
+    if (value.draw_hour * 60 + value.draw_minute < closeMinutes) {
       setMessage("La course ou le tirage ne peut pas commencer avant la clôture des mises.");
       return;
     }
@@ -253,9 +264,9 @@ export function OpsTab() {
                   <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Ouverture des mises</span>
                   <input
                     type="time"
-                    step={3600}
-                    value={timeValue(value.open_hour)}
-                    onChange={(event) => updateTime(game, "open_hour", event.target.value)}
+                    step={60}
+                    value={timeValue(value.open_hour, value.open_minute)}
+                    onChange={(event) => updateTime(game, "open", event.target.value)
                     className="h-12 w-full rounded-xl border border-input bg-card px-3 text-base font-semibold tabular-nums outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                   />
                 </label>
@@ -263,9 +274,9 @@ export function OpsTab() {
                   <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Clôture des mises</span>
                   <input
                     type="time"
-                    step={3600}
-                    value={timeValue(value.close_hour)}
-                    onChange={(event) => updateTime(game, "close_hour", event.target.value)}
+                    step={60}
+                    value={timeValue(value.close_hour, value.close_minute)}
+                    onChange={(event) => updateTime(game, "close", event.target.value)
                     className="h-12 w-full rounded-xl border border-input bg-card px-3 text-base font-semibold tabular-nums outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                   />
                 </label>
@@ -275,7 +286,7 @@ export function OpsTab() {
                     type="time"
                     step={60}
                     value={timeValue(value.draw_hour, value.draw_minute)}
-                    onChange={(event) => updateTime(game, "draw_hour", event.target.value)}
+                    onChange={(event) => updateTime(game, "draw", event.target.value)}
                     className="h-12 w-full rounded-xl border border-input bg-card px-3 text-base font-semibold tabular-nums outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                   />
                 </label>
@@ -311,7 +322,7 @@ export function OpsTab() {
                       </div>
                       {current ? (
                         <div className="flex flex-wrap justify-end gap-x-3 gap-y-1 text-xs tabular-nums text-muted-foreground">
-                          <span>{timeValue(current.open_hour)} – {timeValue(current.close_hour)}</span>
+                          <span>{timeValue(current.open_hour, current.open_minute ?? 0)} – {timeValue(current.close_hour, current.close_minute ?? 0)}</span>
                           <span className="font-semibold text-foreground">{timeValue(current.draw_hour, current.draw_minute)}</span>
                         </div>
                       ) : (
