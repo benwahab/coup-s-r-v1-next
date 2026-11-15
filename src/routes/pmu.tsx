@@ -76,14 +76,26 @@ function PmuPage() {
     day_schedules?: WeeklyGameSchedule;
   } | null>(null);
   useEffect(() => {
-    void supabase
-      .from("game_schedules")
-      .select("open_hour,close_hour,draw_hour,draw_minute,enabled,day_schedules")
-      .eq("game_id", "pmu")
-      .maybeSingle()
-      .then(({ data }) => {
-        setSchedule(data ? { ...data, day_schedules: Array.isArray(data.day_schedules) ? data.day_schedules as unknown as WeeklyGameSchedule : undefined } : null);
-      });
+    let cancelled = false;
+    const loadSchedule = async () => {
+      const { data, error } = await supabase
+        .from("game_schedules")
+        .select("open_hour,close_hour,draw_hour,draw_minute,enabled,day_schedules")
+        .eq("game_id", "pmu")
+        .maybeSingle();
+      if (cancelled) return;
+      if (!error) setSchedule(data ? { ...data, day_schedules: Array.isArray(data.day_schedules) ? data.day_schedules as unknown as WeeklyGameSchedule : undefined } : null);
+      
+    };
+    void loadSchedule();
+    const channel = supabase
+      .channel("pmu-game-schedule")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "game_schedules", filter: "game_id=eq.pmu" }, () => void loadSchedule())
+      .subscribe();
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(channel);
+    };
   }, []);
 
   const todaySchedule = schedule?.day_schedules?.length === 7 ? scheduleForNigerDay(schedule.day_schedules) : schedule;
