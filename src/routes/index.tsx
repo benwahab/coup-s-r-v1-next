@@ -98,7 +98,9 @@ function HomeContent() {
         "pmu" | "loto",
         {
           open_hour: number;
+          open_minute?: number;
           close_hour: number;
+          close_minute?: number;
           draw_hour: number;
           draw_minute: number;
           enabled: boolean;
@@ -370,14 +372,14 @@ function HomeContent() {
 
               <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
                 {[
-                  { l: t("closeAt"), v: pmuSchedule ? formatHour(pmuSchedule.close_hour) : "—" },
+                  { l: t("closeAt"), v: pmuSchedule ? formatHour(pmuSchedule.close_hour, pmuSchedule.close_minute ?? 0) : "—" },
                   {
                     l: t("drawAt"),
                     v: pmuSchedule
                       ? formatHour(pmuSchedule.draw_hour, pmuSchedule.draw_minute)
                       : "—",
                   },
-                  { l: t("openAt"), v: pmuSchedule ? formatHour(pmuSchedule.open_hour) : "—" },
+                  { l: t("openAt"), v: pmuSchedule ? formatHour(pmuSchedule.open_hour, pmuSchedule.open_minute ?? 0) : "—" },
                 ].map((b, i) => (
                   <div
                     key={i}
@@ -395,7 +397,7 @@ function HomeContent() {
                 <div className="text-[10px] font-bold uppercase tracking-widest text-white/60 min-h-4">
                   {pmuEvt
                     ? pmuEvt.stage === "openAt"
-                      ? `${t("openAt")} ${pmuSchedule ? formatHour(pmuSchedule.open_hour) : "—"}`
+                      ? `${t("openAt")} ${pmuSchedule ? formatHour(pmuSchedule.open_hour, pmuSchedule.open_minute ?? 0) : "—"}`
                       : t(pmuEvt.stage)
                     : "\u00A0"}
                 </div>
@@ -473,14 +475,14 @@ function HomeContent() {
 
               <div className="mt-3 grid grid-cols-3 gap-1.5 text-[11px]">
                 {[
-                  { l: t("closeAt"), v: lotoSchedule ? formatHour(lotoSchedule.close_hour) : "—" },
+                  { l: t("closeAt"), v: lotoSchedule ? formatHour(lotoSchedule.close_hour, lotoSchedule.close_minute ?? 0) : "—" },
                   {
                     l: t("drawAt"),
                     v: lotoSchedule
                       ? formatHour(lotoSchedule.draw_hour, lotoSchedule.draw_minute)
                       : "—",
                   },
-                  { l: t("openAt"), v: lotoSchedule ? formatHour(lotoSchedule.open_hour) : "—" },
+                  { l: t("openAt"), v: lotoSchedule ? formatHour(lotoSchedule.open_hour, lotoSchedule.open_minute ?? 0) : "—" },
                 ].map((b, i) => (
                   <div
                     key={i}
@@ -497,7 +499,7 @@ function HomeContent() {
               <div className="mt-3 text-[10px] font-bold uppercase tracking-widest text-white/60 min-h-4">
                 {lotoEvt
                   ? lotoEvt.stage === "openAt"
-                    ? `${t("openAt")} ${lotoSchedule ? formatHour(lotoSchedule.open_hour) : "—"}`
+                    ? `${t("openAt")} ${lotoSchedule ? formatHour(lotoSchedule.open_hour, lotoSchedule.open_minute ?? 0) : "—"}`
                     : t(lotoEvt.stage)
                   : "\u00A0"}
               </div>
