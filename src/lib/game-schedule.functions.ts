@@ -20,7 +20,7 @@ const scheduleSchema = z.object({
   todayWinnersCount: z.number().int().min(0).nullable(),
   todayPaidFcfa: z.number().int().min(0).nullable(),
   daySchedules: z.array(z.object({ day: z.number().int().min(0).max(6), open_hour: z.number().int().min(0).max(23), close_hour: z.number().int().min(0).max(23), draw_hour: z.number().int().min(0).max(23), draw_minute: z.number().int().min(0).max(59) })).length(7),
-});
+}).refine((value) => new Set(value.daySchedules.map((day) => day.day)).size === 7, { message: "schedule_requires_all_weekdays" });
 
 async function assertOperationsPermission(supabase: SupabaseClient<Database>, userId: string) {
   const { data, error } = await supabase.rpc("has_admin_permission", {
