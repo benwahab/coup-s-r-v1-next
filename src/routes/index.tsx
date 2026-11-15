@@ -18,7 +18,7 @@ import { useAuth } from "@/lib/auth";
 
 import { supabase } from "@/integrations/supabase/client";
 import { formatFcfa, formatHour } from "@/lib/utils";
-import { nextDailyEvent, nextWeeklyEvent, diffParts, drawNameForDate, nigerDateLabel, type WeeklyGameSchedule } from "@/lib/schedule";
+import { nextDailyEvent, nextWeeklyEvent, diffParts, drawNameForDate, nigerDateLabel, scheduleForNigerDay, type WeeklyGameSchedule } from "@/lib/schedule";
 import heroBackground from "@/assets/coup-sur-home-background.webp";
 
 export const Route = createFileRoute("/")({
@@ -141,8 +141,15 @@ function HomeContent() {
       void supabase.removeChannel(channel);
     };
   }, []);
-  const pmuSchedule = schedules.pmu;
-  const lotoSchedule = schedules.loto;
+  const pmuRow = schedules.pmu;
+  const lotoRow = schedules.loto;
+  // Home cards must show today's weekday schedule, not the legacy top-level Monday values.
+  const pmuSchedule = pmuRow
+    ? { ...pmuRow, ...(pmuRow.day_schedules?.length === 7 ? scheduleForNigerDay(pmuRow.day_schedules) ?? {} : {}) }
+    : undefined;
+  const lotoSchedule = lotoRow
+    ? { ...lotoRow, ...(lotoRow.day_schedules?.length === 7 ? scheduleForNigerDay(lotoRow.day_schedules) ?? {} : {}) }
+    : undefined;
   const pmuEvtRaw = useLiveStage(
     pmuSchedule?.open_hour ?? 0,
     pmuSchedule?.close_hour ?? 0,
