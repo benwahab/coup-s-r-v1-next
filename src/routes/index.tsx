@@ -18,7 +18,7 @@ import { useAuth } from "@/lib/auth";
 
 import { supabase } from "@/integrations/supabase/client";
 import { formatFcfa, formatHour } from "@/lib/utils";
-import { nextDailyEvent, diffParts, drawNameForDate, nigerDateLabel } from "@/lib/schedule";
+import { nextDailyEvent, nextWeeklyEvent, diffParts, drawNameForDate, nigerDateLabel, type WeeklyGameSchedule } from "@/lib/schedule";
 import heroBackground from "@/assets/coup-sur-home-background.webp";
 
 export const Route = createFileRoute("/")({
@@ -65,15 +65,15 @@ function useCountdown(target: Date) {
  * SSR hydration mismatch: the server may render one stage and the client
  * another because minutes pass between renders.
  */
-function useLiveStage(openHour: number, closeHour: number, drawHour: number, drawMinute = 0) {
+function useLiveStage(openHour: number, closeHour: number, drawHour: number, drawMinute = 0, weekly?: WeeklyGameSchedule) {
   const [stage, setStage] = useState<ReturnType<typeof nextDailyEvent> | null>(null);
   useEffect(() => {
     const compute = () =>
-      setStage(nextDailyEvent(openHour, closeHour, drawHour, new Date(), drawMinute));
+      setStage(weekly?.length === 7 ? nextWeeklyEvent(weekly) : nextDailyEvent(openHour, closeHour, drawHour, new Date(), drawMinute));
     compute();
     const id = setInterval(compute, 1000);
     return () => clearInterval(id);
-  }, [openHour, closeHour, drawHour, drawMinute]);
+  }, [openHour, closeHour, drawHour, drawMinute, weekly]);
   return stage;
 }
 
@@ -115,7 +115,7 @@ function HomeContent() {
       try {
         const { data } = await supabase
           .from("game_schedules")
-          .select("game_id,open_hour,close_hour,draw_hour,draw_minute,enabled,daily_stats_date,today_winners_count,today_paid_fcfa")
+          .select("game_id,open_hour,close_hour,draw_hour,draw_minute,enabled,day_schedules,daily_stats_date,today_winners_count,today_paid_fcfa")
           .in("game_id", ["pmu", "loto"]);
         if (cancelled) return;
         const next: typeof schedules = {};
