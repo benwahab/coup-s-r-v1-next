@@ -28,6 +28,8 @@ import {
   adminGetRegisteredPlayerCount,
   adminGetPlayerStatistics,
   adminGetRegionStatistics,
+  adminGetMonthlyRegionStatistics,
+  type AdminMonthlyRegionStat,
   type AdminPlayerStat,
   type AdminRegionStat,
   getMyAdminPermissions,
@@ -143,6 +145,7 @@ function AdminPage() {
   // sensitive ticket internals. Only authorized aggregates and sanitized activity are available here.
   const [adminTicketRows, setAdminTicketRows] = useState<Awaited<ReturnType<typeof adminListTickets>>["tickets"]>([]);
   const [regionStats, setRegionStats] = useState<AdminRegionStat[]>([]);
+  const [monthlyRegionStats, setMonthlyRegionStats] = useState<AdminMonthlyRegionStat[]>([]);
   const [playerStats, setPlayerStats] = useState<AdminPlayerStat[]>([]);
   useEffect(() => {
     if (gate !== "ok" || !permissionsReady || !can("player_activity")) return;
@@ -408,6 +411,16 @@ function AdminPage() {
     adminGetPlayerStatistics()
       .then((r) => setPlayerStats(r.players))
       .catch(() => setPlayerStats([]));
+  }, [gate, permissionsReady, adminPermissions]);
+
+  useEffect(() => {
+    if (gate !== "ok" || !permissionsReady) return;
+    if (adminPermissions !== "all" && !adminPermissions.includes("region_stats")) return;
+    let active = true;
+    adminGetMonthlyRegionStatistics()
+      .then((r) => { if (active) setMonthlyRegionStats(r.regions); })
+      .catch(() => { if (active) setMonthlyRegionStats([]); });
+    return () => { active = false; };
   }, [gate, permissionsReady, adminPermissions]);
 
   const maxRegion = Math.max(1, ...regionStats.map((r) => r.staked));
@@ -817,7 +830,7 @@ function AdminPage() {
               />
             )}
             {can("region_stats") && tab === "regions" && (
-              <RegionsTab regionStats={regionStats} maxRegion={maxRegion} />
+              <RegionsTab regionStats={monthlyRegionStats} />
             )}
             {can("ball_stats") && tab === "balls" && (
               <BallsTab
