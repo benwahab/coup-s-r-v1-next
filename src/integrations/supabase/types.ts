@@ -477,7 +477,7 @@ export type Database = {
         }
         Insert: {
           close_hour: number
-          day_schedules?: Json
+          day_schedules: Json
           daily_stats_date?: string
           draw_hour: number
           draw_minute: number
