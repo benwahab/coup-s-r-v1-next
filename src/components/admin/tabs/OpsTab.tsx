@@ -98,27 +98,26 @@ export function OpsTab() {
   }, []);
 
   const toggleDay = (game: Game, day: number) => {
-    setSelected((prev) => {
-      const exists = prev[game].includes(day);
-      if (!exists && prev[game].length === 0) {
-        const current = schedules[game]?.day_schedules.find((item) => item.day === day);
-        if (current) {
-          setEdit((values) => ({
-            ...values,
-            [game]: {
-              open_hour: current.open_hour,
-              close_hour: current.close_hour,
-              draw_hour: current.draw_hour,
-              draw_minute: current.draw_minute,
-            },
-          }));
-        }
+    const currentSelection = selected[game];
+    const exists = currentSelection.includes(day);
+    if (!exists && currentSelection.length === 0) {
+      const current = schedules[game]?.day_schedules.find((item) => item.day === day);
+      if (current) {
+        setEdit((values) => ({
+          ...values,
+          [game]: {
+            open_hour: current.open_hour,
+            close_hour: current.close_hour,
+            draw_hour: current.draw_hour,
+            draw_minute: current.draw_minute,
+          },
+        }));
       }
-      return {
-        ...prev,
-        [game]: exists ? prev[game].filter((value) => value !== day) : [...prev[game], day],
-      };
-    });
+    }
+    setSelected((prev) => ({
+      ...prev,
+      [game]: exists ? currentSelection.filter((value) => value !== day) : [...currentSelection, day],
+    }));
   };
 
   const updateTime = (game: Game, field: keyof EditableSchedule, value: string) => {
