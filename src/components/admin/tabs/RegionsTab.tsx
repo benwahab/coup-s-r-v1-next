@@ -42,7 +42,8 @@ function intensityColor(value: number, max: number) {
 }
 
 export function RegionsTab({ regionStats }: { regionStats: MonthlyRegionStat[] }) {
-  const [selectedRegion, setSelectedRegion] = useState("Niamey");
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const statsByRegion = useMemo(
     () => new Map(regionStats.map((item) => [item.region, item])),
     [regionStats],
@@ -51,9 +52,10 @@ export function RegionsTab({ regionStats }: { regionStats: MonthlyRegionStat[] }
     region, players: 0, tickets: 0, staked: 0, paid: 0,
   });
   const maxStaked = Math.max(0, ...orderedStats.map((item) => item.staked));
-  const selected = statsByRegion.get(selectedRegion) ?? {
-    region: selectedRegion, players: 0, tickets: 0, staked: 0, paid: 0,
-  };
+  const activeRegion = hoveredRegion ?? selectedRegion;
+  const activeStats = activeRegion ? (statsByRegion.get(activeRegion) ?? {
+    region: activeRegion, players: 0, tickets: 0, staked: 0, paid: 0,
+  }) : null;
   const monthLabel = new Intl.DateTimeFormat("fr-FR", {
     month: "long", year: "numeric", timeZone: "Africa/Niamey",
   }).format(new Date());
@@ -76,12 +78,12 @@ export function RegionsTab({ regionStats }: { regionStats: MonthlyRegionStat[] }
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(260px,0.65fr)]">
+        <div className="mt-4">
           <div className="min-w-0 rounded-2xl bg-muted/25 p-2 sm:p-3">
             <svg
               viewBox="0 0 820 650"
               role="group"
-              aria-label="Carte interactive des huit régions du Niger. Touchez une région pour voir ses statistiques."
+              aria-label="Carte interactive des huit régions du Niger. Survolez une région ou touchez-la pour afficher ses statistiques."
               className="h-auto w-full overflow-visible"
             >
               <g transform="translate(8 6)">
@@ -96,10 +98,14 @@ export function RegionsTab({ regionStats }: { regionStats: MonthlyRegionStat[] }
                       stroke={active ? "#d69e2e" : "#ffffff"}
                       strokeWidth={active ? 3.5 : 2}
                       strokeLinejoin="round"
-                      className="cursor-pointer transition-colors duration-200 hover:brightness-95 focus:outline-none"
+                      className="cursor-pointer transition-all duration-200 hover:brightness-95 focus:outline-none"
+                      onMouseEnter={() => setHoveredRegion(path.name)}
+                      onMouseLeave={() => setHoveredRegion(null)}
+                      onFocus={() => setHoveredRegion(path.name)}
+                      onBlur={() => setHoveredRegion(null)}
                       role="button"
                       tabIndex={0}
-                      aria-label={`${path.name}: ${stat?.tickets ?? 0} tickets, ${formatFcfa(stat?.staked ?? 0)} de mises`}
+                      aria-label={`${path.name}: ${stat?.tickets ?? 0} tickets, ${stat?.players ?? 0} joueurs, ${formatFcfa(stat?.staked ?? 0)} de mises, ${formatFcfa(stat?.paid ?? 0)} de gains payés`}
                       aria-pressed={active}
                       onClick={() => setSelectedRegion(path.name)}
                       onKeyDown={(event) => {
@@ -109,41 +115,29 @@ export function RegionsTab({ regionStats }: { regionStats: MonthlyRegionStat[] }
                         }
                       }}
                     >
-                      <title>{`${path.name} · ${stat?.tickets ?? 0} tickets · ${formatFcfa(stat?.staked ?? 0)} misés`}</title>
+                      <title>{`${path.name}\n${stat?.tickets ?? 0} tickets · ${stat?.players ?? 0} joueurs\nMises : ${formatFcfa(stat?.staked ?? 0)}\nGains payés : ${formatFcfa(stat?.paid ?? 0)}`}</title>
                     </path>
                   );
                 })}
                 {orderedStats.map((stat) => {
                   const pos = LABEL_POSITIONS[stat.region];
-                  const active = selectedRegion === stat.region;
-                  const isNiamey = stat.region === "Niamey";
-                  const x = isNiamey ? 92 : pos.x - pos.w / 2;
-                  const y = isNiamey ? 558 : pos.y - 15;
-                  const w = isNiamey ? 82 : pos.w;
+                  const x = stat.region === "Niamey" ? 92 : pos.x - pos.w / 2;
+                  const y = stat.region === "Niamey" ? 558 : pos.y - 2;
                   return (
-                    <g key={stat.region} pointerEvents="none">
-                      <rect
-                        x={x} y={y} width={w} height="44" rx="9"
-                        fill={active ? "#172b24" : "#ffffff"}
-                        stroke={active ? "#d69e2e" : "#a7b3ad"}
-                        strokeWidth="1.5"
-                        opacity="0.96"
-                      />
-                      <text
-                        x={x + w / 2} y={y + 17}
-                        textAnchor="middle"
-                        fontSize="16"
-                        fontWeight="700"
-                        fill={active ? "#ffffff" : "#26332c"}
-                      >{stat.region}</text>
-                      <text
-                        x={x + w / 2} y={y + 35}
-                        textAnchor="middle"
-                        fontSize="18"
-                        fontWeight="800"
-                        fill={active ? "#ffffff" : "#14532d"}
-                      >{stat.tickets.toLocaleString("fr-FR")} tickets</text>
-                    </g>
+                    <text
+                      key={stat.region}
+                      x={x + (stat.region === "Niamey" ? 41 : pos.w / 2)}
+                      y={y}
+                      textAnchor="middle"
+                      fontSize={stat.region === "Niamey" ? 15 : 17}
+                      fontWeight="800"
+                      letterSpacing="0.2"
+                      fill="#24332b"
+                      stroke="#ffffff"
+                      strokeWidth="4"
+                      paintOrder="stroke"
+                      pointerEvents="none"
+                    >{stat.region}</text>
                   );
                 })}
               </g>
@@ -159,52 +153,36 @@ export function RegionsTab({ regionStats }: { regionStats: MonthlyRegionStat[] }
             </p>
           </div>
 
-          <div className="flex min-w-0 flex-col gap-3">
-            <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
-              <p className="text-xs font-semibold text-muted-foreground">Région sélectionnée</p>
-              <h3 className="mt-1 font-display text-xl font-extrabold">{selected.region}</h3>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded-xl bg-background/80 p-3">
+          {activeStats && (
+            <div
+              className="mx-auto mt-3 max-w-md rounded-2xl border border-primary/25 bg-card p-4 shadow-lg"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-display text-base font-extrabold">{activeStats.region}</h3>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Statistiques du mois</span>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="rounded-xl bg-muted/50 p-3">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Ticket className="h-3.5 w-3.5" /> Tickets</div>
-                  <p className="mt-1 text-xl font-extrabold tabular-nums">{selected.tickets.toLocaleString("fr-FR")}</p>
+                  <p className="mt-1 text-lg font-extrabold tabular-nums">{activeStats.tickets.toLocaleString("fr-FR")}</p>
                 </div>
-                <div className="rounded-xl bg-background/80 p-3">
+                <div className="rounded-xl bg-muted/50 p-3">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Users className="h-3.5 w-3.5" /> Joueurs</div>
-                  <p className="mt-1 text-xl font-extrabold tabular-nums">{selected.players.toLocaleString("fr-FR")}</p>
+                  <p className="mt-1 text-lg font-extrabold tabular-nums">{activeStats.players.toLocaleString("fr-FR")}</p>
                 </div>
-                <div className="rounded-xl bg-background/80 p-3">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Wallet className="h-3.5 w-3.5" /> Total des mises</div>
-                  <p className="mt-1 text-sm font-extrabold tabular-nums">{formatFcfa(selected.staked)}</p>
+                <div className="rounded-xl bg-muted/50 p-3">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Wallet className="h-3.5 w-3.5" /> Mises</div>
+                  <p className="mt-1 text-sm font-extrabold tabular-nums">{formatFcfa(activeStats.staked)}</p>
                 </div>
-                <div className="rounded-xl bg-background/80 p-3">
+                <div className="rounded-xl bg-muted/50 p-3">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Banknote className="h-3.5 w-3.5" /> Gains payés</div>
-                  <p className="mt-1 text-sm font-extrabold tabular-nums">{formatFcfa(selected.paid)}</p>
+                  <p className="mt-1 text-sm font-extrabold tabular-nums">{formatFcfa(activeStats.paid)}</p>
                 </div>
               </div>
             </div>
-
-            <div className="min-h-0">
-              <h3 className="mb-2 text-sm font-bold">Toutes les régions</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {orderedStats.map((stat) => (
-                  <button
-                    type="button"
-                    key={stat.region}
-                    onClick={() => setSelectedRegion(stat.region)}
-                    aria-pressed={selectedRegion === stat.region}
-                    className={`rounded-xl border p-2.5 text-left transition ${selectedRegion === stat.region ? "border-primary bg-primary/10" : "border-border bg-background hover:bg-secondary/50"}`}
-                  >
-                    <span className="block truncate text-xs font-bold">{stat.region}</span>
-                    <span className="mt-1 block text-sm font-extrabold tabular-nums">{stat.tickets.toLocaleString("fr-FR")} tickets</span>
-                    <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">{formatFcfa(stat.staked)}</span>
-                    <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-secondary">
-                      <span className="block h-full rounded-full" style={{ width: `${maxStaked > 0 ? (stat.staked / maxStaked) * 100 : 0}%`, background: "#24865a" }} />
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </section>
