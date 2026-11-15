@@ -1,147 +1,20 @@
 import { Clock3 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { adminUpdateGameSchedule, getGameSchedules } from "@/lib/game-schedule.functions";
-
 import { useI18n } from "@/lib/i18n";
 
-export function OpsTab() {
-  const { t } = useI18n();
-  type Schedule = {
-    open_hour: number;
-    close_hour: number;
-    draw_hour: number;
-    draw_minute: number;
-    enabled: boolean;
-    daily_stats_date: string;
-    today_winners_count: number | null;
-    today_paid_fcfa: number | null;
-  };
-  const [schedules, setSchedules] = useState<Partial<Record<"pmu" | "loto", Schedule>>>({});
-  const [scheduleMsg, setScheduleMsg] = useState<string | null>(null);
-  useEffect(() => {
-    void getGameSchedules()
-      .then((rows) => {
-        setSchedules((prev) => {
-          const next = { ...prev };
-          for (const row of rows)
-            if (row.game_id === "pmu" || row.game_id === "loto")
-              next[row.game_id] = {
-                open_hour: row.open_hour,
-                close_hour: row.close_hour,
-                draw_hour: row.draw_hour,
-                draw_minute: row.draw_minute,
-                enabled: row.enabled,
-                daily_stats_date: row.daily_stats_date,
-                today_winners_count: row.today_winners_count,
-                today_paid_fcfa: row.today_paid_fcfa,
-              };
-          return next;
-        });
-      })
-      .catch(() => setScheduleMsg(t("admin.static.scheduleLoadError")));
-  }, []);
-  const saveSchedule = async (gameId: "pmu" | "loto") => {
-    const s = schedules[gameId];
-    if (!s) {
-      setScheduleMsg(t("admin.static.noSchedule", { game: gameId === "pmu" ? "PMU" : "Loto Balsa" }));
-      return;
-    }
-    try {
-      const dailyStatsDate = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Niamey" });
-      await adminUpdateGameSchedule({
-        data: {
-          gameId,
-          ...s,
-          dailyStatsDate,
-          todayWinnersCount: s.today_winners_count,
-          todayPaidFcfa: s.today_paid_fcfa,
-        },
-      });
-      setScheduleMsg(t("admin.static.scheduleSaved", { game: gameId === "pmu" ? "PMU" : "Loto Balsa" }));
-    } catch (e) {
-      setScheduleMsg((e as Error).message || "Échec de l'enregistrement.");
-    }
-  };
+const DAYS = [{id:1,label:"Lundi"},{id:2,label:"Mardi"},{id:3,label:"Mercredi"},{id:4,label:"Jeudi"},{id:5,label:"Vendredi"},{id:6,label:"Samedi"},{id:0,label:"Dimanche"}] as const;
+type DaySchedule = {day:number;open_hour:number;close_hour:number;draw_hour:number;draw_minute:number};
+type Schedule = {open_hour:number;close_hour:number;draw_hour:number;draw_minute:number;enabled:boolean;daily_stats_date:string;today_winners_count:number|null;today_paid_fcfa:number|null;day_schedules:DaySchedule[]};
+const fallback=(s:{open_hour:number;close_hour:number;draw_hour:number;draw_minute:number}):DaySchedule[]=>Array.from({length:7},(_,day)=>({day,...s}));
 
-  return (
-    <div className="space-y-4">
-      <section className="rounded-3xl border border-border bg-card p-5 shadow-soft">
-        <div className="flex items-center gap-2">
-          <Clock3 className="h-4 w-4 text-primary" />
-          <h2 className="font-display text-lg font-bold">{t("admin.static.gameSchedule")}</h2>
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Les horaires PMU et Loto sont définis manuellement par l'administration. Fuseau :
-          Africa/Niamey.
-        </p>
-        {(["pmu", "loto"] as const).map((gameId) => {
-          const s = schedules[gameId];
-          if (!s)
-            return (
-              <div
-                key={gameId}
-                className="mt-4 rounded-2xl border border-border p-4 text-sm text-muted-foreground"
-              >
-                {t("admin.static.noSchedule", { game: gameId === "pmu" ? "PMU" : "Loto Balsa" })}
-              </div>
-            );
-          const field = (
-            key: "open_hour" | "close_hour" | "draw_hour" | "draw_minute",
-            label: string,
-          ) => (
-            <label className="block">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                {label}
-              </span>
-              <input
-                type="number"
-                min={0}
-                max={key === "draw_minute" ? 59 : 23}
-                value={s[key]}
-                onChange={(e) =>
-                  setSchedules((prev) => ({
-                    ...prev,
-                    [gameId]: { ...prev[gameId], [key]: Number(e.target.value) },
-                  }))
-                }
-                className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"
-              />
-            </label>
-          );
-          return (
-            <div key={gameId} className="mt-4 rounded-2xl border border-border p-4">
-              <div className="mb-3 font-bold">{gameId === "pmu" ? "PMU" : "Loto Balsa"}</div>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                {field("open_hour", t("openAt"))}
-                {field("close_hour", t("closeAt"))}
-                {field("draw_hour", t("drawAt"))}
-                {field("draw_minute", t("admin.static.drawMinute"))}
-              </div>
-              <label className="mt-3 flex items-center gap-2 text-sm font-semibold">
-                <input
-                  type="checkbox"
-                  checked={s.enabled}
-                  onChange={(e) =>
-                    setSchedules((prev) => ({
-                      ...prev,
-                      [gameId]: { ...prev[gameId]!, enabled: e.target.checked },
-                    }))
-                  }
-                />
-                Jeu actif
-              </label>
-              <button
-                type="button"
-                onClick={() => void saveSchedule(gameId)}
-                className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
-              >
-                Enregistrer
-              </button>
-            </div>
-          );
-        })}
-        {scheduleMsg && <p className="mt-3 text-xs font-semibold text-primary">{scheduleMsg}</p>}
-      </section>
-    </div>
-  );
+export function OpsTab() {
+ const {t}=useI18n();
+ const [schedules,setSchedules]=useState<Partial<Record<"pmu"|"loto",Schedule>>>({});
+ const [selected,setSelected]=useState<Record<"pmu"|"loto",number[]>>({pmu:[1,2,3,4,5,6,0],loto:[1,2,3,4,5,6,0]});
+ const [edit,setEdit]=useState<Record<"pmu"|"loto",{open_hour:number;close_hour:number;draw_hour:number;draw_minute:number}>>({pmu:{open_hour:16,close_hour:15,draw_hour:15,draw_minute:30},loto:{open_hour:16,close_hour:15,draw_hour:15,draw_minute:30}});
+ const [message,setMessage]=useState<string|null>(null);
+ useEffect(()=>{void getGameSchedules().then(rows=>{for(const row of rows){if(row.game_id!=="pmu"&&row.game_id!=="loto")continue;const legacy={open_hour:row.open_hour,close_hour:row.close_hour,draw_hour:row.draw_hour,draw_minute:row.draw_minute};const ds=Array.isArray(row.day_schedules)&&row.day_schedules.length===7?row.day_schedules as unknown as DaySchedule[]:fallback(legacy);setSchedules(prev=>({...prev,[row.game_id]:{...legacy,enabled:true,daily_stats_date:row.daily_stats_date,today_winners_count:row.today_winners_count,today_paid_fcfa:row.today_paid_fcfa,day_schedules:ds}}));setEdit(prev=>({...prev,[row.game_id]:legacy}));}}).catch(()=>setMessage(t("admin.static.scheduleLoadError")));},[]);
+ const save=async(game:"pmu"|"loto")=>{const current=schedules[game];if(!current)return;if(!selected[game].length){setMessage("Sélectionne au moins un jour.");return;}const days=current.day_schedules.map(d=>selected[game].includes(d.day)?{...d,...edit[game]}:d);try{const date=new Date().toLocaleDateString("en-CA",{timeZone:"Africa/Niamey"});await adminUpdateGameSchedule({data:{gameId:game,...edit[game],enabled:true,dailyStatsDate:date,todayWinnersCount:current.today_winners_count,todayPaidFcfa:current.today_paid_fcfa,daySchedules:days}});setSchedules(prev=>({...prev,[game]:{...current,...edit[game],day_schedules:days}}));setMessage("Horaires enregistrés.");}catch(e){setMessage((e as Error).message||"Échec de l'enregistrement.");}};
+ return <div className="space-y-4"><section className="rounded-3xl border border-border bg-card p-5 shadow-soft"><div className="flex items-center gap-2"><Clock3 className="h-4 w-4 text-primary"/><h2 className="font-display text-lg font-bold">{t("admin.static.gameSchedule")}</h2></div><p className="mt-1 text-xs text-muted-foreground">Définis les horaires par jour ou sélectionne plusieurs jours pour leur appliquer les mêmes heures. Fuseau : Africa/Niamey. PMU et Loto Balsa fonctionnent 7 jours sur 7.</p>{(["pmu","loto"] as const).map(game=>{const s=schedules[game];if(!s)return <p key={game} className="mt-4 text-sm text-muted-foreground">{t("admin.static.noSchedule",{game:game==="pmu"?"PMU":"Loto Balsa"})}</p>;const field=(key:"open_hour"|"close_hour"|"draw_hour"|"draw_minute",label:string,max:number)=><label className="block"><span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</span><input type="number" min={0} max={max} value={edit[game][key]} onChange={e=>setEdit(prev=>({...prev,[game]:{...prev[game],[key]:Math.max(0,Math.min(max,Number(e.target.value)))}}))} className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm"/></label>;return <div key={game} className="mt-4 rounded-2xl border border-border p-4"><div className="mb-3 font-bold">{game==="pmu"?"PMU":"Loto Balsa"}</div><p className="mb-2 text-xs font-semibold text-muted-foreground">Sélectionne les jours à configurer ensemble :</p><div className="grid grid-cols-2 gap-2 sm:grid-cols-4">{DAYS.map(d=><label key={d.id} className="flex items-center gap-2 rounded-lg border border-border px-2 py-2 text-sm"><input type="checkbox" checked={selected[game].includes(d.id)} onChange={e=>setSelected(prev=>({...prev,[game]:e.target.checked?[...prev[game],d.id]:prev[game].filter(x=>x!==d.id)}))}/>{d.label}</label>)}</div><div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">{field("open_hour","Ouverture",23)}{field("close_hour","Clôture",23)}{field("draw_hour",game==="pmu"?"Heure de la course":"Heure du tirage",23)}{field("draw_minute","Minute",59)}</div><button type="button" onClick={()=>void save(game)} className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground">Enregistrer les jours sélectionnés</button><div className="mt-4 border-t border-border pt-3"><p className="mb-2 text-xs font-bold">Récapitulatif des 7 jours</p><div className="space-y-1">{DAYS.map(d=>{const v=s.day_schedules.find(x=>x.day===d.id);return <div key={d.id} className="flex justify-between gap-2 text-xs"><span>{d.label}</span><span className="tabular-nums">{v?String(v.open_hour).padStart(2,"0")+":00 · "+String(v.close_hour).padStart(2,"0")+":00 · "+String(v.draw_hour).padStart(2,"0")+":"+String(v.draw_minute).padStart(2,"0"):"Non configuré"}</span></div>;})}</div></div></div>;})}{message&&<p className="mt-3 text-xs font-semibold text-primary">{message}</p>}</section></div>;
 }
