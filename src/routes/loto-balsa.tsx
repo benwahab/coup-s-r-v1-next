@@ -71,7 +71,7 @@ function LotoPage() {
       .maybeSingle()
       .then(
         ({ data }) => {
-          setSchedule(data ?? null);
+          setSchedule(data ? { ...data, day_schedules: Array.isArray(data.day_schedules) ? data.day_schedules as unknown as WeeklyGameSchedule : undefined } : null);
           setScheduleLoading(false);
         },
         () => setScheduleLoading(false),
