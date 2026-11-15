@@ -472,6 +472,27 @@ export const adminGetPlayerStatistics = createServerFn({ method: "POST" })
     return { players: Array.isArray(data) ? (data as unknown as AdminPlayerStat[]) : [] };
   });
 
+
+export interface AdminMonthlyRegionStat {
+  region: string;
+  players: number;
+  tickets: number;
+  staked: number;
+  paid: number;
+}
+
+export const adminGetMonthlyRegionStatistics = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .handler(async ({ context }) => {
+    await assertAdminPermission(context.supabase as SB, context.userId, "region_stats");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin.rpc("get_admin_monthly_region_statistics");
+    if (error) throw new Error("monthly_region_statistics_failed");
+    return {
+      regions: Array.isArray(data) ? (data as unknown as AdminMonthlyRegionStat[]) : [],
+    };
+  });
+
 export const adminGetRegionStatistics = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
