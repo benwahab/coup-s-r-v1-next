@@ -992,6 +992,7 @@ export type Database = {
         }
         Returns: string
       }
+      get_admin_monthly_region_statistics: { Args: never; Returns: Json }
       get_admin_player_statistics: { Args: never; Returns: Json }
       get_admin_region_statistics: { Args: never; Returns: Json }
       get_loto_ball_statistics: { Args: never; Returns: Json }
