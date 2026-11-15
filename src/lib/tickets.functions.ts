@@ -108,7 +108,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
       throw new Error("payment_method_mismatch");
     const drawDate = data.drawDate ? data.drawDate.slice(0, 10) : "";
     if (drawDate && !/^\d{4}-\d{2}-\d{2}$/.test(drawDate)) throw new Error("invalid_draw_date");
-    const { nigerParts, nigerInstant } = await import("@/lib/schedule");
+    const { nigerParts, nigerInstant, isWeeklyGameOpen } = await import("@/lib/schedule");
     const now = new Date();
     const nowParts = nigerParts(now);
     const todayNiger = [
@@ -124,17 +124,17 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     if (data.gameId === "pmu" || data.gameId === "loto") {
       const { data: schedule, error: scheduleError } = await supabaseAdmin
         .from("game_schedules")
-        .select("open_hour,close_hour,enabled")
+        .select("open_hour,close_hour,enabled,day_schedules")
         .eq("game_id", data.gameId)
         .maybeSingle();
       if (scheduleError) throw new Error("schedule_lookup_failed: " + scheduleError.message);
       if (!schedule?.enabled) throw new Error("game_schedule_disabled");
-      const open = nigerInstant(nowParts.year, nowParts.month, nowParts.day, schedule.open_hour);
-      const close = nigerInstant(nowParts.year, nowParts.month, nowParts.day, schedule.close_hour);
-      const isOpen =
-        schedule.open_hour > schedule.close_hour
-          ? !(now >= close && now < open)
-          : now >= open && now < close;
+      const weekly = Array.isArray(schedule.day_schedules) ? schedule.day_schedules as unknown as import("@/lib/schedule").WeeklyGameSchedule : null;
+      const isOpen = weekly?.length === 7 ? isWeeklyGameOpen(weekly, now) : (() => {
+        const open = nigerInstant(nowParts.year, nowParts.month, nowParts.day, schedule.open_hour);
+        const close = nigerInstant(nowParts.year, nowParts.month, nowParts.day, schedule.close_hour);
+        return schedule.open_hour > schedule.close_hour ? !(now >= close && now < open) : now >= open && now < close;
+      })();
       if (!isOpen) throw new Error("game_closed");
     }
 
