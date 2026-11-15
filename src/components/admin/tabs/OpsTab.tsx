@@ -36,7 +36,7 @@ type Schedule = {
 type Game = "pmu" | "loto";
 type EditableSchedule = Pick<DaySchedule, "open_hour" | "open_minute" | "close_hour" | "close_minute" | "draw_hour" | "draw_minute">;
 
-const fallback = (s: EditableSchedule): DaySchedule[] =>
+const fallback = (s: Pick<DaySchedule, "open_hour" | "close_hour" | "draw_hour" | "draw_minute">): DaySchedule[] =>
   DAYS.map(({ id }) => ({ day: id, open_minute: 0, close_minute: 0, ...s }));
 
 const timeValue = (hour: number, minute = 0) =>
