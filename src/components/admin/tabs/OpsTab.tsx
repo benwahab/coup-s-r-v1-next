@@ -72,12 +72,22 @@ export function OpsTab() {
         draw_hour: row.draw_hour,
         draw_minute: row.draw_minute,
       };
-      const active = Array.isArray(row.day_schedules) && row.day_schedules.length === 7
-        ? row.day_schedules as unknown as DaySchedule[]
-        : fallback(legacy);
-      const draft = Array.isArray(row.draft_day_schedules) && row.draft_day_schedules.length === 7
-        ? row.draft_day_schedules as unknown as DaySchedule[]
-        : active;
+      const normalizeDays = (days: DaySchedule[]): DaySchedule[] =>
+        days.map((day) => ({
+          ...day,
+          open_minute: day.open_minute ?? 0,
+          close_minute: day.close_minute ?? 0,
+        }));
+      const active = normalizeDays(
+        Array.isArray(row.day_schedules) && row.day_schedules.length === 7
+          ? row.day_schedules as unknown as DaySchedule[]
+          : fallback(legacy),
+      );
+      const draft = normalizeDays(
+        Array.isArray(row.draft_day_schedules) && row.draft_day_schedules.length === 7
+          ? row.draft_day_schedules as unknown as DaySchedule[]
+          : active,
+      );
       next[game] = {
         ...legacy,
         enabled: row.enabled,
