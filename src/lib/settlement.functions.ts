@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { requireConfiguredUser } from "@/lib/secure-user.functions";
-import { isGameOpen, nigerParts } from "@/lib/schedule";
+import { isGameOpen, isWeeklyGameOpen, nigerParts } from "@/lib/schedule";
 import { evaluatePublishedAiPredictions } from "./ai-adaptive.functions";
 
 async function writeAuditLog(...args: Parameters<(typeof import("./audit.server"))["writeAuditLog"]>) {
@@ -108,7 +108,7 @@ async function assertGameClosedForResult(
 ) {
   const { data: schedule, error } = await supabaseAdmin
     .from("game_schedules")
-    .select("open_hour,close_hour,enabled")
+    .select("open_hour,close_hour,enabled,day_schedules")
     .eq("game_id", gameId)
     .maybeSingle();
   if (error) throw new Error("schedule_lookup_failed: " + error.message);
@@ -118,7 +118,7 @@ async function assertGameClosedForResult(
   const today = `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
   if (requireCurrentDate && drawDate !== today) throw new Error("result_date_must_match_niger_schedule");
   if (!requireCurrentDate && drawDate > today) throw new Error("result_date_must_not_be_future");
-  if (isGameOpen(schedule.open_hour, schedule.close_hour, now)) {
+  const weekly = Array.isArray(schedule.day_schedules) ? schedule.day_schedules as unknown as import("@/lib/schedule").WeeklyGameSchedule : null;\n  const openNow = weekly?.length === 7 ? isWeeklyGameOpen(weekly, now) : isGameOpen(schedule.open_hour, schedule.close_hour, now);\n  if (openNow) {
     throw new Error("result_publication_blocked_game_open");
   }
 }
