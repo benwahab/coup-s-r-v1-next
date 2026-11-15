@@ -56,7 +56,9 @@ function LotoPage() {
   const [cart, setCart] = useState<TicketLeg[]>([]);
   const [schedule, setSchedule] = useState<{
     open_hour: number;
+    open_minute?: number;
     close_hour: number;
+    close_minute?: number;
     draw_hour: number;
     draw_minute: number;
     enabled: boolean;
@@ -174,9 +176,9 @@ function LotoPage() {
               </div>
             ) : schedule ? (
               [
-                { l: t("closeAt"), v: formatHour((todaySchedule ?? schedule).close_hour) },
+                { l: t("closeAt"), v: formatHour((todaySchedule ?? schedule).close_hour, (todaySchedule ?? schedule).close_minute ?? 0) },
                 { l: t("drawAt"), v: formatHour((todaySchedule ?? schedule).draw_hour, (todaySchedule ?? schedule).draw_minute) },
-                { l: t("openAt"), v: formatHour((todaySchedule ?? schedule).open_hour) },
+                { l: t("openAt"), v: formatHour((todaySchedule ?? schedule).open_hour, (todaySchedule ?? schedule).open_minute ?? 0) },
               ].map((b, i) => (
                 <div
                   key={i}
