@@ -89,7 +89,7 @@ export function RegionsTab({ regionStats }: { regionStats: MonthlyRegionStat[] }
               <g transform="translate(8 6)">
                 {REGION_PATHS.map((path) => {
                   const stat = statsByRegion.get(path.name);
-                  const active = selectedRegion === path.name;
+                  const active = activeRegion === path.name;
                   return (
                     <path
                       key={path.id}
