@@ -20,7 +20,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { isAdmin, verificationFailed } = useIsAdmin();
   const { tickets } = useTickets();
   // A ticket remains a winner after its prize has been cashed out.
-  const winningTicketCount = tickets.filter((ticket) => ticket.status === "winning" || ticket.status === "paid").length;
+  const winningTicketCount = tickets.filter((ticket) => ticket.status === "winning").length;
   const lockMs = remainingLockMs();
   const locked = isPermanent() || lockMs > 0;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
