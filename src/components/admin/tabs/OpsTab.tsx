@@ -177,7 +177,10 @@ export function OpsTab() {
       await adminUpdateGameSchedule({
         data: {
           gameId: game,
-          ...value,
+          openHour: value.open_hour,
+          closeHour: value.close_hour,
+          drawHour: value.draw_hour,
+          drawMinute: value.draw_minute,
           enabled: true,
           dailyStatsDate: date,
           todayWinnersCount: current.today_winners_count,
