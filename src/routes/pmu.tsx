@@ -105,7 +105,7 @@ function PmuPage() {
     const today = nigerDateIso();
     const { data: races, error: raceError } = await supabase
       .from("pmu_races")
-      .select("id,start_at")
+      .select("id")
       .eq("race_date", today)
       .in("status", ["scheduled", "open"])
       .limit(1);
