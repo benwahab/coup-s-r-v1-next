@@ -53,21 +53,13 @@ export const adminUpdateGameSchedule = createServerFn({ method: "POST" })
 
     const { data: row, error } = await supabaseAdmin
       .from("game_schedules")
-      .upsert(
-        {
-          game_id: data.gameId,
-          timezone: "Africa/Niamey",
-          enabled: data.enabled,
-          daily_stats_date: data.dailyStatsDate,
-          today_winners_count: data.todayWinnersCount,
-          today_paid_fcfa: data.todayPaidFcfa,
-          draft_day_schedules: data.daySchedules,
-          updated_at: new Date().toISOString(),
-          updated_by: context.userId,
-        },
-        { onConflict: "game_id" },
-      )
-      .select("game_id,open_hour,close_hour,draw_hour,draw_minute,timezone,enabled,updated_at")
+      .update({
+        draft_day_schedules: data.daySchedules,
+        updated_at: new Date().toISOString(),
+        updated_by: context.userId,
+      })
+      .eq("game_id", data.gameId)
+      .select("game_id,open_hour,close_hour,draw_hour,draw_minute,timezone,enabled,updated_at,draft_day_schedules")
       .single();
 
     if (error) throw new Error("schedule_update_failed: " + error.message);
