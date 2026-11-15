@@ -19,6 +19,7 @@ const scheduleSchema = z.object({
   dailyStatsDate: z.string().date(),
   todayWinnersCount: z.number().int().min(0).nullable(),
   todayPaidFcfa: z.number().int().min(0).nullable(),
+  daySchedules: z.array(z.object({ day: z.number().int().min(0).max(6), open_hour: z.number().int().min(0).max(23), close_hour: z.number().int().min(0).max(23), draw_hour: z.number().int().min(0).max(23), draw_minute: z.number().int().min(0).max(59) })).length(7),
 });
 
 async function assertOperationsPermission(supabase: SupabaseClient<Database>, userId: string) {
@@ -37,7 +38,7 @@ export const getGameSchedules = createServerFn({ method: "POST" })
     await assertOperationsPermission(supabaseAdmin, context.userId);
     const { data, error } = await supabaseAdmin
       .from("game_schedules")
-      .select("game_id,open_hour,close_hour,draw_hour,draw_minute,timezone,enabled,daily_stats_date,today_winners_count,today_paid_fcfa,updated_at")
+      .select("game_id,open_hour,close_hour,draw_hour,draw_minute,timezone,enabled,daily_stats_date,today_winners_count,today_paid_fcfa,day_schedules,updated_at")
       .order("game_id");
     if (error) throw new Error("schedule_lookup_failed: " + error.message);
     return data ?? [];
@@ -64,6 +65,7 @@ export const adminUpdateGameSchedule = createServerFn({ method: "POST" })
           daily_stats_date: data.dailyStatsDate,
           today_winners_count: data.todayWinnersCount,
           today_paid_fcfa: data.todayPaidFcfa,
+          day_schedules: data.daySchedules,
           updated_at: new Date().toISOString(),
           updated_by: context.userId,
         },
@@ -83,6 +85,7 @@ export const adminUpdateGameSchedule = createServerFn({ method: "POST" })
         closeHour: data.closeHour,
         drawHour: data.drawHour,
         drawMinute: data.drawMinute,
+        daySchedules: data.daySchedules,
         dailyStatsDate: data.dailyStatsDate,
         todayWinnersCount: data.todayWinnersCount,
         todayPaidFcfa: data.todayPaidFcfa,
