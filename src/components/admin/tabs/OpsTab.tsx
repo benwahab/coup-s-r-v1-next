@@ -266,7 +266,7 @@ export function OpsTab() {
                     type="time"
                     step={60}
                     value={timeValue(value.open_hour, value.open_minute)}
-                    onChange={(event) => updateTime(game, "open", event.target.value)
+                    onChange={(event) => updateTime(game, "open", event.target.value)}
                     className="h-12 w-full rounded-xl border border-input bg-card px-3 text-base font-semibold tabular-nums outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                   />
                 </label>
@@ -276,7 +276,7 @@ export function OpsTab() {
                     type="time"
                     step={60}
                     value={timeValue(value.close_hour, value.close_minute)}
-                    onChange={(event) => updateTime(game, "close", event.target.value)
+                    onChange={(event) => updateTime(game, "close", event.target.value)}
                     className="h-12 w-full rounded-xl border border-input bg-card px-3 text-base font-semibold tabular-nums outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
                   />
                 </label>
