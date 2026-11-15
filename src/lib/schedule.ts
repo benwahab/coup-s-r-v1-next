@@ -3,6 +3,8 @@
 // l'instant courant via toLocaleString. Pas de dépendance externe.
 
 export const NIGER_TIME_ZONE = "Africa/Niamey";
+export type DailyGameSchedule = { day: number; open_hour: number; close_hour: number; draw_hour: number; draw_minute: number };
+export type WeeklyGameSchedule = DailyGameSchedule[];
 
 const DRAW_NAMES = [
   "BALSA", // dimanche
@@ -155,4 +157,22 @@ export function nextOpenInstant(openHour: number, now: Date = new Date()): Date 
   const todayOpen = nigerInstant(p.year, p.month, p.day, openHour);
   if (now < todayOpen) return todayOpen;
   return new Date(todayOpen.getTime() + 24 * 3600 * 1000);
+}
+
+export function scheduleForNigerDay(schedules: WeeklyGameSchedule | null | undefined, now: Date = new Date()): DailyGameSchedule | null {
+  return Array.isArray(schedules) ? schedules.find((x) => x.day === nigerDayOfWeek(now)) ?? null : null;
+}
+export function isWeeklyGameOpen(schedules: WeeklyGameSchedule | null | undefined, now: Date = new Date()): boolean {
+  if (!Array.isArray(schedules) || schedules.length !== 7) return false;
+  const day=nigerDayOfWeek(now), p=nigerParts(now), minute=p.hour*60+p.minute;
+  const today=schedules.find(x=>x.day===day), yesterday=schedules.find(x=>x.day===(day+6)%7);
+  if(yesterday&&yesterday.open_hour>yesterday.close_hour&&minute<yesterday.close_hour*60)return true;
+  if(!today)return false;
+  if(today.open_hour===today.close_hour)return true;
+  return today.open_hour>today.close_hour?minute>=today.open_hour*60||minute<today.close_hour*60:minute>=today.open_hour*60&&minute<today.close_hour*60;
+}
+export function nextWeeklyEvent(schedules: WeeklyGameSchedule, now: Date = new Date()): NextEvent {
+  const p=nigerParts(now), base=Date.UTC(p.year,p.month-1,p.day,12), events:NextEvent[]=[];
+  for(let offset=-1;offset<=8;offset++){const d=new Date(base+offset*86400000),item=schedules.find(x=>x.day===d.getUTCDay());if(!item)continue;const y=d.getUTCFullYear(),m=d.getUTCMonth()+1,day=d.getUTCDate();events.push({stage:"openAt",target:nigerInstant(y,m,day,item.open_hour)},{stage:"closesIn",target:nigerInstant(y,m,day,item.close_hour)},{stage:"drawIn",target:nigerInstant(y,m,day,item.draw_hour,item.draw_minute)});}
+  return events.filter(x=>x.target>now).sort((a,b)=>a.target.getTime()-b.target.getTime())[0]??{stage:"openAt",target:new Date(now.getTime()+86400000)};
 }
