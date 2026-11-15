@@ -56,10 +56,6 @@ export const adminUpdateGameSchedule = createServerFn({ method: "POST" })
       .upsert(
         {
           game_id: data.gameId,
-          open_hour: data.openHour,
-          close_hour: data.closeHour,
-          draw_hour: data.drawHour,
-          draw_minute: data.drawMinute,
           timezone: "Africa/Niamey",
           enabled: data.enabled,
           daily_stats_date: data.dailyStatsDate,
