@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Trophy, Info, Plus, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
-import { isGameOpen, isWeeklyGameOpen, scheduleForNigerDay, nigerDateIso, type WeeklyGameSchedule } from "@/lib/schedule";
+import { isGameOpen, isWeeklyGameOpen, scheduleForNigerDay, nigerDateIso, nigerParts, nigerInstant, type WeeklyGameSchedule } from "@/lib/schedule";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { pmuBets, findBet, type PmuBetId } from "@/lib/pmu-bets";
@@ -64,7 +64,6 @@ function PmuPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
-  const [raceStartAt, setRaceStartAt] = useState<string | null>(null);
   const [schedule, setSchedule] = useState<{
     open_hour: number;
     open_minute?: number;
@@ -113,12 +112,10 @@ function PmuPage() {
       .limit(1);
     if (raceError || !races?.[0]) {
       setHorses([]);
-      setRaceStartAt(null);
       setLoadError(Boolean(raceError));
       setLoading(false);
       return;
     }
-    setRaceStartAt(races[0].start_at);
     const { data, error } = await supabase
       .from("pmu_horses")
       .select("number,name,intl_name,jockey,status,form,win_rate,place_rate,weight")
@@ -176,7 +173,14 @@ function PmuPage() {
     picks.length >= bet.minPicks && picks.length <= bet.maxPicks && unitStake >= MIN_STAKE;
   const canContinue = currentValid || cart.length > 0;
 
-  const drawDateIso = raceStartAt;
+  // L'heure officielle de la course provient exclusivement des horaires publiés.
+  // pmu_races identifie la course et ses chevaux, mais son ancien start_at ne pilote plus l'heure.
+  const drawDateIso = todaySchedule
+    ? (() => {
+        const p = nigerParts();
+        return nigerInstant(p.year, p.month, p.day, todaySchedule.draw_hour, todaySchedule.draw_minute ?? 0).toISOString();
+      })()
+    : null;
 
   const addCurrentToCart = () => {
     if (!currentValid) return;
