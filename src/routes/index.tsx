@@ -121,7 +121,7 @@ function HomeContent() {
         if (cancelled) return;
         const next: typeof schedules = {};
         for (const row of data ?? [])
-          if (row.game_id === "pmu" || row.game_id === "loto") next[row.game_id] = row;
+          if (row.game_id === "pmu" || row.game_id === "loto") next[row.game_id] = row as unknown as NonNullable<typeof next["pmu"]>;
         setSchedules(next);
       } catch (error) {
         console.error("[home] schedule load failed", error);
