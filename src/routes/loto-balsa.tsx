@@ -66,18 +66,26 @@ function LotoPage() {
   } | null>(null);
   const [scheduleLoading, setScheduleLoading] = useState(true);
   useEffect(() => {
-    void supabase
-      .from("game_schedules")
-      .select("open_hour,close_hour,draw_hour,draw_minute,enabled,day_schedules")
-      .eq("game_id", "loto")
-      .maybeSingle()
-      .then(
-        ({ data }) => {
-          setSchedule(data ? { ...data, day_schedules: Array.isArray(data.day_schedules) ? data.day_schedules as unknown as WeeklyGameSchedule : undefined } : null);
-          setScheduleLoading(false);
-        },
-        () => setScheduleLoading(false),
-      );
+    let cancelled = false;
+    const loadSchedule = async () => {
+      const { data, error } = await supabase
+        .from("game_schedules")
+        .select("open_hour,close_hour,draw_hour,draw_minute,enabled,day_schedules")
+        .eq("game_id", "loto")
+        .maybeSingle();
+      if (cancelled) return;
+      if (!error) setSchedule(data ? { ...data, day_schedules: Array.isArray(data.day_schedules) ? data.day_schedules as unknown as WeeklyGameSchedule : undefined } : null);
+                setScheduleLoading(false);
+    };
+    void loadSchedule();
+    const channel = supabase
+      .channel("loto-game-schedule")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "game_schedules", filter: "game_id=eq.loto" }, () => void loadSchedule())
+      .subscribe();
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(channel);
+    };
   }, []);
 
   const todaySchedule = schedule?.day_schedules?.length === 7 ? scheduleForNigerDay(schedule.day_schedules) : schedule;
