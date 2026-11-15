@@ -463,6 +463,7 @@ export type Database = {
         Row: {
           close_hour: number
           day_schedules: Json
+          draft_day_schedules: Json
           daily_stats_date: string
           draw_hour: number
           draw_minute: number
@@ -478,6 +479,7 @@ export type Database = {
         Insert: {
           close_hour: number
           day_schedules: Json
+          draft_day_schedules: Json
           daily_stats_date?: string
           draw_hour: number
           draw_minute: number
@@ -493,6 +495,7 @@ export type Database = {
         Update: {
           close_hour?: number
           day_schedules?: Json
+          draft_day_schedules?: Json
           daily_stats_date?: string
           draw_hour?: number
           draw_minute?: number
@@ -992,6 +995,7 @@ export type Database = {
         }
         Returns: string
       }
+      publish_game_schedules: { Args: { p_user_id: string }; Returns: Json }
       get_admin_monthly_region_statistics: { Args: never; Returns: Json }
       get_admin_player_statistics: { Args: never; Returns: Json }
       get_admin_region_statistics: { Args: never; Returns: Json }
