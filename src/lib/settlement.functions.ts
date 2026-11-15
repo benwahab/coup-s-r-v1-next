@@ -118,7 +118,13 @@ async function assertGameClosedForResult(
   const today = `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
   if (requireCurrentDate && drawDate !== today) throw new Error("result_date_must_match_niger_schedule");
   if (!requireCurrentDate && drawDate > today) throw new Error("result_date_must_not_be_future");
-  const weekly = Array.isArray(schedule.day_schedules) ? schedule.day_schedules as unknown as import("@/lib/schedule").WeeklyGameSchedule : null;\n  const openNow = weekly?.length === 7 ? isWeeklyGameOpen(weekly, now) : isGameOpen(schedule.open_hour, schedule.close_hour, now);\n  if (openNow) {
+  const weekly = Array.isArray(schedule.day_schedules)
+    ? (schedule.day_schedules as unknown as import("@/lib/schedule").WeeklyGameSchedule)
+    : null;
+  const openNow = weekly?.length === 7
+    ? isWeeklyGameOpen(weekly, now)
+    : isGameOpen(schedule.open_hour, schedule.close_hour, now);
+  if (openNow) {
     throw new Error("result_publication_blocked_game_open");
   }
 }
