@@ -108,7 +108,7 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
       throw new Error("payment_method_mismatch");
     const drawDate = data.drawDate ? data.drawDate.slice(0, 10) : "";
     if (drawDate && !/^\d{4}-\d{2}-\d{2}$/.test(drawDate)) throw new Error("invalid_draw_date");
-    const { nigerParts, nigerInstant, isWeeklyGameOpen } = await import("@/lib/schedule");
+    const { nigerParts, nigerInstant, nigerDayOfWeek, isWeeklyGameOpen } = await import("@/lib/schedule");
     const now = new Date();
     const nowParts = nigerParts(now);
     const todayNiger = [
@@ -121,15 +121,26 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
     // Re-check the authoritative PMU/Loto schedule at ticket creation time.
     // A payment may have been confirmed earlier while the game was open; that
     // must never allow a ticket to slip through after the closing boundary.
+    let officialPmuDrawAt: Date | null = null;
     if (data.gameId === "pmu" || data.gameId === "loto") {
       const { data: schedule, error: scheduleError } = await supabaseAdmin
         .from("game_schedules")
-        .select("open_hour,close_hour,enabled,day_schedules")
+        .select("open_hour,close_hour,draw_hour,draw_minute,enabled,day_schedules")
         .eq("game_id", data.gameId)
         .maybeSingle();
       if (scheduleError) throw new Error("schedule_lookup_failed: " + scheduleError.message);
       if (!schedule?.enabled) throw new Error("game_schedule_disabled");
       const weekly = Array.isArray(schedule.day_schedules) ? schedule.day_schedules as unknown as import("@/lib/schedule").WeeklyGameSchedule : null;
+      if (data.gameId === "pmu") {
+        const todayEntry = weekly?.length === 7
+          ? weekly.find((entry) => entry.day === nigerDayOfWeek(now))
+          : null;
+        const drawHour = todayEntry?.draw_hour ?? schedule.draw_hour;
+        const drawMinute = todayEntry?.draw_minute ?? schedule.draw_minute ?? 0;
+        if (typeof drawHour !== "number") throw new Error("pmu_draw_time_not_configured");
+        officialPmuDrawAt = nigerInstant(nowParts.year, nowParts.month, nowParts.day, drawHour, drawMinute);
+        if (now >= officialPmuDrawAt) throw new Error("pmu_race_closed");
+      }
       const isOpen = weekly?.length === 7 ? isWeeklyGameOpen(weekly, now) : (() => {
         const open = nigerInstant(nowParts.year, nowParts.month, nowParts.day, schedule.open_hour);
         const close = nigerInstant(nowParts.year, nowParts.month, nowParts.day, schedule.close_hour);
@@ -176,14 +187,14 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
         ].join("-");
         const { data: races, error: raceError } = await pmuDb
           .from("pmu_races")
-          .select("id,start_at,status")
+          .select("id,status")
           .eq("race_date", today)
           .in("status", ["scheduled", "open"])
           .order("start_at", { ascending: true })
           .limit(1);
         if (raceError || !races?.[0]) throw new Error("pmu_race_not_found");
         pmuRaceId = races[0].id;
-        if (new Date(races[0].start_at).getTime() <= Date.now()) throw new Error("pmu_race_closed");
+        if (!officialPmuDrawAt || Date.now() >= officialPmuDrawAt.getTime()) throw new Error("pmu_race_closed");
         const { data: starters, error: startersError } = await pmuDb
           .from("pmu_horses")
           .select("number,status")
