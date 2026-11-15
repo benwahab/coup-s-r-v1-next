@@ -108,7 +108,6 @@ function PmuPage() {
       .select("id,start_at")
       .eq("race_date", today)
       .in("status", ["scheduled", "open"])
-      .order("start_at", { ascending: true })
       .limit(1);
     if (raceError || !races?.[0]) {
       setHorses([]);
