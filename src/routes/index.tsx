@@ -102,6 +102,7 @@ function HomeContent() {
           draw_hour: number;
           draw_minute: number;
           enabled: boolean;
+          day_schedules?: WeeklyGameSchedule;
           daily_stats_date: string;
           today_winners_count: number | null;
           today_paid_fcfa: number | null;
@@ -138,6 +139,7 @@ function HomeContent() {
     pmuSchedule?.close_hour ?? 0,
     pmuSchedule?.draw_hour ?? 0,
     pmuSchedule?.draw_minute ?? 0,
+    pmuSchedule?.day_schedules,
   );
   const pmuEvt = pmuSchedule ? pmuEvtRaw : null;
   const [lastPmu, setLastPmu] = useState<{ date: string; horses: number[] } | null>(null);
@@ -266,6 +268,7 @@ function HomeContent() {
     lotoSchedule?.close_hour ?? 0,
     lotoSchedule?.draw_hour ?? 0,
     lotoSchedule?.draw_minute ?? 0,
+    lotoSchedule?.day_schedules,
   );
   const lotoEvt = lotoSchedule ? lotoEvtRaw : null;
   const pmuCd = useCountdown(pmuEvt?.target ?? new Date(0));
