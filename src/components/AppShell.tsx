@@ -8,6 +8,7 @@ import { useI18n, type Lang } from "@/lib/i18n";
 import { useAccount } from "@/lib/account";
 import { useAuth } from "@/lib/auth";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { useTickets } from "@/lib/tickets";
 import { SiteFooter } from "@/components/SiteFooter";
 import { cn } from "@/lib/utils";
 import logoCoupSur from "@/assets/logo-coup-sur.png?format=webp&w=96&quality=90&url";
@@ -17,6 +18,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { account } = useAccount();
   const { authed, authChecked, remainingLockMs, isPermanent, logout, session } = useAuth();
   const { isAdmin, verificationFailed } = useIsAdmin();
+  const { tickets } = useTickets();
+  // A ticket remains a winner after its prize has been cashed out.
+  const winningTicketCount = tickets.filter((ticket) => ticket.status === "winning" || ticket.status === "paid").length;
   const lockMs = remainingLockMs();
   const locked = isPermanent() || lockMs > 0;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -54,11 +58,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
-  const navItems: { to: string; label: string; icon: typeof Home; exact?: boolean }[] = [
+  const navItems: { to: string; label: string; icon: typeof Home; exact?: boolean; badgeCount?: number }[] = [
     { to: "/", label: t("home"), icon: Home, exact: true },
     { to: "/resultats", label: t("results"), icon: Trophy },
     { to: "/pronostics", label: t("predictions"), icon: Sparkles },
-    { to: "/mes-tickets", label: t("myTickets"), icon: TicketIcon },
+    { to: "/mes-tickets", label: t("myTickets"), icon: TicketIcon, badgeCount: winningTicketCount },
   ];
 
   return (
@@ -134,7 +138,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition",
                     active ? "text-primary" : "text-muted-foreground hover:text-foreground",
                   )}>
-                    <it.icon className={cn("h-5 w-5", active && "text-primary")} />{it.label}
+                    <it.icon className={cn("h-5 w-5", active && "text-primary")} /><span className="inline-flex items-center gap-1.5">{it.label}{it.badgeCount !== undefined && <span aria-label={`${it.badgeCount} ticket(s) gagnant(s)`} className={cn("inline-flex min-w-5 h-5 items-center justify-center rounded-full px-1 text-[10px] font-extrabold tabular-nums", it.badgeCount === 0 ? "bg-muted-foreground/70 text-white" : "bg-success text-white")}>{it.badgeCount}</span>}</span>
                   </Link>
                 </li>
               );
