@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Trophy, Info, Plus, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { BetFlow } from "@/components/BetFlow";
-import { isGameOpen, nigerDateIso } from "@/lib/schedule";
+import { isGameOpen, isWeeklyGameOpen, scheduleForNigerDay, nigerDateIso, type WeeklyGameSchedule } from "@/lib/schedule";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { pmuBets, findBet, type PmuBetId } from "@/lib/pmu-bets";
