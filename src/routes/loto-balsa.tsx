@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/AppShell";
 import { cn, formatFcfa, formatHour } from "@/lib/utils";
 import { lotoMultipliers } from "@/lib/game-config";
 import { supabase } from "@/integrations/supabase/client";
-import { drawNameForDate, nigerDateLabel, isGameOpen, nigerParts, nigerInstant } from "@/lib/schedule";
+import { drawNameForDate, nigerDateLabel, isGameOpen, isWeeklyGameOpen, scheduleForNigerDay, nigerParts, nigerInstant, type WeeklyGameSchedule } from "@/lib/schedule";
 import type { TicketLeg } from "@/lib/tickets";
 import ogAsset from "@/assets/og-loto.jpg.asset.json";
 import { SITE_ORIGIN, absoluteOgUrl } from "@/lib/og";
@@ -65,7 +65,7 @@ function LotoPage() {
   useEffect(() => {
     void supabase
       .from("game_schedules")
-      .select("open_hour,close_hour,draw_hour,draw_minute,enabled")
+      .select("open_hour,close_hour,draw_hour,draw_minute,enabled,day_schedules")
       .eq("game_id", "loto")
       .maybeSingle()
       .then(
@@ -77,7 +77,7 @@ function LotoPage() {
       );
   }, []);
 
-  const drawName = drawNameForDate();
+  const todaySchedule = schedule?.day_schedules?.length === 7 ? scheduleForNigerDay(schedule.day_schedules) : schedule;\n  const drawName = drawNameForDate();
   const dateLabel = nigerDateLabel();
   const drawDateIso = useMemo(() => {
     if (!schedule) return "";
@@ -89,7 +89,7 @@ function LotoPage() {
       schedule.draw_hour,
       schedule.draw_minute,
     ).toISOString();
-  }, [schedule]);
+  }, [schedule, todaySchedule]);
 
   const changeMode = (m: Mode) => {
     setMode(m);
@@ -172,9 +172,9 @@ function LotoPage() {
               </div>
             ) : schedule ? (
               [
-                { l: t("closeAt"), v: formatHour(schedule.close_hour) },
-                { l: t("drawAt"), v: formatHour(schedule.draw_hour, schedule.draw_minute) },
-                { l: t("openAt"), v: formatHour(schedule.open_hour) },
+                { l: t("closeAt"), v: formatHour((todaySchedule ?? schedule).close_hour) },
+                { l: t("drawAt"), v: formatHour((todaySchedule ?? schedule).draw_hour, (todaySchedule ?? schedule).draw_minute) },
+                { l: t("openAt"), v: formatHour((todaySchedule ?? schedule).open_hour) },
               ].map((b, i) => (
                 <div
                   key={i}
@@ -211,9 +211,9 @@ function LotoPage() {
         defaultStake={stake}
         skipStake
         gameOpen={Boolean(
-          schedule?.enabled && schedule && isGameOpen(schedule.open_hour, schedule.close_hour),
+          schedule?.enabled && schedule && (schedule.day_schedules?.length === 7 ? isWeeklyGameOpen(schedule.day_schedules) : isGameOpen(schedule.open_hour, schedule.close_hour)),
         )}
-        openHour={schedule?.open_hour ?? 0}
+        openHour={todaySchedule?.open_hour ?? schedule?.open_hour ?? 0}
         renderSelection={
           <div>
             <div className="mb-4">
