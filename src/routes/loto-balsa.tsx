@@ -60,6 +60,7 @@ function LotoPage() {
     draw_hour: number;
     draw_minute: number;
     enabled: boolean;
+    day_schedules?: WeeklyGameSchedule;
   } | null>(null);
   const [scheduleLoading, setScheduleLoading] = useState(true);
   useEffect(() => {
@@ -77,7 +78,8 @@ function LotoPage() {
       );
   }, []);
 
-  const todaySchedule = schedule?.day_schedules?.length === 7 ? scheduleForNigerDay(schedule.day_schedules) : schedule;\n  const drawName = drawNameForDate();
+  const todaySchedule = schedule?.day_schedules?.length === 7 ? scheduleForNigerDay(schedule.day_schedules) : schedule;
+  const drawName = drawNameForDate();
   const dateLabel = nigerDateLabel();
   const drawDateIso = useMemo(() => {
     if (!schedule) return "";
@@ -86,8 +88,8 @@ function LotoPage() {
       today.year,
       today.month,
       today.day,
-      schedule.draw_hour,
-      schedule.draw_minute,
+      (todaySchedule ?? schedule).draw_hour,
+      (todaySchedule ?? schedule).draw_minute,
     ).toISOString();
   }, [schedule, todaySchedule]);
 
