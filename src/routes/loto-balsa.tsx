@@ -75,7 +75,7 @@ function LotoPage() {
         .maybeSingle();
       if (cancelled) return;
       if (!error) setSchedule(data ? { ...data, day_schedules: Array.isArray(data.day_schedules) ? data.day_schedules as unknown as WeeklyGameSchedule : undefined } : null);
-                setScheduleLoading(false);
+      setScheduleLoading(false);
     };
     void loadSchedule();
     const channel = supabase
