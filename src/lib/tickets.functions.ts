@@ -190,7 +190,6 @@ export const createTicketAfterPayment = createServerFn({ method: "POST" })
           .select("id,status")
           .eq("race_date", today)
           .in("status", ["scheduled", "open"])
-          .order("start_at", { ascending: true })
           .limit(1);
         if (raceError || !races?.[0]) throw new Error("pmu_race_not_found");
         pmuRaceId = races[0].id;
