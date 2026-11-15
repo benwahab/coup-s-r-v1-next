@@ -71,6 +71,7 @@ function PmuPage() {
     draw_hour: number;
     draw_minute: number;
     enabled: boolean;
+    day_schedules?: WeeklyGameSchedule;
   } | null>(null);
   useEffect(() => {
     void supabase
@@ -83,7 +84,9 @@ function PmuPage() {
       });
   }, []);
 
-  const todaySchedule = schedule?.day_schedules?.length === 7 ? scheduleForNigerDay(schedule.day_schedules) : schedule;\n\n  const loadRace = async () => {
+  const todaySchedule = schedule?.day_schedules?.length === 7 ? scheduleForNigerDay(schedule.day_schedules) : schedule;
+
+  const loadRace = async () => {
     setLoading(true);
     setLoadError(false);
     const today = nigerDateIso();
