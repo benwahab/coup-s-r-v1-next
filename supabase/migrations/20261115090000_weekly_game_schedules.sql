@@ -3,7 +3,6 @@ UPDATE public.game_schedules
 SET day_schedules=(SELECT jsonb_agg(jsonb_build_object('day',d,'open_hour',open_hour,'close_hour',close_hour,'draw_hour',draw_hour,'draw_minute',draw_minute) ORDER BY d) FROM generate_series(0,6) AS d)
 WHERE day_schedules IS NULL;
 ALTER TABLE public.game_schedules ALTER COLUMN day_schedules SET NOT NULL;
-ALTER TABLE public.game_schedules ALTER COLUMN day_schedules SET DEFAULT '[]'::jsonb;
 ALTER TABLE public.game_schedules ADD CONSTRAINT game_schedules_seven_days_check CHECK(jsonb_typeof(day_schedules)='array' AND jsonb_array_length(day_schedules)=7);
 
 -- Keep all existing PMU race binding and Loto multiplier safeguards while enforcing the weekday schedule atomically.
