@@ -67,7 +67,9 @@ function PmuPage() {
   const [raceStartAt, setRaceStartAt] = useState<string | null>(null);
   const [schedule, setSchedule] = useState<{
     open_hour: number;
+    open_minute?: number;
     close_hour: number;
+    close_minute?: number;
     draw_hour: number;
     draw_minute: number;
     enabled: boolean;
