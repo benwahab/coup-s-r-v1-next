@@ -818,6 +818,7 @@ function PhoneField({
   phone,
   onChange,
   error,
+  helperText,
   autoFocus = false,
 }: {
   phone: string;
