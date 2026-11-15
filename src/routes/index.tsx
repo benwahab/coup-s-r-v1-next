@@ -114,12 +114,13 @@ function HomeContent() {
   >({});
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
+    const loadSchedules = async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("game_schedules")
           .select("game_id,open_hour,close_hour,draw_hour,draw_minute,enabled,day_schedules,daily_stats_date,today_winners_count,today_paid_fcfa")
           .in("game_id", ["pmu", "loto"]);
+        if (error) throw error;
         if (cancelled) return;
         const next: typeof schedules = {};
         for (const row of data ?? [])
@@ -129,9 +130,15 @@ function HomeContent() {
         console.error("[home] schedule load failed", error);
         if (!cancelled) setSchedules({});
       }
-    })();
+    };
+    void loadSchedules();
+    const channel = supabase
+      .channel("home-game-schedules")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "game_schedules" }, () => void loadSchedules())
+      .subscribe();
     return () => {
       cancelled = true;
+      void supabase.removeChannel(channel);
     };
   }, []);
   const pmuSchedule = schedules.pmu;
