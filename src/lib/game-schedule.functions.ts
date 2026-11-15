@@ -38,7 +38,7 @@ export const getGameSchedules = createServerFn({ method: "POST" })
     await assertOperationsPermission(context.supabase as SupabaseClient<Database>, context.userId);
     const { data, error } = await supabaseAdmin
       .from("game_schedules")
-      .select("game_id,open_hour,close_hour,draw_hour,draw_minute,timezone,enabled,daily_stats_date,today_winners_count,today_paid_fcfa,day_schedules,updated_at")
+      .select("game_id,open_hour,close_hour,draw_hour,draw_minute,timezone,enabled,daily_stats_date,today_winners_count,today_paid_fcfa,day_schedules,draft_day_schedules,updated_at")
       .order("game_id");
     if (error) throw new Error("schedule_lookup_failed: " + error.message);
     return data ?? [];
@@ -65,7 +65,7 @@ export const adminUpdateGameSchedule = createServerFn({ method: "POST" })
           daily_stats_date: data.dailyStatsDate,
           today_winners_count: data.todayWinnersCount,
           today_paid_fcfa: data.todayPaidFcfa,
-          day_schedules: data.daySchedules,
+          draft_day_schedules: data.daySchedules,
           updated_at: new Date().toISOString(),
           updated_by: context.userId,
         },
@@ -78,8 +78,9 @@ export const adminUpdateGameSchedule = createServerFn({ method: "POST" })
 
     await writeAuditLog(supabaseAdmin, {
       userId: context.userId,
-      action: "admin.game_schedule.updated",
+      action: "admin.game_schedule.draft_saved",
       detail: {
+        stage: "draft",
         gameId: data.gameId,
         openHour: data.openHour,
         closeHour: data.closeHour,
@@ -93,4 +94,25 @@ export const adminUpdateGameSchedule = createServerFn({ method: "POST" })
     });
 
     return row;
+  });
+
+
+export const publishGameSchedules = createServerFn({ method: "POST" })
+  .middleware([requireConfiguredUser])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await assertOperationsPermission(context.supabase as SupabaseClient<Database>, context.userId);
+
+    const { data, error } = await supabaseAdmin.rpc("publish_game_schedules", {
+      p_user_id: context.userId,
+    });
+    if (error) throw new Error("schedule_publish_failed: " + error.message);
+
+    await writeAuditLog(supabaseAdmin, {
+      userId: context.userId,
+      action: "admin.game_schedule.published",
+      detail: { result: data },
+    });
+
+    return data;
   });
