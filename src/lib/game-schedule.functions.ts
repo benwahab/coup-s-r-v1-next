@@ -35,7 +35,7 @@ export const getGameSchedules = createServerFn({ method: "POST" })
   .middleware([requireConfiguredUser])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await assertOperationsPermission(supabaseAdmin, context.userId);
+    await assertOperationsPermission(context.supabase as SupabaseClient<Database>, context.userId);
     const { data, error } = await supabaseAdmin
       .from("game_schedules")
       .select("game_id,open_hour,close_hour,draw_hour,draw_minute,timezone,enabled,daily_stats_date,today_winners_count,today_paid_fcfa,day_schedules,updated_at")
@@ -49,7 +49,7 @@ export const adminUpdateGameSchedule = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => scheduleSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await assertOperationsPermission(supabaseAdmin, context.userId);
+    await assertOperationsPermission(context.supabase as SupabaseClient<Database>, context.userId);
 
     const { data: row, error } = await supabaseAdmin
       .from("game_schedules")
