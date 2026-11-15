@@ -23,7 +23,7 @@ const REGION_PATHS = [
 
 const LABEL_POSITIONS: Record<string, { x: number; y: number; w: number }> = {
   Agadez: { x: 500, y: 230, w: 82 },
-  Diffa: { x: 695, y: 500, w: 72 },
+  Diffa: { x: 695, y: 450, w: 72 },
   Dosso: { x: 176, y: 585, w: 72 },
   Maradi: { x: 365, y: 520, w: 76 },
   Niamey: { x: 83, y: 550, w: 82 },
@@ -123,23 +123,23 @@ export function RegionsTab({ regionStats }: { regionStats: MonthlyRegionStat[] }
                   return (
                     <g key={stat.region} pointerEvents="none">
                       <rect
-                        x={x} y={y} width={w} height="34" rx="9"
+                        x={x} y={y} width={w} height="44" rx="9"
                         fill={active ? "#172b24" : "#ffffff"}
                         stroke={active ? "#d69e2e" : "#a7b3ad"}
                         strokeWidth="1.5"
                         opacity="0.96"
                       />
                       <text
-                        x={x + w / 2} y={y + 12}
+                        x={x + w / 2} y={y + 17}
                         textAnchor="middle"
-                        fontSize="9"
+                        fontSize="16"
                         fontWeight="700"
                         fill={active ? "#ffffff" : "#26332c"}
                       >{stat.region}</text>
                       <text
-                        x={x + w / 2} y={y + 26}
+                        x={x + w / 2} y={y + 35}
                         textAnchor="middle"
-                        fontSize="11"
+                        fontSize="18"
                         fontWeight="800"
                         fill={active ? "#ffffff" : "#14532d"}
                       >{stat.tickets.toLocaleString("fr-FR")} tickets</text>
